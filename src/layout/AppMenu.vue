@@ -5,30 +5,32 @@ import AppMenuItem from './AppMenuItem.vue';
 const model = ref([
     {
         label: 'Home',
-        items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
+        items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/dashboard' }]
     },
     {
         label: 'Library Catalog',
         items: [
-            { label: 'Browse Books', icon: 'pi pi-fw pi-book', to: '/catalog/books' },
-            { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/catalog/categories' },
-            { label: 'Authors', icon: 'pi pi-fw pi-user-edit', to: '/catalog/authors' },
-            { label: 'Publishers', icon: 'pi pi-fw pi-building', to: '/catalog/publishers' }
+            { label: 'All Books', icon: 'pi pi-fw pi-list', to: '/books' },
+            { label: 'E-Books', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks' },
+            { label: 'Digital Assets', icon: 'pi pi-fw pi-video', to: '/books/assets' },
+            { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/books/categories' },
+            { label: 'Publishers', icon: 'pi pi-fw pi-building', to: '/books/publishers' }
         ]
     },
     {
         label: 'My Account',
         items: [
-            { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/account/borrowed' },
-            { label: 'Reservations', icon: 'pi pi-fw pi-calendar', to: '/account/reservations' },
-            { label: 'Reading History', icon: 'pi pi-fw pi-clock', to: '/account/history' },
+            { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/books/borrowed' },
+            { label: 'Borrowing History', icon: 'pi pi-fw pi-clock', to: '/books/history' },
             { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' }
         ]
     },
     {
-        label: 'Administration',
+        label: 'Library Management',
         items: [
-            { label: 'Manage Books', icon: 'pi pi-fw pi-pencil', to: '/admin/books' },
+            { label: 'Add Physical Book', icon: 'pi pi-fw pi-book', to: '/books/physical/create' },
+            { label: 'Add E-Book', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks/create' },
+            { label: 'Add Digital Asset', icon: 'pi pi-fw pi-plus-circle', to: '/books/assets/create' },
             { label: 'Manage Users', icon: 'pi pi-fw pi-users', to: '/admin/users' },
             { label: 'Reports', icon: 'pi pi-fw pi-chart-bar', to: '/admin/reports' }
         ]
