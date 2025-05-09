@@ -1,5 +1,6 @@
 import AppLayout from '@/layout/AppLayout.vue';
-
+import { useAuthStore } from '@/stores/authStore';
+import Cookies from 'js-cookie';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -139,6 +140,13 @@ const router = createRouter({
             component: () => import('@/views/pages/auth/Login.vue')
         },
         {
+            path: '/',
+            name: 'home',
+            component: () => import('@/views/pages/home/Home.vue'),
+            meta: { public: true }
+        },
+
+        {
             path: '/auth/register',
             name: 'register',
             component: () => import('@/views/pages/auth/Register.vue')
@@ -173,60 +181,100 @@ const router = createRouter({
 
 let isInitialLoad = true;
 
-// router.beforeEach(async (to, from, next) => {
-//     const authStore = useAuthStore();
-//     const { authCheck, auth } = authStore;
+// Define role constants outside the router guard for better maintainability
+const ROLE = {
+    SUPER_ADMIN: 1,
+    ADMIN: 2,
+    LIBRARIAN: 3,
+    STAFF: 4,
+    STUDENT: 5
+};
 
-//     if (isInitialLoad && to.path !== '/auth/login' && !to.query.token) {
-//         try {
-//             await authCheck();
-//         } catch (error) {
-//             console.error('Auth validation failed on initial load:', error);
-//         } finally {
-//             isInitialLoad = false;
-//         }
-//     }
+router.beforeEach(async (to, from, next) => {
+    const authStore = useAuthStore();
+    const accessToken = Cookies.get('access_token');
 
-//     const { isAuthenticated, user } = auth;
+    // Skip authentication checks for home page and auth routes
+    if (to.path === '/' || to.path.startsWith('/auth/')) {
+        return next();
+    }
 
-//     if (to.meta.requiresAuth && !isAuthenticated) {
-//         Cookies.remove('access_token');
-//         return next('/auth/login');
-//     }
+    // First time the app loads, check authentication status
+    if (isInitialLoad && !to.query.token) {
+        try {
+            // If we have a token but no user info, try to validate it
+            if (accessToken && (!authStore.getAuth.isAuthenticated || !authStore.getAuth.user)) {
+                const isAuthenticated = await authStore.authCheck();
+                if (!isAuthenticated) {
+                    Cookies.remove('access_token');
+                    isInitialLoad = false;
+                    return next('/auth/login');
+                }
+            } else if (!accessToken) {
+                isInitialLoad = false;
+                return next('/auth/login');
+            }
+        } catch (error) {
+            console.error('Auth validation failed on initial load:', error);
+            Cookies.remove('access_token');
+        } finally {
+            isInitialLoad = false;
+        }
+    }
 
-//     // Role-based access control
-//     const userRoleId = user?.roles?.[0]?.id;
+    const { isAuthenticated, user } = authStore.getAuth;
 
-//     // Define roles by ID
-//     const ADMIN_ROLE = 1;
-//     const LIBRARIAN_ROLE = 2;
-//     const STAFF_ROLE = 3;
-//     const STUDENT_ROLE = 4;
+    // Check for public routes that don't require authentication
+    const isAuthRoute = to.path.startsWith('/auth/');
 
-//     const conditions = [
-//         { metaKey: 'requiresAuth', condition: !isAuthenticated, redirect: '/auth/login' },
-//         { metaKey: 'isAdmin', condition: userRoleId !== ADMIN_ROLE, redirect: '/auth/access-denied' },
-//         { metaKey: 'isLibrarian', condition: userRoleId !== LIBRARIAN_ROLE, redirect: '/auth/access-denied' },
-//         { metaKey: 'isStaff', condition: userRoleId !== STAFF_ROLE, redirect: '/auth/access-denied' },
-//         { metaKey: 'isStudent', condition: userRoleId !== STUDENT_ROLE, redirect: '/auth/access-denied' },
-//         {
-//             metaKey: 'isAdminOrLibrarian',
-//             condition: !(userRoleId === ADMIN_ROLE || userRoleId === LIBRARIAN_ROLE),
-//             redirect: '/auth/access-denied'
-//         }
-//     ];
+    // If route requires authentication but user is not authenticated
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        Cookies.remove('access_token');
+        return next({
+            path: '/auth/login',
+            query: { redirect: to.fullPath } // Store the attempted URL for later redirection
+        });
+    }
 
-//     for (const { metaKey, condition, redirect } of conditions) {
-//         if (to.meta[metaKey] && condition) {
-//             return next(redirect);
-//         }
-//     }
+    // Role-based access control
+    if (isAuthenticated && user) {
+        const userRoles = user?.user?.roles || [];
+        console.log('User Roles:', userRoles);
+        const userRoleIds = userRoles.map((role) => role.id);
 
-//     if ((to.path === '/auth/login' || to.path === '/auth/register') && isAuthenticated) {
-//         return next('/dashboard');
-//     }
+        // Ensure super-admin has unrestricted access
+        if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
+            return next();
+        }
 
-//     next();
-// });
+        // Define conditions for access
+        const conditions = [
+            { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
+            { metaKey: 'isSuperAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
+            { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
+            { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
+            { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
+            {
+                metaKey: 'isAdminOrLibrarian',
+                condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                redirect: '/auth/access-denied'
+            }
+        ];
+
+        // Check each condition
+        for (const { condition, redirect } of conditions) {
+            if (condition) {
+                return next(redirect);
+            }
+        }
+    }
+
+    // Redirect authenticated users away from auth pages
+    if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
+        return next('/dashboard');
+    }
+
+    next();
+});
 
 export default router;
