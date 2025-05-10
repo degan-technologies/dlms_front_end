@@ -31,6 +31,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, isLibrarian: true }
                 },
                 {
+                    path: '/library/manage',
+                    name: 'libray-manage',
+                    component: () => import('@/views/pages/library/ManageLibrary.vue'),
+                    meta: { requiresAuth: true, isAdminOrSuperAdmin: true }
+                },
+                {
                     path: '/books/physical/edit/:id',
                     name: 'physical-book-edit',
                     component: () => import('@/views/pages/book/PhysicalBookEdit.vue'),
@@ -250,13 +256,14 @@ router.beforeEach(async (to, from, next) => {
         // Define conditions for access
         const conditions = [
             { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
-            { metaKey: 'isSuperAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
+            { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
             { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
             { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
             { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
             {
                 metaKey: 'isAdminOrLibrarian',
                 condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
                 redirect: '/auth/access-denied'
             }
         ];

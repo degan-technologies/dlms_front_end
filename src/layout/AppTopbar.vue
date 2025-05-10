@@ -61,7 +61,7 @@ const logout = async () => {
                     </g>
                 </svg>
 
-                <span>SAKAI</span>
+                <span>FIS</span>
             </router-link>
         </div>
 
