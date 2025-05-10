@@ -1,6 +1,5 @@
 import AppLayout from '@/layout/AppLayout.vue';
-import { useAuthStore } from '@/stores/authStore';
-import Cookies from 'js-cookie';
+
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -15,119 +14,258 @@ const router = createRouter({
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue'),
                     meta: { requiresAuth: true }
-                },
-
-                // Book Management Routes
-                {
-                    path: '/books',
-                    name: 'books-list',
-                    component: () => import('@/views/pages/book/BooksList.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/physical/create',
-                    name: 'physical-book-create',
-                    component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/physical/edit/:id',
-                    name: 'physical-book-edit',
-                    component: () => import('@/views/pages/book/PhysicalBookEdit.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/physical/:id',
-                    name: 'physical-book-details',
-                    component: () => import('@/views/pages/book/PhysicalBookDetails.vue'),
-                    meta: { requiresAuth: true }
-                },
-
-                // E-Book Management Routes
-                {
-                    path: '/books/ebooks',
-                    name: 'ebooks-list',
-                    component: () => import('@/views/pages/book/EBooksList.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/ebooks/create',
-                    name: 'ebook-create',
-                    component: () => import('@/views/pages/book/EBookCreate.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/ebooks/edit/:id',
-                    name: 'ebook-edit',
-                    component: () => import('@/views/pages/book/EBookEdit.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/ebooks/:id',
-                    name: 'ebook-details',
-                    component: () => import('@/views/pages/book/EBookDetails.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/ebooks/read/:id',
-                    name: 'ebook-reader',
-                    component: () => import('@/views/pages/book/EBookReader.vue'),
-                    meta: { requiresAuth: true }
-                },
-
-                // Other Assets Management Routes
-                {
-                    path: '/books/assets',
-                    name: 'assets-list',
-                    component: () => import('@/views/pages/book/AssetsList.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/assets/create',
-                    name: 'asset-create',
-                    component: () => import('@/views/pages/book/AssetCreate.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/assets/edit/:id',
-                    name: 'asset-edit',
-                    component: () => import('@/views/pages/book/AssetEdit.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/assets/:id',
-                    name: 'asset-details',
-                    component: () => import('@/views/pages/book/AssetDetails.vue'),
-                    meta: { requiresAuth: true }
-                },
-
-                // Category and Publisher Routes
-                {
-                    path: '/books/categories',
-                    name: 'categories-list',
-                    component: () => import('@/views/pages/book/CategoriesList.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/publishers',
-                    name: 'publishers-list',
-                    component: () => import('@/views/pages/book/PublishersList.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-
-                // User borrowing and history routes
-                {
-                    path: '/books/borrowed',
-                    name: 'borrowed-books',
-                    component: () => import('@/views/pages/book/BorrowedBooks.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/history',
-                    name: 'borrowing-history',
-                    component: () => import('@/views/pages/book/BorrowingHistory.vue'),
-                    meta: { requiresAuth: true }
                 }
+
+                // User Profile Management Routes
+                // {
+                //     path: '/profile',
+                //     name: 'user-profile',
+                //     component: () => import('@/views/pages/profile/UserProfile.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/profile/change-password',
+                //     name: 'change-password',
+                //     component: () => import('@/views/pages/profile/ChangePassword.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/profile/preferences',
+                //     name: 'user-preferences',
+                //     component: () => import('@/views/pages/profile/UserPreferences.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+
+                // // Catalog Management Routes (Admin & Librarian)
+                // {
+                //     path: '/catalog/books',
+                //     name: 'manage-books',
+                //     component: () => import('@/views/pages/admin/catalog/ManageBooks.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/catalog/books/add',
+                //     name: 'add-book',
+                //     component: () => import('@/views/pages/admin/catalog/AddBook.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/catalog/books/edit/:id',
+                //     name: 'edit-book',
+                //     component: () => import('@/views/pages/admin/catalog/EditBook.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/catalog/categories',
+                //     name: 'manage-categories',
+                //     component: () => import('@/views/pages/admin/catalog/ManageCategories.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/catalog/authors',
+                //     name: 'manage-authors',
+                //     component: () => import('@/views/pages/admin/catalog/ManageAuthors.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/catalog/publishers',
+                //     name: 'manage-publishers',
+                //     component: () => import('@/views/pages/admin/catalog/ManagePublishers.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+
+                // // Circulation Management Routes
+                // {
+                //     path: '/circulation/checkouts',
+                //     name: 'manage-checkouts',
+                //     component: () => import('@/views/pages/librarian/circulation/ManageCheckouts.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/circulation/returns',
+                //     name: 'manage-returns',
+                //     component: () => import('@/views/pages/librarian/circulation/ManageReturns.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/circulation/reservations',
+                //     name: 'manage-reservations',
+                //     component: () => import('@/views/pages/librarian/circulation/ManageReservations.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/circulation/fines',
+                //     name: 'manage-fines',
+                //     component: () => import('@/views/pages/librarian/circulation/ManageFines.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+
+                // // User Management Routes (Admin only)
+                // {
+                //     path: '/admin/users',
+                //     name: 'manage-users',
+                //     component: () => import('@/views/pages/admin/users/ManageUsers.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+                // {
+                //     path: '/admin/users/add',
+                //     name: 'add-user',
+                //     component: () => import('@/views/pages/admin/users/AddUser.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+                // {
+                //     path: '/admin/users/edit/:id',
+                //     name: 'edit-user',
+                //     component: () => import('@/views/pages/admin/users/EditUser.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+                // {
+                //     path: '/admin/roles',
+                //     name: 'manage-roles',
+                //     component: () => import('@/views/pages/admin/users/ManageRoles.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+
+                // Reports Routes
+                // {
+                //     path: '/admin/reports/circulation',
+                //     name: 'circulation-reports',
+                //     component: () => import('@/views/pages/admin/reports/CirculationReports.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/admin/reports/acquisitions',
+                //     name: 'acquisition-reports',
+                //     component: () => import('@/views/pages/admin/reports/AcquisitionReports.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+                // {
+                //     path: '/admin/reports/user-activity',
+                //     name: 'user-activity-reports',
+                //     component: () => import('@/views/pages/admin/reports/UserActivityReports.vue'),
+                //     meta: { requiresAuth: true, isAdminOrLibrarian: true }
+                // },
+
+                // // System Configuration Routes (Admin only)
+                // {
+                //     path: '/admin/settings/general',
+                //     name: 'general-settings',
+                //     component: () => import('@/views/pages/admin/settings/GeneralSettings.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+                // {
+                //     path: '/admin/settings/circulation',
+                //     name: 'circulation-settings',
+                //     component: () => import('@/views/pages/admin/settings/CirculationSettings.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+                // {
+                //     path: '/admin/settings/notifications',
+                //     name: 'notification-settings',
+                //     component: () => import('@/views/pages/admin/settings/NotificationSettings.vue'),
+                //     meta: { requiresAuth: true, isAdmin: true }
+                // },
+
+                // // Member/Student Routes
+                // {
+                //     path: '/catalog/browse',
+                //     name: 'browse-catalog',
+                //     component: () => import('@/views/pages/student/BrowseCatalog.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/catalog/book/:id',
+                //     name: 'book-details',
+                //     component: () => import('@/views/pages/student/BookDetails.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/student/borrowed',
+                //     name: 'my-borrowed-items',
+                //     component: () => import('@/views/pages/student/MyBorrowedItems.vue'),
+                //     meta: { requiresAuth: true, isStudent: true }
+                // },
+                // {
+                //     path: '/student/history',
+                //     name: 'borrowing-history',
+                //     component: () => import('@/views/pages/student/BorrowingHistory.vue'),
+                //     meta: { requiresAuth: true, isStudent: true }
+                // },
+                // {
+                //     path: '/student/reservations',
+                //     name: 'my-reservations',
+                //     component: () => import('@/views/pages/student/MyReservations.vue'),
+                //     meta: { requiresAuth: true, isStudent: true }
+                // },
+                // {
+                //     path: '/student/fines',
+                //     name: 'my-fines',
+                //     component: () => import('@/views/pages/student/MyFines.vue'),
+                //     meta: { requiresAuth: true, isStudent: true }
+                // },
+
+                // Faculty/Staff Routes
+                // {
+                //     path: '/staff/resources',
+                //     name: 'staff-resources',
+                //     component: () => import('@/views/pages/staff/StaffResources.vue'),
+                //     meta: { requiresAuth: true, isStaff: true }
+                // },
+                // {
+                //     path: '/staff/reserved-materials',
+                //     name: 'reserved-materials',
+                //     component: () => import('@/views/pages/staff/ReservedMaterials.vue'),
+                //     meta: { requiresAuth: true, isStaff: true }
+                // },
+                // {
+                //     path: '/staff/course-reserves/add',
+                //     name: 'add-course-reserves',
+                //     component: () => import('@/views/pages/staff/AddCourseReserves.vue'),
+                //     meta: { requiresAuth: true, isStaff: true }
+                // },
+
+                // // Digital Resources Routes
+                // {
+                //     path: '/resources/e-books',
+                //     name: 'e-books',
+                //     component: () => import('@/views/pages/resources/EBooks.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/resources/journals',
+                //     name: 'journals',
+                //     component: () => import('@/views/pages/resources/Journals.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/resources/databases',
+                //     name: 'databases',
+                //     component: () => import('@/views/pages/resources/Databases.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/resources/multimedia',
+                //     name: 'multimedia',
+                //     component: () => import('@/views/pages/resources/Multimedia.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+
+                // // Help & Support Routes
+                // {
+                //     path: '/help/faq',
+                //     name: 'faq',
+                //     component: () => import('@/views/pages/help/FAQ.vue')
+                // },
+                // {
+                //     path: '/help/contact',
+                //     name: 'contact-support',
+                //     component: () => import('@/views/pages/help/ContactSupport.vue')
+                // },
+                // {
+                //     path: '/help/tutorials',
+                //     name: 'tutorials',
+                //     component: () => import('@/views/pages/help/Tutorials.vue')
+                // }
             ]
         },
 
@@ -139,13 +277,6 @@ const router = createRouter({
             name: 'login',
             component: () => import('@/views/pages/auth/Login.vue')
         },
-        {
-            path: '/',
-            name: 'home',
-            component: () => import('@/views/pages/home/Home.vue'),
-            meta: { public: true }
-        },
-
         {
             path: '/auth/register',
             name: 'register',
@@ -165,116 +296,76 @@ const router = createRouter({
             path: '/auth/verify-email',
             name: 'verify-email',
             component: () => import('@/views/pages/auth/VerifyEmail.vue')
-        },
-        {
-            path: '/auth/access-denied',
-            name: 'access-denied',
-            component: () => import('@/views/pages/auth/Access.vue')
-        },
-        {
-            path: '/:pathMatch(.*)*',
-            name: 'not-found',
-            component: () => import('@/views/pages/NotFound.vue')
         }
+        // {
+        //     path: '/auth/access-denied',
+        //     name: 'access-denied',
+        //     component: () => import('@/views/pages/auth/Access.vue')
+        // },
+        // {
+        //     path: '/:pathMatch(.*)*',
+        //     name: 'not-found',
+        //     component: () => import('@/views/pages/NotFound.vue')
+        // }
     ]
 });
 
 let isInitialLoad = true;
 
-// Define role constants outside the router guard for better maintainability
-const ROLE = {
-    SUPER_ADMIN: 1,
-    ADMIN: 2,
-    LIBRARIAN: 3,
-    STAFF: 4,
-    STUDENT: 5
-};
+// router.beforeEach(async (to, from, next) => {
+//     const authStore = useAuthStore();
+//     const { authCheck, auth } = authStore;
 
-router.beforeEach(async (to, from, next) => {
-    const authStore = useAuthStore();
-    const accessToken = Cookies.get('access_token');
+//     if (isInitialLoad && to.path !== '/auth/login' && !to.query.token) {
+//         try {
+//             await authCheck();
+//         } catch (error) {
+//             console.error('Auth validation failed on initial load:', error);
+//         } finally {
+//             isInitialLoad = false;
+//         }
+//     }
 
-    // Skip authentication checks for home page and auth routes
-    if (to.path === '/' || to.path.startsWith('/auth/')) {
-        return next();
-    }
+//     const { isAuthenticated, user } = auth;
 
-    // First time the app loads, check authentication status
-    if (isInitialLoad && !to.query.token) {
-        try {
-            // If we have a token but no user info, try to validate it
-            if (accessToken && (!authStore.getAuth.isAuthenticated || !authStore.getAuth.user)) {
-                const isAuthenticated = await authStore.authCheck();
-                if (!isAuthenticated) {
-                    Cookies.remove('access_token');
-                    isInitialLoad = false;
-                    return next('/auth/login');
-                }
-            } else if (!accessToken) {
-                isInitialLoad = false;
-                return next('/auth/login');
-            }
-        } catch (error) {
-            console.error('Auth validation failed on initial load:', error);
-            Cookies.remove('access_token');
-        } finally {
-            isInitialLoad = false;
-        }
-    }
+//     if (to.meta.requiresAuth && !isAuthenticated) {
+//         Cookies.remove('access_token');
+//         return next('/auth/login');
+//     }
 
-    const { isAuthenticated, user } = authStore.getAuth;
+//     // Role-based access control
+//     const userRoleId = user?.roles?.[0]?.id;
 
-    // Check for public routes that don't require authentication
-    const isAuthRoute = to.path.startsWith('/auth/');
+//     // Define roles by ID
+//     const ADMIN_ROLE = 1;
+//     const LIBRARIAN_ROLE = 2;
+//     const STAFF_ROLE = 3;
+//     const STUDENT_ROLE = 4;
 
-    // If route requires authentication but user is not authenticated
-    if (to.meta.requiresAuth && !isAuthenticated) {
-        Cookies.remove('access_token');
-        return next({
-            path: '/auth/login',
-            query: { redirect: to.fullPath } // Store the attempted URL for later redirection
-        });
-    }
+//     const conditions = [
+//         { metaKey: 'requiresAuth', condition: !isAuthenticated, redirect: '/auth/login' },
+//         { metaKey: 'isAdmin', condition: userRoleId !== ADMIN_ROLE, redirect: '/auth/access-denied' },
+//         { metaKey: 'isLibrarian', condition: userRoleId !== LIBRARIAN_ROLE, redirect: '/auth/access-denied' },
+//         { metaKey: 'isStaff', condition: userRoleId !== STAFF_ROLE, redirect: '/auth/access-denied' },
+//         { metaKey: 'isStudent', condition: userRoleId !== STUDENT_ROLE, redirect: '/auth/access-denied' },
+//         {
+//             metaKey: 'isAdminOrLibrarian',
+//             condition: !(userRoleId === ADMIN_ROLE || userRoleId === LIBRARIAN_ROLE),
+//             redirect: '/auth/access-denied'
+//         }
+//     ];
 
-    // Role-based access control
-    if (isAuthenticated && user) {
-        const userRoles = user?.user?.roles || [];
-        console.log('User Roles:', userRoles);
-        const userRoleIds = userRoles.map((role) => role.id);
+//     for (const { metaKey, condition, redirect } of conditions) {
+//         if (to.meta[metaKey] && condition) {
+//             return next(redirect);
+//         }
+//     }
 
-        // Ensure super-admin has unrestricted access
-        if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
-            return next();
-        }
+//     if ((to.path === '/auth/login' || to.path === '/auth/register') && isAuthenticated) {
+//         return next('/dashboard');
+//     }
 
-        // Define conditions for access
-        const conditions = [
-            { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
-            { metaKey: 'isSuperAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
-            { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
-            { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
-            { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
-            {
-                metaKey: 'isAdminOrLibrarian',
-                condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
-                redirect: '/auth/access-denied'
-            }
-        ];
-
-        // Check each condition
-        for (const { condition, redirect } of conditions) {
-            if (condition) {
-                return next(redirect);
-            }
-        }
-    }
-
-    // Redirect authenticated users away from auth pages
-    if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
-        return next('/dashboard');
-    }
-
-    next();
-});
+//     next();
+// });
 
 export default router;

@@ -1,41 +1,35 @@
 <script setup>
-import { useAuthStore } from '@/stores/authStore';
-import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-const toast = useToast();
 
-const login = ref(''); // Changed from email to login to match backend
+const email = ref('');
 const password = ref('');
 const rememberMe = ref(false);
 const submitted = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
 const router = useRouter();
-const authStore = useAuthStore();
 
-const handleLogin = async () => {
+const login = async () => {
     submitted.value = true;
-    errorMessage.value = '';
 
-    if (!login.value || !password.value) {
+    if (!email.value || !password.value) {
         return;
     }
 
     try {
         loading.value = true;
-        // Call the login method from authStore
-        await authStore.login(login.value, password.value, rememberMe.value);
-        // No need to set loading to false as we will redirect after login
+        // In a real application, you would authenticate with your backend here
+        // const authStore = useAuthStore();
+        // await authStore.login(email.value, password.value);
+
+        setTimeout(() => {
+            loading.value = false;
+            router.push('/dashboard');
+        }, 1000);
     } catch (error) {
         loading.value = false;
-        if (error.response && error.response.data && error.response.data.message) {
-            errorMessage.value = error.response.data.message;
-        } else {
-            errorMessage.value = 'Failed to login. Please check your credentials and try again.';
-        }
-    } finally {
-        loading.value = false;
+        errorMessage.value = error?.message || 'Invalid email or password. Please try again.';
     }
 };
 
@@ -46,7 +40,7 @@ const loginWithGoogle = () => {
     // In production, you would redirect to Google auth endpoint or use a library
     setTimeout(() => {
         loading.value = false;
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
     }, 1000);
 };
 
@@ -56,13 +50,12 @@ const loginWithLinkedIn = () => {
     // In production, you would redirect to LinkedIn auth endpoint or use a library
     setTimeout(() => {
         loading.value = false;
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
     }, 1000);
 };
 </script>
 
 <template>
-    <Toast />
     <div class="login-page flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <!-- Left side with branding -->
         <div class="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-primary-800 justify-center items-center relative overflow-hidden">
@@ -118,13 +111,13 @@ const loginWithLinkedIn = () => {
                         </div>
                     </div>
 
-                    <form @submit.prevent="handleLogin" class="space-y-5">
+                    <form @submit.prevent="login" class="space-y-5">
                         <div>
                             <FloatLabel variant="on" class="w-full">
-                                <InputText id="login" v-model="login" type="text" class="w-full" :class="{ 'p-invalid': submitted && !login }" autocomplete="username" />
-                                <label for="login">Username or Email</label>
+                                <InputText id="email" v-model="email" type="email" class="w-full" :class="{ 'p-invalid': submitted && !email }" autocomplete="email" />
+                                <label for="email">Email</label>
                             </FloatLabel>
-                            <small v-if="submitted && !login" class="p-error">Username or email is required</small>
+                            <small v-if="submitted && !email" class="p-error">Email is required</small>
                         </div>
 
                         <div>
