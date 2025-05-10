@@ -42,11 +42,35 @@ const model = computed(() => [
         items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/dashboard' }]
     },
     // Admin menu - only show for admin or librarian roles
+
+    // Admin and Super Admin menu - shared access
+    hasRole(ROLE.ADMIN) || hasRole(ROLE.SUPER_ADMIN)
+        ? {
+              label: 'Library Management',
+              items: [
+                  { label: 'Manage Library', icon: 'pi pi-fw pi-book', to: '/library/manage' },
+                  { label: 'Manage Library Sections', icon: 'pi pi-fw pi-sitemap', to: '/library/sections' }
+              ]
+          }
+        : null,
+    // Super Admin menu - exclusive access
+    hasRole(ROLE.SUPER_ADMIN)
+        ? {
+              items: [
+                  { label: 'Manage Library Branch', icon: 'pi pi-fw pi-building', to: '/library/branches' },
+                  { label: 'Manage Admins', icon: 'pi pi-fw pi-user-plus', to: '/admins/manage' }
+              ]
+          }
+        : null,
+    // Admin menu - exclusive access
     hasRole(ROLE.ADMIN)
         ? {
-              label: 'Admin',
+              label: 'User Management',
+              icon: 'pi pi-fw pi-users',
               items: [
-                  { label: 'User Management', icon: 'pi pi-fw pi-users', to: '/admin/users' },
+                  { label: 'Manage Students', icon: 'pi pi-fw pi-users', to: '/students/manage' },
+                  { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' },
+
                   { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/admin/roles' },
                   { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/admin/settings' }
               ]
@@ -75,7 +99,7 @@ const model = computed(() => [
     // Library Management - only for librarians (assuming role ID 2 is librarian)
     hasRole(ROLE.LIBRARIAN)
         ? {
-              label: 'Library Management',
+              label: 'Resource Management',
               items: [
                   { label: 'Add Physical Book', icon: 'pi pi-fw pi-book', to: '/books/physical/create' },
                   { label: 'Add E-Book', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks/create' },
