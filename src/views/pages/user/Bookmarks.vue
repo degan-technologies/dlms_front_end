@@ -1,453 +1,520 @@
 <template>
-    <div class="card">
+    <div class="bookmarks-page">
         <Toast />
-        <!-- Page Title -->
-        <div class="flex justify-content-between align-items-center mb-5">
-            <div>
-                <h1 class="text-3xl font-bold m-0">My Bookmarks</h1>
-                <p class="text-color-secondary mt-2 mb-0">Access your bookmarked resources quickly</p>
-            </div>
-            <div class="flex align-items-center">
-                <span class="p-input-icon-left mr-3">
-                    <i class="pi pi-search" />
-                    <InputText v-model="filters.global.value" placeholder="Search bookmarks..." class="p-inputtext-sm" />
-                </span>
-                <Button icon="pi pi-sort-alt" class="p-button-outlined p-button-rounded p-button-sm" @click="showSortOptions = true" aria-label="Sort" aria-haspopup="true" />
-                <Menu ref="sortMenu" :model="sortOptions" :popup="true" aria-label="Sort Options" />
-            </div>
-        </div>
-
-        <!-- Bookmark Filters by Type -->
-        <div class="flex gap-2 mb-4">
-            <Button :class="{ 'p-button-outlined': activeFilter !== 'all' }" @click="setFilter('all')" label="All" icon="pi pi-star" size="small" />
-            <Button :class="{ 'p-button-outlined': activeFilter !== 'pdf' }" @click="setFilter('pdf')" label="PDF" icon="pi pi-file-pdf" size="small" />
-            <Button :class="{ 'p-button-outlined': activeFilter !== 'ebook' }" @click="setFilter('ebook')" label="E-Books" icon="pi pi-book" size="small" />
-            <Button :class="{ 'p-button-outlined': activeFilter !== 'video' }" @click="setFilter('video')" label="Videos" icon="pi pi-video" size="small" />
-            <Button :class="{ 'p-button-outlined': activeFilter !== 'audio' }" @click="setFilter('audio')" label="Audio" icon="pi pi-volume-up" size="small" />
-        </div>
-
-        <!-- Loading State -->
-        <div v-if="loading" class="flex justify-content-center py-6">
-            <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="3" />
-        </div>
-
-        <!-- Empty State -->
-        <div v-else-if="filteredBookmarks.length === 0" class="surface-ground border-round p-6 flex flex-column align-items-center justify-content-center gap-3">
-            <i class="pi pi-bookmark-fill text-5xl text-color-secondary"></i>
-            <h3 class="m-0">No bookmarks found</h3>
-            <p class="text-color-secondary text-center">
-                {{ activeFilter === 'all' ? "You haven't bookmarked any resources yet. Start exploring the library!" : `You don't have any bookmarks for ${activeFilter} resources.` }}
-            </p>
-            <Button label="Explore Library" icon="pi pi-search" @click="navigateToLibrary" />
-        </div>
-
-        <!-- Bookmarks DataTable -->
-        <DataTable
-            v-else
-            :value="filteredBookmarks"
-            :paginator="true"
-            :rows="10"
-            pageLinkSize="5"
-            :rowsPerPageOptions="[5, 10, 20, 50]"
-            tableStyle="min-width: 50rem"
-            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} bookmarks"
-            :filters="filters"
-            filterDisplay="menu"
-            responsiveLayout="scroll"
-            v-model:expandedRows="expandedRows"
-            dataKey="id"
-            stateStorage="local"
-            stateKey="bookmarks-table"
-            class="p-datatable-sm"
-        >
-            <template #empty>
-                <div class="flex flex-column align-items-center p-5">
-                    <span class="pi pi-search text-5xl text-color-secondary mb-3"></span>
-                    <span>No matching bookmarks found</span>
-                </div>
-            </template>
-
-            <!-- Table Header -->
-            <Column style="width: 4rem" />
-            <Column field="title" header="Title" :sortable="true" style="min-width: 14rem">
-                <template #body="{ data }">
-                    <div class="flex align-items-center">
-                        <i :class="getIconForResourceType(data.type)" class="text-xl mr-2"></i>
-                        <div>
-                            <span class="font-semibold block">{{ data.title }}</span>
-                            <span class="text-sm text-color-secondary">{{ data.type }}</span>
-                        </div>
+        <!-- Header -->
+        <div class="win8-header">
+            <div class="container p-0">
+                <div class="header-content">
+                    <div class="header-title">
+                        <i class="pi pi-th-large mr-2"></i>
+                        <h1>Bookmarks</h1>
                     </div>
-                </template>
-            </Column>
-
-            <Column field="dateBookmarked" header="Date Bookmarked" :sortable="true" style="min-width: 10rem">
-                <template #body="{ data }">
-                    {{ formatDate(data.dateBookmarked) }}
-                </template>
-            </Column>
-
-            <Column field="author" header="Author" :sortable="true" style="min-width: 10rem" />
-
-            <Column field="lastAccessed" header="Last Accessed" :sortable="true" style="min-width: 10rem">
-                <template #body="{ data }">
-                    {{ data.lastAccessed ? formatDate(data.lastAccessed) : 'Never' }}
-                </template>
-            </Column>
-
-            <Column style="width: 8rem">
-                <template #body="{ data }">
-                    <div class="flex justify-content-end">
-                        <Button icon="pi pi-eye" @click="viewResource(data)" text rounded tooltip="View" />
-                        <Button icon="pi pi-trash" @click="confirmRemove(data)" text rounded tooltip="Remove" class="text-red-500" />
-                    </div>
-                </template>
-            </Column>
-
-            <!-- Expanded Row Template -->
-            <template #expansion="{ data }">
-                <div class="p-3 surface-hover">
-                    <div class="grid">
-                        <div class="col-12 md:col-6">
-                            <h4 class="mt-0 mb-3">Resource Details</h4>
-                            <div class="flex flex-column gap-3">
-                                <div v-if="data.publisher" class="flex align-items-center gap-2">
-                                    <i class="pi pi-building text-color-secondary"></i>
-                                    <span><strong>Publisher:</strong> {{ data.publisher }}</span>
-                                </div>
-                                <div v-if="data.publicationYear" class="flex align-items-center gap-2">
-                                    <i class="pi pi-calendar text-color-secondary"></i>
-                                    <span><strong>Year:</strong> {{ data.publicationYear }}</span>
-                                </div>
-                                <div v-if="data.language" class="flex align-items-center gap-2">
-                                    <i class="pi pi-globe text-color-secondary"></i>
-                                    <span><strong>Language:</strong> {{ data.language }}</span>
-                                </div>
-                                <div v-if="data.category" class="flex align-items-center gap-2">
-                                    <i class="pi pi-folder text-color-secondary"></i>
-                                    <span><strong>Category:</strong> {{ data.category }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 md:col-6 flex flex-column">
-                            <h4 class="mt-0 mb-3">Bookmark Notes</h4>
-                            <div v-if="data.notes" class="surface-card p-3 border-round mb-3 flex-grow-1">
-                                <p class="m-0">{{ data.notes }}</p>
-                            </div>
-                            <div v-else class="surface-card border-round p-3 flex-grow-1 flex align-items-center justify-content-center text-color-secondary">
-                                <span>No notes for this bookmark</span>
-                            </div>
-                            <div class="flex justify-content-end mt-3">
-                                <Button icon="pi pi-pencil" label="Add/Edit Note" class="p-button-outlined p-button-sm" @click="openNoteDialog(data)" />
-                            </div>
+                    <div class="search-container">
+                        <div class="p-inputgroup">
+                            <InputText v-model="filters.global.value" placeholder="Search bookmarks..." class="search-input" />
+                            <Button icon="pi pi-search" class="search-button" />
                         </div>
                     </div>
                 </div>
-            </template>
-        </DataTable>
-
-        <!-- Remove Bookmark Confirmation -->
-        <ConfirmDialog />
-
-        <!-- Note Dialog -->
-        <Dialog v-model:visible="noteDialogVisible" header="Bookmark Note" :style="{ width: '450px' }" modal>
-            <div class="field">
-                <label for="bookmark-note" class="block mb-2">Add a note to this bookmark</label>
-                <Textarea id="bookmark-note" v-model="currentNote" rows="5" class="w-full" autoResize />
             </div>
-            <template #footer>
-                <Button label="Cancel" icon="pi pi-times" @click="noteDialogVisible = false" class="p-button-text" />
-                <Button label="Save" icon="pi pi-check" @click="saveNote" autofocus />
-            </template>
-        </Dialog>
+        </div>
+        <!-- Main content area -->
+        <div class="explorer-content container py-4">
+            <!-- Loading State -->
+            <div v-if="loading" class="loading-state">
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p>Loading bookmarks...</p>
+            </div>
+            <!-- Empty State -->
+            <div v-else-if="filteredBookmarks.length === 0" class="empty-state">
+                <i class="pi pi-folder"></i>
+                <h3>No bookmarks found</h3>
+                <p>You haven't added any bookmarks yet</p>
+                <Button label="Explore Library" icon="pi pi-search" @click="navigateToLibrary" class="p-button-primary p-button-lg" />
+            </div>
+
+            <!-- Tile Grid View -->
+            <div v-else class="tile-grid">
+                <div
+                    v-for="(bookmark, index) in filteredBookmarks"
+                    :key="bookmark.id"
+                    class="tile"
+                    :class="getTileSize(index)"
+                    :style="{ animationDelay: `${index * 0.05}s` }"
+                    @click="openResource(bookmark)"
+                    @contextmenu.prevent="showContextMenu($event, bookmark)"
+                >
+                    <div class="tile-content" :style="{ backgroundColor: getColorForType(bookmark.type) }">
+                        <div class="tile-icon">
+                            <i :class="getIconForResourceType(bookmark.type)"></i>
+                        </div>
+                        <div class="tile-info">
+                            <div class="tile-title">{{ bookmark.title }}</div>
+                            <div class="tile-meta">{{ bookmark.author }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context Menu -->
+        <ContextMenu ref="contextMenu" :model="contextMenuItems" />
+
+        <!-- Delete Confirmation Dialog -->
+        <ConfirmDialog></ConfirmDialog>
     </div>
 </template>
 
 <script setup>
-import { format } from 'date-fns';
-// Use FilterMatchMode directly as a constant instead of importing from primevue/api
-// These values match the ones in PrimeVue
-const FilterMatchMode = {
-    STARTS_WITH: 'startsWith',
-    CONTAINS: 'contains',
-    NOT_CONTAINS: 'notContains',
-    ENDS_WITH: 'endsWith',
-    EQUALS: 'equals',
-    NOT_EQUALS: 'notEquals',
-    IN: 'in',
-    LESS_THAN: 'lt',
-    LESS_THAN_OR_EQUAL_TO: 'lte',
-    GREATER_THAN: 'gt',
-    GREATER_THAN_OR_EQUAL_TO: 'gte',
-    BETWEEN: 'between',
-    DATE_IS: 'dateIs',
-    DATE_IS_NOT: 'dateIsNot',
-    DATE_BEFORE: 'dateBefore',
-    DATE_AFTER: 'dateAfter'
-};
-
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-// Component setup
+// PrimeVue Components
+import Button from 'primevue/button';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ContextMenu from 'primevue/contextmenu';
+import InputText from 'primevue/inputtext';
+import Toast from 'primevue/toast';
+
 const router = useRouter();
-const toast = useToast();
 const confirm = useConfirm();
-const sortMenu = ref();
+const toast = useToast();
+const contextMenu = ref(null);
 
 // State
 const bookmarks = ref([]);
 const loading = ref(true);
 const activeFilter = ref('all');
-const showSortOptions = ref(false);
-const expandedRows = ref([]);
-const filters = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+const selectedBookmark = ref(null);
+
+// Search filter
+const filters = reactive({
+    global: { value: null, matchMode: 'contains' }
 });
-const noteDialogVisible = ref(false);
-const currentBookmark = ref(null);
-const currentNote = ref('');
 
-// Sort options for the dropdown menu
-const sortOptions = [
+// Context menu items
+const contextMenuItems = ref([
     {
-        label: 'Date Bookmarked (Newest First)',
-        icon: 'pi pi-sort-amount-down',
-        command: () => sortBookmarks('dateBookmarked', -1)
+        label: 'Open',
+        icon: 'pi pi-external-link',
+        command: () => {
+            if (selectedBookmark.value) {
+                openResource(selectedBookmark.value);
+            }
+        }
     },
     {
-        label: 'Date Bookmarked (Oldest First)',
-        icon: 'pi pi-sort-amount-up',
-        command: () => sortBookmarks('dateBookmarked', 1)
-    },
-    {
-        label: 'Title (A-Z)',
-        icon: 'pi pi-sort-alpha-down',
-        command: () => sortBookmarks('title', 1)
-    },
-    {
-        label: 'Title (Z-A)',
-        icon: 'pi pi-sort-alpha-up',
-        command: () => sortBookmarks('title', -1)
-    },
-    {
-        label: 'Recently Accessed',
-        icon: 'pi pi-clock',
-        command: () => sortBookmarks('lastAccessed', -1)
+        label: 'Remove',
+        icon: 'pi pi-trash',
+        command: () => {
+            if (selectedBookmark.value) {
+                confirmRemoveBookmark(selectedBookmark.value);
+            }
+        }
     }
-];
+]);
 
-// Computed properties
+// Display right-click context menu
+const showContextMenu = (event, bookmark) => {
+    selectedBookmark.value = bookmark;
+    contextMenu.value.show(event);
+};
+
+// Filter bookmarks based on search
 const filteredBookmarks = computed(() => {
-    if (activeFilter.value === 'all') {
+    if (!filters.global.value) {
         return bookmarks.value;
     }
-    return bookmarks.value.filter((b) => b.type.toLowerCase() === activeFilter.value);
+    return bookmarks.value.filter((bookmark) => bookmark.title.toLowerCase().includes(filters.global.value.toLowerCase()));
 });
 
-// Methods
-const fetchBookmarks = async () => {
-    loading.value = true;
-    try {
-        // In a real app, you would fetch bookmarks from an API
-        // For now, we'll use mock data
-        await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate API delay
+// Get icon based on resource type
+const getIconForResourceType = (type) => {
+    const icons = {
+        pdf: 'pi pi-file-pdf',
+        ebook: 'pi pi-book',
+        video: 'pi pi-video',
+        audio: 'pi pi-volume-up',
+        youtube: 'pi pi-youtube'
+    };
+    return icons[type] || 'pi pi-file';
+};
 
-        bookmarks.value = [
-            {
-                id: '1',
-                title: 'Introduction to Computer Science',
-                type: 'PDF',
-                author: 'Dr. John Smith',
-                dateBookmarked: new Date('2023-08-15'),
-                lastAccessed: new Date('2023-09-01'),
-                publisher: 'Academic Press',
-                publicationYear: '2021',
-                language: 'English',
-                category: 'Computer Science',
-                notes: 'Important reference for CS101 course'
-            },
-            {
-                id: '2',
-                title: 'Advanced Data Structures',
-                type: 'Ebook',
-                author: 'Jane Doe',
-                dateBookmarked: new Date('2023-07-22'),
-                lastAccessed: new Date('2023-08-30'),
-                publisher: 'Tech Publications',
-                publicationYear: '2020',
-                language: 'English',
-                category: 'Computer Science'
-            },
-            {
-                id: '3',
-                title: 'Machine Learning Fundamentals',
-                type: 'Video',
-                author: 'Prof. Alex Johnson',
-                dateBookmarked: new Date('2023-09-05'),
-                lastAccessed: null,
-                publisher: 'TechEd Videos',
-                publicationYear: '2022',
-                language: 'English',
-                category: 'Data Science'
-            },
-            {
-                id: '4',
-                title: 'History of Ancient Civilizations',
-                type: 'Audio',
-                author: 'Dr. Maria Garcia',
-                dateBookmarked: new Date('2023-06-10'),
-                lastAccessed: new Date('2023-07-15'),
-                publisher: 'Historical Archives',
-                publicationYear: '2019',
-                language: 'English',
-                category: 'History',
-                notes: 'Great background material for the Egypt project'
-            },
-            {
-                id: '5',
-                title: 'Modern Physics Principles',
-                type: 'PDF',
-                author: 'Dr. Robert Chen',
-                dateBookmarked: new Date('2023-08-30'),
-                lastAccessed: new Date('2023-09-10'),
-                publisher: 'Science Press',
-                publicationYear: '2021',
-                language: 'English',
-                category: 'Physics'
-            }
-        ];
-    } catch (error) {
-        console.error('Error fetching bookmarks:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to load bookmarks. Please try again later.',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
+// Get color based on resource type
+const getColorForType = (type) => {
+    const colors = {
+        pdf: '#FF7043',
+        ebook: '#29B6F6',
+        video: '#AB47BC',
+        audio: '#26A69A',
+        youtube: '#EF5350'
+    };
+    return colors[type] || '#78909C';
+};
+
+// Determine tile size based on index - Windows 8 style with different sized tiles
+const getTileSize = (index) => {
+    // Create an interesting pattern with different sized tiles
+    if (index === 0 || index === 3) {
+        return 'tile-large'; // 2x2
+    } else if (index === 4 || index === 7) {
+        return 'tile-wide'; // 2x1
+    } else {
+        return 'tile-normal'; // 1x1
     }
 };
 
-const setFilter = (filter) => {
-    activeFilter.value = filter;
+// Open the resource
+const openResource = (bookmark) => {
+    // Navigate to resource viewer or open resource
+    router.push(`/resource/${bookmark.id}`);
 };
 
-const sortBookmarks = (field, direction) => {
-    bookmarks.value.sort((a, b) => {
-        if (field === 'lastAccessed') {
-            // Handle null lastAccessed dates
-            if (!a[field] && !b[field]) return 0;
-            if (!a[field]) return 1;
-            if (!b[field]) return -1;
-        }
-
-        if (a[field] < b[field]) return -1 * direction;
-        if (a[field] > b[field]) return 1 * direction;
-        return 0;
-    });
-};
-
-const formatDate = (date) => {
-    if (!date) return '';
-    return format(new Date(date), 'MMM d, yyyy');
-};
-
-const getIconForResourceType = (type) => {
-    const typeMap = {
-        PDF: 'pi pi-file-pdf text-red-500',
-        Ebook: 'pi pi-book text-blue-500',
-        Video: 'pi pi-video text-purple-500',
-        Audio: 'pi pi-volume-up text-orange-500'
-    };
-
-    return typeMap[type] || 'pi pi-file text-gray-500';
-};
-
-const viewResource = (resource) => {
-    // Update lastAccessed date
-    resource.lastAccessed = new Date();
-
-    // Navigate to the universal reader with the appropriate type
-    router.push({
-        name: 'universal-reader',
-        params: { id: resource.id },
-        query: { type: resource.type.toLowerCase() }
-    });
-};
-
-const confirmRemove = (bookmark) => {
+// Confirm and remove a bookmark
+const confirmRemoveBookmark = (bookmark) => {
     confirm.require({
-        message: `Are you sure you want to remove "${bookmark.title}" from your bookmarks?`,
-        header: 'Remove Bookmark',
+        message: `Are you sure you want to remove "${bookmark.title}"?`,
+        header: 'Confirm Removal',
         icon: 'pi pi-exclamation-triangle',
         acceptClass: 'p-button-danger',
-        accept: () => removeBookmark(bookmark)
+        accept: () => {
+            removeBookmark(bookmark);
+        }
     });
 };
 
+// Remove a bookmark
 const removeBookmark = (bookmark) => {
-    // In a real app, you would call an API to remove the bookmark
+    // Mock removal - replace with actual API call
     bookmarks.value = bookmarks.value.filter((b) => b.id !== bookmark.id);
-
-    toast.add({
-        severity: 'success',
-        summary: 'Bookmark Removed',
-        detail: 'The bookmark has been removed from your list',
-        life: 3000
-    });
+    toast.add({ severity: 'success', summary: 'Removed', detail: 'Bookmark removed successfully', life: 3000 });
 };
 
-const openNoteDialog = (bookmark) => {
-    currentBookmark.value = bookmark;
-    currentNote.value = bookmark.notes || '';
-    noteDialogVisible.value = true;
-};
-
-const saveNote = () => {
-    if (currentBookmark.value) {
-        currentBookmark.value.notes = currentNote.value;
-
-        // In a real app, you would save this to an API
-        toast.add({
-            severity: 'success',
-            summary: 'Note Saved',
-            detail: 'Your bookmark note has been updated',
-            life: 3000
-        });
-
-        noteDialogVisible.value = false;
-    }
-};
-
+// Navigate to library
 const navigateToLibrary = () => {
-    router.push('/');
+    router.push('/library');
 };
 
-// Watch for sort options menu click
-watch(showSortOptions, (newVal) => {
-    if (newVal) {
-        sortMenu.value.toggle(event);
-        showSortOptions.value = false;
-    }
-});
+// Load bookmarks
+const loadBookmarks = () => {
+    loading.value = true;
+    // Mock data loading - replace with actual API call
+    setTimeout(() => {
+        bookmarks.value = [
+            { id: 1, title: 'JavaScript Basics', type: 'pdf', author: 'John Doe', bookmarkedAt: new Date() },
+            { id: 2, title: 'Vue.js Guide', type: 'ebook', author: 'Jane Smith', bookmarkedAt: new Date() },
+            { id: 3, title: 'HTML Tutorial', type: 'video', author: 'Web School', bookmarkedAt: new Date() },
+            { id: 4, title: 'CSS Masterclass', type: 'pdf', author: 'Style Master', bookmarkedAt: new Date() },
+            { id: 5, title: 'Python for Beginners', type: 'ebook', author: 'Code Academy', bookmarkedAt: new Date() },
+            { id: 6, title: 'Web Development', type: 'youtube', author: 'Dev Channel', bookmarkedAt: new Date() },
+            { id: 7, title: 'Database Design', type: 'pdf', author: 'SQL Expert', bookmarkedAt: new Date() },
+            { id: 8, title: 'React Hooks', type: 'video', author: 'React Team', bookmarkedAt: new Date() }
+        ];
+        loading.value = false;
+    }, 500);
+};
 
-// Lifecycle hooks
+// Initialize
 onMounted(() => {
-    fetchBookmarks();
+    loadBookmarks();
 });
 </script>
 
 <style scoped>
-.resource-title {
-    max-width: 300px;
+.bookmarks-page {
+    min-height: 100vh;
+    background-color: #0c0c0c; /* Darker background for Windows 8 style */
+    color: white;
+}
+
+/* Windows 8 style header */
+.win8-header {
+    padding: 24px 0;
+    background-color: #1a1a1a;
+    border-bottom: 2px solid #333;
+    margin-bottom: 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 0 16px;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+}
+
+.header-title i {
+    font-size: 1.8rem;
+    color: #0078d7; /* Windows 8 blue */
+}
+
+.header-title h1 {
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin: 0;
+    letter-spacing: 1px;
+    color: white;
+}
+
+.search-container {
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-input {
+    background-color: #333 !important;
+    border: none !important;
+    color: white !important;
+    height: 44px;
+    font-size: 1rem !important;
+    padding-left: 16px !important;
+    border-radius: 0 !important;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    background-color: #444 !important;
+    box-shadow: none !important;
+}
+
+.search-input::placeholder {
+    color: #888;
+}
+
+.search-button {
+    background-color: #0078d7 !important; /* Windows 8 blue */
+    border: none !important;
+    height: 44px !important;
+    width: 50px !important;
+    border-radius: 0 !important;
+}
+
+.search-button:hover {
+    background-color: #00a2ed !important;
+}
+
+/* Windows 8 style tile grid */
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-auto-rows: 140px;
+    grid-gap: 10px;
+    padding: 20px 10px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Tile sizes */
+.tile {
+    position: relative;
+    cursor: pointer;
+    border-radius: 2px;
+    overflow: hidden;
+    animation: tileAppear 0.3s ease-out forwards;
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+.tile-normal {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.tile-wide {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.tile-large {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+/* Tile content styling */
+.tile-content {
+    height: 100%;
+    width: 100%;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.tile:hover .tile-content {
+    transform: scale(1.05);
+}
+
+.tile-icon {
+    font-size: 2rem;
+    margin-bottom: auto;
+}
+
+.tile-info {
+    margin-top: auto;
+}
+
+.tile-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.tile-meta {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Windows 8 style animations */
+@keyframes tileAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .tile-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        grid-auto-rows: 100px;
+        grid-gap: 8px;
+    }
+
+    .tile-icon {
+        font-size: 1.5rem;
+    }
+
+    .tile-title {
+        font-size: 0.8rem;
+    }
+
+    .tile-meta {
+        font-size: 0.7rem;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    .tile-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        grid-auto-rows: 160px;
+    }
+}
+
+/* Loading animation styling */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    margin: 40px auto;
+}
+
+.loading-state p {
+    color: #888;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.loading-dots span {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #0078d7;
+    animation: dotPulse 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.loading-dots span:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.loading-dots span:nth-child(5) {
+    animation-delay: 0.8s;
+}
+
+@keyframes dotPulse {
+    0%,
+    100% {
+        transform: scale(0.3);
+        opacity: 0.2;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Empty state styling */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 60px 20px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    max-width: 500px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #0078d7;
+    margin-bottom: 10px;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin: 0;
+    color: white;
+}
+
+.empty-state p {
+    color: #888;
+    margin: 0;
 }
 </style>

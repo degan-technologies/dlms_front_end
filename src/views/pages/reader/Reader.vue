@@ -51,7 +51,8 @@
             <!-- Video Player -->
             <div v-else-if="isVideoResource" class="video-player-container p-3">
                 <div class="video-container border-round overflow-hidden shadow-2 w-full">
-                    <VideoPlayer :resourceUrl="resource.url" :resourceType="resource.type" @loading-error="handleLoadingError" @video-loaded="handleVideoLoaded" />
+                    <VideoPlayer v-if="!isYouTubeVideo" :resourceUrl="resource.url" :resourceType="resource.type" @loading-error="handleLoadingError" @video-loaded="handleVideoLoaded" />
+                    <YouTubePlayer v-else :videoId="extractYouTubeId(resource.url)" :darkMode="isDarkMode" @loading-error="handleLoadingError" @video-loaded="handleVideoLoaded" />
                 </div>
             </div>
 
@@ -62,11 +63,27 @@
 
             <!-- Audio Player -->
             <div v-else-if="isAudioResource" class="audio-player-container p-3 flex flex-column align-items-center">
-                <div class="audio-cover-art mb-4 mt-4">
-                    <img :src="resource.coverUrl || getDefaultCoverForType('audio')" :alt="resource.title" class="w-full shadow-2 border-round" style="max-width: 300px; height: auto" />
+                <div v-if="isAudioBook" class="w-full">
+                    <AudiobookPlayer
+                        :audiobookId="resource.url"
+                        :metadata="{
+                            title: resource.title,
+                            author: resource.author,
+                            coverUrl: resource.coverUrl,
+                            chapters: resource.chapters || []
+                        }"
+                        :darkMode="isDarkMode"
+                        @loading-error="handleLoadingError"
+                        @audiobook-loaded="handleAudioLoaded"
+                    />
                 </div>
-                <div class="audio-container w-full max-w-30rem">
-                    <AudioPlayer :resourceUrl="resource.url" @loading-error="handleLoadingError" @audio-loaded="handleAudioLoaded" />
+                <div v-else>
+                    <div class="audio-cover-art mb-4 mt-4">
+                        <img :src="resource.coverUrl || getDefaultCoverForType('audio')" :alt="resource.title" class="w-full shadow-2 border-round" style="max-width: 300px; height: auto" />
+                    </div>
+                    <div class="audio-container w-full max-w-30rem">
+                        <AudioPlayer :resourceUrl="resource.url" @loading-error="handleLoadingError" @audio-loaded="handleAudioLoaded" />
+                    </div>
                 </div>
             </div>
 
@@ -102,8 +119,10 @@ import { useRoute, useRouter } from 'vue-router';
 // These components would be created as separate files
 const PDFReader = defineAsyncComponent(() => import('@/components/reader/PDFReader.vue'));
 const VideoPlayer = defineAsyncComponent(() => import('@/components/reader/VideoPlayer.vue'));
+const YouTubePlayer = defineAsyncComponent(() => import('@/components/reader/YouTubePlayer.vue'));
 const EbookReader = defineAsyncComponent(() => import('@/components/reader/EbookReader.vue'));
 const AudioPlayer = defineAsyncComponent(() => import('@/components/reader/AudioPlayer.vue'));
+const AudiobookPlayer = defineAsyncComponent(() => import('@/components/reader/AudiobookPlayer.vue'));
 
 const route = useRoute();
 const router = useRouter();
@@ -121,11 +140,26 @@ const currentPage = ref(null);
 // Computed properties to determine resource type
 const isPdfResource = computed(() => resource.value?.type === 'pdf' || resource.value?.fileExtension?.toLowerCase() === 'pdf');
 
-const isVideoResource = computed(() => resource.value?.type === 'video' || ['mp4', 'webm', 'ogg'].includes(resource.value?.fileExtension?.toLowerCase()));
+const isVideoResource = computed(() => resource.value?.type === 'video' || ['mp4', 'webm', 'ogg'].includes(resource.value?.fileExtension?.toLowerCase()) || (resource.value?.url && isYouTubeVideo.value));
+
+const isYouTubeVideo = computed(() => resource.value?.url && (resource.value.url.includes('youtube.com') || resource.value.url.includes('youtu.be')));
 
 const isEbookResource = computed(() => resource.value?.type === 'ebook' || ['epub', 'mobi'].includes(resource.value?.fileExtension?.toLowerCase()));
 
 const isAudioResource = computed(() => resource.value?.type === 'audio' || ['mp3', 'wav', 'ogg', 'aac'].includes(resource.value?.fileExtension?.toLowerCase()));
+
+const isAudioBook = computed(() => resource.value?.isAudiobook || (resource.value?.chapters && resource.value.chapters.length > 0));
+
+// Extract YouTube video ID from URL
+const extractYouTubeId = (url) => {
+    if (!url) return '';
+
+    // Regular YouTube URL format: https://www.youtube.com/watch?v=VIDEO_ID
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+
+    return match && match[2].length === 11 ? match[2] : '';
+};
 
 // Fetch resource data
 onMounted(async () => {
@@ -148,7 +182,29 @@ onMounted(async () => {
             url: getMockUrlForType(resourceType, resourceId),
             coverUrl: null,
             bookmarked: false,
-            fileExtension: resourceType
+            fileExtension: resourceType,
+            // For audiobooks - sample chapters
+            isAudiobook: resourceType === 'audiobook',
+            chapters:
+                resourceType === 'audiobook'
+                    ? [
+                          {
+                              title: 'Chapter 1: Introduction',
+                              src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                              duration: 125
+                          },
+                          {
+                              title: 'Chapter 2: Main Concepts',
+                              src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                              duration: 148
+                          },
+                          {
+                              title: 'Chapter 3: Advanced Techniques',
+                              src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+                              duration: 157
+                          }
+                      ]
+                    : []
         };
 
         // Check for dark mode preference
@@ -174,12 +230,18 @@ const getMockUrlForType = (type, id) => {
         case 'video':
             // Sample video URL
             return 'https://www.w3schools.com/html/mov_bbb.mp4';
+        case 'youtube':
+            // Sample YouTube video
+            return 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
         case 'ebook':
             // Sample EPUB URL (in a real app you'd have an actual EPUB file)
             return `/api/resources/ebook/${id}`;
         case 'audio':
             // Sample audio URL
             return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        case 'audiobook':
+            // Main URL for the audiobook (used for metadata)
+            return `/api/resources/audiobook/${id}`;
         default:
             return '#';
     }
@@ -241,9 +303,13 @@ const downloadResource = () => {
     // In a real app, start the download
     console.log(`Downloading resource: ${resource.value?.title}`);
 
-    // For demonstration, let's just show a toast
-    // Assume you have a toast service or component
-    // toast.add({ severity: 'info', summary: 'Download Started', detail: 'Your download will begin shortly', life: 3000 });
+    // For demonstration, show a toast
+    toast.add({
+        severity: 'info',
+        summary: 'Download Started',
+        detail: 'Your download will begin shortly',
+        life: 3000
+    });
 };
 
 const addNote = () => {
