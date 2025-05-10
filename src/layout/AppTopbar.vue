@@ -1,42 +1,11 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { useAuthStore } from '@/stores/authStore';
-import { storeToRefs } from 'pinia';
-import { useToast } from 'primevue/usetoast';
-import { computed, ref } from 'vue';
 import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
-const showProfileMenu = ref(false);
-const authStore = useAuthStore();
-const { getUser } = storeToRefs(authStore);
-const loading = ref(false);
-
-const user = computed(() => {
-    return getUser.value;
-});
-
-const toast = useToast();
-
-function toggleProfileMenu() {
-    showProfileMenu.value = !showProfileMenu.value;
-}
-
-const logout = async () => {
-    try {
-        loading.value = true;
-        await authStore.logout();
-        // No need to call authCheck after logout since we're redirecting
-        loading.value = false;
-    } catch (error) {
-        console.error('Logout error:', error);
-        loading.value = false;
-    }
-};
 </script>
 
 <template>
-    <Toast />
     <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" @click="toggleMenu">
@@ -61,7 +30,7 @@ const logout = async () => {
                     </g>
                 </svg>
 
-                <span>FIS</span>
+                <span>SAKAI</span>
             </router-link>
         </div>
 
@@ -95,30 +64,16 @@ const logout = async () => {
                         <i class="pi pi-calendar"></i>
                         <span>Calendar</span>
                     </button>
-
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-inbox"></i>
                         <span>Messages</span>
                     </button>
-
-                    <Avatar @click="toggleProfileMenu" :label="user?.user?.email?.charAt(0).toUpperCase()" class="mr-2 cursor-pointer" size="large" shape="circle" />
+                    <button type="button" class="layout-topbar-action">
+                        <i class="pi pi-user"></i>
+                        <span>Profile</span>
+                    </button>
                 </div>
             </div>
         </div>
-
-        <Dialog position="topright" v-model:visible="showProfileMenu" header="Profile" :modal="false" :closable="true" :baseZIndex="1000" appendTo="body">
-            <div class="p-4 space-y-3">
-                <div class="flex items-center justify-center space-x-4">
-                    <i class="pi pi-user text-2xl"></i>
-                    <h4 class="text-lg font-semibold">{{ user?.user?.username || user?.user?.email }}</h4>
-                </div>
-                <div class="flex flex-col space-y-2">
-                    <Button label="Settings" icon="pi pi-cog" class="p-button-text" />
-                    <Button label="Logout" :loading="loading" icon="pi pi-sign-out" class="p-button-danger" @click="logout" />
-                </div>
-            </div>
-        </Dialog>
     </div>
 </template>
-
-<style scoped></style>
