@@ -24,7 +24,8 @@ const fetchEbookDetails = async () => {
                 author: 'Dr. Elizabeth Chen',
                 isbn: '9781234567890',
                 publication_year: 2023,
-                description: 'A comprehensive guide to modern digital design principles and practices. This book covers the fundamentals of digital systems, circuit design, and advanced topics in digital electronics.',
+                description:
+                    'A comprehensive guide to modern digital design principles and practices. This book covers the fundamentals of digital systems, circuit design, and advanced topics in digital electronics.',
                 cover_image_url: '/demo/images/product/product-placeholder.svg',
                 category: { id: 6, name: 'Technology' },
                 publisher: { id: 5, name: 'Digital Education Group' },
@@ -109,7 +110,10 @@ const goBack = () => {
         <div class="col-12">
             <div class="card">
                 <div class="flex align-items-center mb-4">
-                    <Button icon="pi pi-arrow-left" class="p-button-text p-button-rounded mr-2" @click="goBack" />
+                    <Button
+                        icon="pi pi-arrow-left"
+                        class="p-button-text p-button-rounded mr-2"
+                        @click="goBack" />
                     <h5 class="m-0" v-if="ebook">{{ ebook.title }}</h5>
                     <h5 class="m-0" v-else>E-Book Details</h5>
                 </div>
@@ -121,26 +125,46 @@ const goBack = () => {
                 <div v-else-if="ebook" class="grid">
                     <div class="col-12 md:col-4 flex flex-column align-items-center">
                         <div class="book-cover-container mb-4">
-                            <img :src="ebook.cover_image_url" :alt="ebook.title" class="book-cover shadow-4" />
+                            <img
+                                :src="ebook.cover_image_url"
+                                :alt="ebook.title"
+                                class="book-cover shadow-4" />
                         </div>
 
                         <div class="w-full">
                             <div class="flex justify-content-center gap-2 mb-4">
                                 <Button label="Read Online" icon="pi pi-book" @click="readEbook" />
 
-                                <Button label="Download" icon="pi pi-download" severity="secondary" :disabled="!ebook.is_downloadable" :loading="downloading" @click="downloadEbook" />
+                                <Button
+                                    label="Download"
+                                    icon="pi pi-download"
+                                    severity="secondary"
+                                    :disabled="!ebook.is_downloadable"
+                                    :loading="downloading"
+                                    @click="downloadEbook" />
                             </div>
 
                             <div class="flex justify-content-center mb-4">
-                                <Button icon="pi pi-pencil" label="Edit" class="p-button-outlined" @click="editEbook" />
+                                <Button
+                                    icon="pi pi-pencil"
+                                    label="Edit"
+                                    class="p-button-outlined"
+                                    @click="editEbook" />
                             </div>
 
-                            <div v-if="!ebook.is_downloadable" class="flex justify-content-center mb-4">
+                            <div
+                                v-if="!ebook.is_downloadable"
+                                class="flex justify-content-center mb-4">
                                 <Tag severity="info" value="Online Reading Only" />
                             </div>
 
-                            <div v-if="ebook.requires_authentication" class="flex justify-content-center mb-4">
-                                <Tag severity="warning" value="Authentication Required" icon="pi pi-lock" />
+                            <div
+                                v-if="ebook.requires_authentication"
+                                class="flex justify-content-center mb-4">
+                                <Tag
+                                    severity="warning"
+                                    value="Authentication Required"
+                                    icon="pi pi-lock" />
                             </div>
 
                             <div class="flex justify-content-center gap-4 mt-4">
@@ -170,7 +194,9 @@ const goBack = () => {
                                 <h6 class="font-bold mb-2">Book Details</h6>
                                 <ul class="book-details-list">
                                     <li><span>ISBN:</span> {{ ebook.isbn }}</li>
-                                    <li><span>Publication Year:</span> {{ ebook.publication_year }}</li>
+                                    <li>
+                                        <span>Publication Year:</span> {{ ebook.publication_year }}
+                                    </li>
                                     <li><span>Category:</span> {{ ebook.category.name }}</li>
                                     <li><span>Publisher:</span> {{ ebook.publisher.name }}</li>
                                     <li><span>Language:</span> {{ ebook.language }}</li>
@@ -182,18 +208,35 @@ const goBack = () => {
                                 <h6 class="font-bold mb-2">File Information</h6>
                                 <ul class="book-details-list">
                                     <li><span>Format:</span> {{ ebook.file_format }}</li>
-                                    <li><span>Size:</span> {{ formatFileSize(ebook.file_size_mb) }}</li>
+                                    <li>
+                                        <span>Size:</span> {{ formatFileSize(ebook.file_size_mb) }}
+                                    </li>
                                     <li><span>Recommended Reader:</span> {{ ebook.reader_app }}</li>
-                                    <li><span>DRM Protection:</span> {{ ebook.drm_type === 'none' ? 'None' : ebook.drm_type }}</li>
-                                    <li v-if="ebook.max_downloads"><span>Download Limit:</span> {{ ebook.max_downloads }} per user</li>
-                                    <li v-if="ebook.access_expires_at"><span>Access Expires:</span> {{ new Date(ebook.access_expires_at).toLocaleDateString() }}</li>
+                                    <li>
+                                        <span>DRM Protection:</span>
+                                        {{ ebook.drm_type === 'none' ? 'None' : ebook.drm_type }}
+                                    </li>
+                                    <li v-if="ebook.max_downloads">
+                                        <span>Download Limit:</span> {{ ebook.max_downloads }} per
+                                        user
+                                    </li>
+                                    <li v-if="ebook.access_expires_at">
+                                        <span>Access Expires:</span>
+                                        {{ new Date(ebook.access_expires_at).toLocaleDateString() }}
+                                    </li>
                                 </ul>
 
                                 <h6 class="font-bold mb-2 mt-4">Access Information</h6>
                                 <ul class="book-details-list">
                                     <li><span>Branch:</span> {{ ebook.library_branch.name }}</li>
-                                    <li><span>Downloadable:</span> {{ ebook.is_downloadable ? 'Yes' : 'No' }}</li>
-                                    <li><span>Authentication Required:</span> {{ ebook.requires_authentication ? 'Yes' : 'No' }}</li>
+                                    <li>
+                                        <span>Downloadable:</span>
+                                        {{ ebook.is_downloadable ? 'Yes' : 'No' }}
+                                    </li>
+                                    <li>
+                                        <span>Authentication Required:</span>
+                                        {{ ebook.requires_authentication ? 'Yes' : 'No' }}
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -202,7 +245,9 @@ const goBack = () => {
 
                 <div v-else class="flex justify-content-center">
                     <div class="text-center">
-                        <i class="pi pi-exclamation-triangle text-yellow-500" style="font-size: 3rem"></i>
+                        <i
+                            class="pi pi-exclamation-triangle text-yellow-500"
+                            style="font-size: 3rem"></i>
                         <h5>E-book not found</h5>
                         <p>The e-book you're looking for doesn't exist or has been removed.</p>
                         <Button label="Go Back" @click="goBack" />

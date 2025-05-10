@@ -51,7 +51,8 @@ const fetchAssets = async () => {
                     category: 'Computer Science',
                     availability_status: 'available',
                     cover_image_url: 'https://img.youtube.com/vi/zOjov-2OZ0E/maxresdefault.jpg',
-                    description: 'A comprehensive video course introducing programming concepts for beginners.',
+                    description:
+                        'A comprehensive video course introducing programming concepts for beginners.',
                     asset_type: 'video',
                     media_type: 'mp4',
                     media_url: 'https://www.youtube.com/embed/zOjov-2OZ0E',
@@ -67,7 +68,8 @@ const fetchAssets = async () => {
                     publication_year: 2021,
                     category: 'Music',
                     availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61yqXWBQStL._UF1000,1000_QL80_.jpg',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/61yqXWBQStL._UF1000,1000_QL80_.jpg',
                     description: 'A collection of classical music pieces for educational purposes.',
                     asset_type: 'audio',
                     media_type: 'mp3',
@@ -83,11 +85,13 @@ const fetchAssets = async () => {
                     publication_year: 2023,
                     category: 'Mathematics',
                     availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61ItRb1o7nL._AC_UF1000,1000_QL80_.jpg',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/61ItRb1o7nL._AC_UF1000,1000_QL80_.jpg',
                     description: 'Practice problems for advanced calculus and linear algebra.',
                     asset_type: 'worksheet',
                     media_type: 'pdf',
-                    media_url: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                    media_url:
+                        'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
                     restricted_access: false,
                     isbn: '9780987654321',
                     shelf_id: 'DIG-P025',
@@ -100,11 +104,14 @@ const fetchAssets = async () => {
                     publication_year: 2022,
                     category: 'Arts',
                     availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/91-v+CyYAeL._AC_UF1000,1000_QL80_.jpg',
-                    description: 'A slide presentation covering the major art movements throughout history.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/91-v+CyYAeL._AC_UF1000,1000_QL80_.jpg',
+                    description:
+                        'A slide presentation covering the major art movements throughout history.',
                     asset_type: 'presentation',
                     media_type: 'pdf',
-                    media_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                    media_url:
+                        'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
                     restricted_access: true,
                     isbn: '9780987654322',
                     shelf_id: 'DIG-P026',
@@ -117,11 +124,14 @@ const fetchAssets = async () => {
                     publication_year: 2023,
                     category: 'Environmental Science',
                     availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/71zWJMkcCQL._AC_UF1000,1000_QL80_.jpg',
-                    description: 'A comprehensive research paper on climate change effects and potential solutions.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/71zWJMkcCQL._AC_UF1000,1000_QL80_.jpg',
+                    description:
+                        'A comprehensive research paper on climate change effects and potential solutions.',
                     asset_type: 'research_paper',
                     media_type: 'pdf',
-                    media_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                    media_url:
+                        'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
                     restricted_access: false,
                     isbn: '9780987654323',
                     shelf_id: 'DIG-P027',
@@ -160,7 +170,12 @@ const viewDetails = (asset) => {
     sessionStorage.removeItem('openPdfViewer');
     sessionStorage.removeItem('openVideoPlayer');
 
-    if (asset.media_type === 'pdf' || asset.asset_type === 'worksheet' || asset.asset_type === 'research_paper' || asset.asset_type === 'presentation') {
+    if (
+        asset.media_type === 'pdf' ||
+        asset.asset_type === 'worksheet' ||
+        asset.asset_type === 'research_paper' ||
+        asset.asset_type === 'presentation'
+    ) {
         // For PDF assets, store the flag to auto-open PDF viewer
         sessionStorage.setItem('openPdfViewer', 'true');
         sessionStorage.setItem('assetType', 'pdf');
@@ -270,21 +285,44 @@ const exportCSV = () => {
         <div class="col-12">
             <div class="card">
                 <h5 class="m-0">Digital Assets Collection</h5>
-                <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage the digital assets available in the library.</p>
+                <p class="mt-2 mb-4 text-gray-600">
+                    Browse, search, and manage the digital assets available in the library.
+                </p>
 
                 <div class="flex flex-column md:flex-row md:justify-content-between mb-4">
                     <div class="flex gap-3 mb-3 md:mb-0">
                         <div>
-                            <label for="assetType" class="block text-sm font-medium text-gray-700 mb-1"> Filter by Asset Type </label>
-                            <Dropdown id="assetType" v-model="selectedAssetType" :options="assetTypes" optionLabel="label" optionValue="value" placeholder="Select Asset Type" class="w-full md:w-14rem" @change="filterByAssetType" />
+                            <label
+                                for="assetType"
+                                class="block text-sm font-medium text-gray-700 mb-1">
+                                Filter by Asset Type
+                            </label>
+                            <Dropdown
+                                id="assetType"
+                                v-model="selectedAssetType"
+                                :options="assetTypes"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select Asset Type"
+                                class="w-full md:w-14rem"
+                                @change="filterByAssetType" />
                         </div>
                     </div>
                 </div>
 
                 <Toolbar class="mb-4">
                     <template v-slot:start>
-                        <Button label="New Asset" icon="pi pi-plus" severity="success" class="mr-2" @click="createAsset" />
-                        <Button label="Delete Selected" icon="pi pi-trash" severity="danger" :disabled="!selectedAssets.length" />
+                        <Button
+                            label="New Asset"
+                            icon="pi pi-plus"
+                            severity="success"
+                            class="mr-2"
+                            @click="createAsset" />
+                        <Button
+                            label="Delete Selected"
+                            icon="pi pi-trash"
+                            severity="danger"
+                            :disabled="!selectedAssets.length" />
                     </template>
                     <template v-slot:end>
                         <div class="flex flex-wrap gap-2">
@@ -315,8 +353,7 @@ const exportCSV = () => {
                     @page="onPage($event)"
                     @sort="onSort($event)"
                     @filter="onFilter()"
-                    style-class="p-datatable-gridlines p-datatable-sm"
-                >
+                    style-class="p-datatable-gridlines p-datatable-sm">
                     <template #empty> No assets found. </template>
                     <template #loading> Loading assets data. Please wait. </template>
 
@@ -326,7 +363,9 @@ const exportCSV = () => {
                         <template #body="{ data }">
                             <div class="flex align-items-center">
                                 <span class="mr-2">
-                                    <i :class="getAssetIcon(data.asset_type)" style="font-size: 1.5rem"></i>
+                                    <i
+                                        :class="getAssetIcon(data.asset_type)"
+                                        style="font-size: 1.5rem"></i>
                                 </span>
                                 <span>{{ data.title }}</span>
                             </div>
@@ -338,7 +377,10 @@ const exportCSV = () => {
 
                     <Column field="asset_type" header="Asset Type" sortable>
                         <template #body="{ data }">
-                            <Tag :value="data.asset_type" :severity="getAssetSeverity(data.asset_type)" :icon="getAssetIcon(data.asset_type)" />
+                            <Tag
+                                :value="data.asset_type"
+                                :severity="getAssetSeverity(data.asset_type)"
+                                :icon="getAssetIcon(data.asset_type)" />
                         </template>
                     </Column>
 
@@ -350,7 +392,9 @@ const exportCSV = () => {
 
                     <Column field="restricted_access" header="Access" sortable>
                         <template #body="{ data }">
-                            <Tag :value="data.restricted_access ? 'Restricted' : 'Open'" :severity="data.restricted_access ? 'danger' : 'success'" />
+                            <Tag
+                                :value="data.restricted_access ? 'Restricted' : 'Open'"
+                                :severity="data.restricted_access ? 'danger' : 'success'" />
                         </template>
                     </Column>
 
@@ -358,18 +402,53 @@ const exportCSV = () => {
                         <template #header>Actions</template>
                         <template #body="{ data }">
                             <div class="flex justify-content-center gap-2">
-                                <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-info p-button-sm" @click="viewDetails(data)" />
-                                <Button v-if="isPdf(data)" icon="pi pi-file-pdf" tooltip="Preview PDF" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-warning p-button-sm" @click="previewPdf(data)" />
-                                <Button icon="pi pi-download" tooltip="Download" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-warning p-button-sm" @click="downloadAsset(data)" />
-                                <Button icon="pi pi-pencil" tooltip="Edit" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="editAsset(data)" />
-                                <Button icon="pi pi-trash" tooltip="Delete" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-danger p-button-sm" @click="confirmDeleteAsset(data)" />
+                                <Button
+                                    icon="pi pi-eye"
+                                    tooltip="View Details"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-info p-button-sm"
+                                    @click="viewDetails(data)" />
+                                <Button
+                                    v-if="isPdf(data)"
+                                    icon="pi pi-file-pdf"
+                                    tooltip="Preview PDF"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-warning p-button-sm"
+                                    @click="previewPdf(data)" />
+                                <Button
+                                    icon="pi pi-download"
+                                    tooltip="Download"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-warning p-button-sm"
+                                    @click="downloadAsset(data)" />
+                                <Button
+                                    icon="pi pi-pencil"
+                                    tooltip="Edit"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-success p-button-sm"
+                                    @click="editAsset(data)" />
+                                <Button
+                                    icon="pi pi-trash"
+                                    tooltip="Delete"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-danger p-button-sm"
+                                    @click="confirmDeleteAsset(data)" />
                             </div>
                         </template>
                     </Column>
                 </DataTable>
 
-                <Dialog v-model:visible="pdfPreviewDialog" header="PDF Preview" :modal="true" :closable="true" :style="{ width: '80vw' }">
-                    <iframe v-if="selectedPdfAsset" :src="selectedPdfAsset.media_url" style="width: 100%; height: 500px" frameborder="0"></iframe>
+                <Dialog
+                    v-model:visible="pdfPreviewDialog"
+                    header="PDF Preview"
+                    :modal="true"
+                    :closable="true"
+                    :style="{ width: '80vw' }">
+                    <iframe
+                        v-if="selectedPdfAsset"
+                        :src="selectedPdfAsset.media_url"
+                        style="width: 100%; height: 500px"
+                        frameborder="0"></iframe>
                 </Dialog>
             </div>
         </div>

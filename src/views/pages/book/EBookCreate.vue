@@ -114,12 +114,22 @@ const submitForm = async () => {
     submitted.value = true;
 
     // Form validation
-    if (!ebook.value.title || !ebook.value.availability_status || !ebook.value.library_branch_id || !ebook.value.category_id || !ebook.value.file_url || !ebook.value.file_format) {
+    if (
+        !ebook.value.title ||
+        !ebook.value.availability_status ||
+        !ebook.value.library_branch_id ||
+        !ebook.value.category_id ||
+        !ebook.value.file_url ||
+        !ebook.value.file_format
+    ) {
         return;
     }
 
     // Validate publication year
-    if (ebook.value.publication_year && (ebook.value.publication_year < 1000 || ebook.value.publication_year > currentYear)) {
+    if (
+        ebook.value.publication_year &&
+        (ebook.value.publication_year < 1000 || ebook.value.publication_year > currentYear)
+    ) {
         return;
     }
 
@@ -158,7 +168,9 @@ const cancelForm = () => {
         <div class="col-12">
             <div class="card">
                 <h5>Add New E-Book</h5>
-                <p class="text-gray-600 mb-4">Enter details for a new e-book in the digital library.</p>
+                <p class="text-gray-600 mb-4">
+                    Enter details for a new e-book in the digital library.
+                </p>
 
                 <form @submit.prevent="submitForm" class="p-fluid">
                     <div class="grid formgrid">
@@ -170,8 +182,14 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="title" class="font-bold">Title*</label>
-                                        <InputText id="title" v-model="ebook.title" :class="{ 'p-invalid': submitted && !ebook.title }" placeholder="Enter e-book title" />
-                                        <small v-if="submitted && !ebook.title" class="p-error">Title is required</small>
+                                        <InputText
+                                            id="title"
+                                            v-model="ebook.title"
+                                            :class="{ 'p-invalid': submitted && !ebook.title }"
+                                            placeholder="Enter e-book title" />
+                                        <small v-if="submitted && !ebook.title" class="p-error"
+                                            >Title is required</small
+                                        >
                                     </div>
                                 </div>
 
@@ -179,7 +197,10 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="isbn" class="font-bold">ISBN</label>
-                                        <InputText id="isbn" v-model="ebook.isbn" placeholder="Enter ISBN (optional)" />
+                                        <InputText
+                                            id="isbn"
+                                            v-model="ebook.isbn"
+                                            placeholder="Enter ISBN (optional)" />
                                     </div>
                                 </div>
 
@@ -187,16 +208,35 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="author" class="font-bold">Author</label>
-                                        <InputText id="author" v-model="ebook.author" placeholder="Author name" />
+                                        <InputText
+                                            id="author"
+                                            v-model="ebook.author"
+                                            placeholder="Author name" />
                                     </div>
                                 </div>
 
                                 <!-- Publication Year -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publication_year" class="font-bold">Publication Year</label>
-                                        <InputNumber id="publication_year" v-model="ebook.publication_year" :min="1000" :max="currentYear" placeholder="Publication year" />
-                                        <small v-if="ebook.publication_year && (ebook.publication_year < 1000 || ebook.publication_year > currentYear)" class="p-error"> Publication year must be between 1000 and {{ currentYear }} </small>
+                                        <label for="publication_year" class="font-bold"
+                                            >Publication Year</label
+                                        >
+                                        <InputNumber
+                                            id="publication_year"
+                                            v-model="ebook.publication_year"
+                                            :min="1000"
+                                            :max="currentYear"
+                                            placeholder="Publication year" />
+                                        <small
+                                            v-if="
+                                                ebook.publication_year &&
+                                                (ebook.publication_year < 1000 ||
+                                                    ebook.publication_year > currentYear)
+                                            "
+                                            class="p-error">
+                                            Publication year must be between 1000 and
+                                            {{ currentYear }}
+                                        </small>
                                     </div>
                                 </div>
 
@@ -204,7 +244,13 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="language" class="font-bold">Language</label>
-                                        <Dropdown id="language" v-model="ebook.language" :options="languages" optionLabel="name" optionValue="code" placeholder="Select language" />
+                                        <Dropdown
+                                            id="language"
+                                            v-model="ebook.language"
+                                            :options="languages"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select language" />
                                     </div>
                                 </div>
 
@@ -212,7 +258,11 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="pages" class="font-bold">Number of Pages</label>
-                                        <InputNumber id="pages" v-model="ebook.pages" :min="1" placeholder="Number of pages" />
+                                        <InputNumber
+                                            id="pages"
+                                            v-model="ebook.pages"
+                                            :min="1"
+                                            placeholder="Number of pages" />
                                     </div>
                                 </div>
                             </div>
@@ -226,25 +276,54 @@ const cancelForm = () => {
                                 <div class="col-12 mb-3">
                                     <div class="field">
                                         <label for="file_url" class="font-bold">File URL*</label>
-                                        <InputText id="file_url" v-model="ebook.file_url" :class="{ 'p-invalid': submitted && !ebook.file_url }" placeholder="URL to the e-book file" />
-                                        <small v-if="submitted && !ebook.file_url" class="p-error">File URL is required</small>
+                                        <InputText
+                                            id="file_url"
+                                            v-model="ebook.file_url"
+                                            :class="{ 'p-invalid': submitted && !ebook.file_url }"
+                                            placeholder="URL to the e-book file" />
+                                        <small v-if="submitted && !ebook.file_url" class="p-error"
+                                            >File URL is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- File Format -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="file_format" class="font-bold">File Format*</label>
-                                        <Dropdown id="file_format" v-model="ebook.file_format" :options="fileFormats" optionLabel="name" optionValue="code" placeholder="Select file format" :class="{ 'p-invalid': submitted && !ebook.file_format }" />
-                                        <small v-if="submitted && !ebook.file_format" class="p-error">File format is required</small>
+                                        <label for="file_format" class="font-bold"
+                                            >File Format*</label
+                                        >
+                                        <Dropdown
+                                            id="file_format"
+                                            v-model="ebook.file_format"
+                                            :options="fileFormats"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select file format"
+                                            :class="{
+                                                'p-invalid': submitted && !ebook.file_format
+                                            }" />
+                                        <small
+                                            v-if="submitted && !ebook.file_format"
+                                            class="p-error"
+                                            >File format is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- File Size (MB) -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="file_size_mb" class="font-bold">File Size (MB)</label>
-                                        <InputNumber id="file_size_mb" v-model="ebook.file_size_mb" :min="0.01" :minFractionDigits="2" :maxFractionDigits="2" placeholder="File size in megabytes" />
+                                        <label for="file_size_mb" class="font-bold"
+                                            >File Size (MB)</label
+                                        >
+                                        <InputNumber
+                                            id="file_size_mb"
+                                            v-model="ebook.file_size_mb"
+                                            :min="0.01"
+                                            :minFractionDigits="2"
+                                            :maxFractionDigits="2"
+                                            placeholder="File size in megabytes" />
                                     </div>
                                 </div>
                             </div>
@@ -257,16 +336,28 @@ const cancelForm = () => {
                                 <!-- Downloadable -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field-checkbox">
-                                        <Checkbox id="is_downloadable" v-model="ebook.is_downloadable" :binary="true" />
-                                        <label for="is_downloadable" class="ml-2 font-medium">Allow Download</label>
+                                        <Checkbox
+                                            id="is_downloadable"
+                                            v-model="ebook.is_downloadable"
+                                            :binary="true" />
+                                        <label for="is_downloadable" class="ml-2 font-medium"
+                                            >Allow Download</label
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Requires Authentication -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field-checkbox">
-                                        <Checkbox id="requires_authentication" v-model="ebook.requires_authentication" :binary="true" />
-                                        <label for="requires_authentication" class="ml-2 font-medium">Requires Authentication</label>
+                                        <Checkbox
+                                            id="requires_authentication"
+                                            v-model="ebook.requires_authentication"
+                                            :binary="true" />
+                                        <label
+                                            for="requires_authentication"
+                                            class="ml-2 font-medium"
+                                            >Requires Authentication</label
+                                        >
                                     </div>
                                 </div>
 
@@ -274,31 +365,57 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="drm_type" class="font-bold">DRM Type</label>
-                                        <Dropdown id="drm_type" v-model="ebook.drm_type" :options="drmTypes" optionLabel="name" optionValue="code" placeholder="Select DRM type" />
+                                        <Dropdown
+                                            id="drm_type"
+                                            v-model="ebook.drm_type"
+                                            :options="drmTypes"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select DRM type" />
                                     </div>
                                 </div>
 
                                 <!-- Max Downloads -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="max_downloads" class="font-bold">Max Downloads (per user)</label>
-                                        <InputNumber id="max_downloads" v-model="ebook.max_downloads" :min="1" placeholder="Maximum number of downloads" :disabled="!ebook.is_downloadable" />
+                                        <label for="max_downloads" class="font-bold"
+                                            >Max Downloads (per user)</label
+                                        >
+                                        <InputNumber
+                                            id="max_downloads"
+                                            v-model="ebook.max_downloads"
+                                            :min="1"
+                                            placeholder="Maximum number of downloads"
+                                            :disabled="!ebook.is_downloadable" />
                                     </div>
                                 </div>
 
                                 <!-- Access Expires Date -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="access_expires_at" class="font-bold">Access Expiration Date</label>
-                                        <Calendar id="access_expires_at" v-model="ebook.access_expires_at" dateFormat="mm/dd/yy" placeholder="When access expires (if applicable)" :minDate="new Date()" showIcon />
+                                        <label for="access_expires_at" class="font-bold"
+                                            >Access Expiration Date</label
+                                        >
+                                        <Calendar
+                                            id="access_expires_at"
+                                            v-model="ebook.access_expires_at"
+                                            dateFormat="mm/dd/yy"
+                                            placeholder="When access expires (if applicable)"
+                                            :minDate="new Date()"
+                                            showIcon />
                                     </div>
                                 </div>
 
                                 <!-- Reader App -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="reader_app" class="font-bold">Recommended Reader App</label>
-                                        <InputText id="reader_app" v-model="ebook.reader_app" placeholder="e.g., Adobe Reader, Kindle" />
+                                        <label for="reader_app" class="font-bold"
+                                            >Recommended Reader App</label
+                                        >
+                                        <InputText
+                                            id="reader_app"
+                                            v-model="ebook.reader_app"
+                                            placeholder="e.g., Adobe Reader, Kindle" />
                                     </div>
                                 </div>
                             </div>
@@ -311,7 +428,9 @@ const cancelForm = () => {
                                 <!-- Library Branch -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="library_branch_id" class="font-bold">Library Branch*</label>
+                                        <label for="library_branch_id" class="font-bold"
+                                            >Library Branch*</label
+                                        >
                                         <Dropdown
                                             id="library_branch_id"
                                             v-model="ebook.library_branch_id"
@@ -319,9 +438,14 @@ const cancelForm = () => {
                                             optionLabel="name"
                                             optionValue="id"
                                             placeholder="Select library branch"
-                                            :class="{ 'p-invalid': submitted && !ebook.library_branch_id }"
-                                        />
-                                        <small v-if="submitted && !ebook.library_branch_id" class="p-error">Library branch is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !ebook.library_branch_id
+                                            }" />
+                                        <small
+                                            v-if="submitted && !ebook.library_branch_id"
+                                            class="p-error"
+                                            >Library branch is required</small
+                                        >
                                     </div>
                                 </div>
 
@@ -329,23 +453,46 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="category_id" class="font-bold">Category*</label>
-                                        <Dropdown id="category_id" v-model="ebook.category_id" :options="categories" optionLabel="name" optionValue="id" placeholder="Select category" :class="{ 'p-invalid': submitted && !ebook.category_id }" />
-                                        <small v-if="submitted && !ebook.category_id" class="p-error">Category is required</small>
+                                        <Dropdown
+                                            id="category_id"
+                                            v-model="ebook.category_id"
+                                            :options="categories"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select category"
+                                            :class="{
+                                                'p-invalid': submitted && !ebook.category_id
+                                            }" />
+                                        <small
+                                            v-if="submitted && !ebook.category_id"
+                                            class="p-error"
+                                            >Category is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Publisher -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publisher_id" class="font-bold">Publisher</label>
-                                        <Dropdown id="publisher_id" v-model="ebook.publisher_id" :options="publishers" optionLabel="name" optionValue="id" placeholder="Select publisher" />
+                                        <label for="publisher_id" class="font-bold"
+                                            >Publisher</label
+                                        >
+                                        <Dropdown
+                                            id="publisher_id"
+                                            v-model="ebook.publisher_id"
+                                            :options="publishers"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select publisher" />
                                     </div>
                                 </div>
 
                                 <!-- Status -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="availability_status" class="font-bold">Availability Status*</label>
+                                        <label for="availability_status" class="font-bold"
+                                            >Availability Status*</label
+                                        >
                                         <Dropdown
                                             id="availability_status"
                                             v-model="ebook.availability_status"
@@ -353,9 +500,14 @@ const cancelForm = () => {
                                             optionLabel="name"
                                             optionValue="code"
                                             placeholder="Select status"
-                                            :class="{ 'p-invalid': submitted && !ebook.availability_status }"
-                                        />
-                                        <small v-if="submitted && !ebook.availability_status" class="p-error">Status is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !ebook.availability_status
+                                            }" />
+                                        <small
+                                            v-if="submitted && !ebook.availability_status"
+                                            class="p-error"
+                                            >Status is required</small
+                                        >
                                     </div>
                                 </div>
                             </div>
@@ -368,16 +520,27 @@ const cancelForm = () => {
                                 <!-- Cover Image URL -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="cover_image_url" class="font-bold">Cover Image URL</label>
-                                        <InputText id="cover_image_url" v-model="ebook.cover_image_url" placeholder="URL to the book cover image" />
+                                        <label for="cover_image_url" class="font-bold"
+                                            >Cover Image URL</label
+                                        >
+                                        <InputText
+                                            id="cover_image_url"
+                                            v-model="ebook.cover_image_url"
+                                            placeholder="URL to the book cover image" />
                                     </div>
                                 </div>
 
                                 <!-- Description -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="description" class="font-bold">Description</label>
-                                        <Textarea id="description" v-model="ebook.description" rows="5" placeholder="E-book description" />
+                                        <label for="description" class="font-bold"
+                                            >Description</label
+                                        >
+                                        <Textarea
+                                            id="description"
+                                            v-model="ebook.description"
+                                            rows="5"
+                                            placeholder="E-book description" />
                                     </div>
                                 </div>
                             </div>
@@ -385,8 +548,18 @@ const cancelForm = () => {
 
                         <!-- Form Buttons -->
                         <div class="col-12 mt-4 flex justify-content-end">
-                            <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary mr-2" @click="cancelForm" type="button" />
-                            <Button label="Save E-Book" icon="pi pi-check" class="p-button-primary" type="submit" :loading="loading" />
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                class="p-button-outlined p-button-secondary mr-2"
+                                @click="cancelForm"
+                                type="button" />
+                            <Button
+                                label="Save E-Book"
+                                icon="pi pi-check"
+                                class="p-button-primary"
+                                type="submit"
+                                :loading="loading" />
                         </div>
                     </div>
                 </form>

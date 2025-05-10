@@ -1,3 +1,318 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+// Import PrimeVue components
+import Carousel from 'primevue/carousel';
+import Paginator from 'primevue/paginator';
+import { useAuthStore } from '@/stores/authStore';
+const authStore = useAuthStore();
+
+const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
+
+
+const router = useRouter();
+const title = ref('FLIPPER INTERNATIONAL SCHOOL');
+const searchQuery = ref('');
+const currentAnnouncementIndex = ref(0);
+const showAnnouncements = ref(true);
+
+const logout = authStore.logout;
+
+// Announcements data
+const announcements = ref([
+    { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
+    { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
+    { id: 3, message: 'Join our Book Club meeting every Friday at 4 PM in Room 204' },
+    { id: 4, message: 'New educational videos on Mathematics added to our digital collection' }
+]);
+
+// Functions to manage announcements
+const dismissAnnouncement = () => {
+    showAnnouncements.value = false;
+};
+
+const learnMoreAboutAnnouncement = (announcement) => {
+    console.log('Learn more about announcement:', announcement);
+    // Here you would navigate to detailed announcement page or show a modal
+    // For example: router.push({ name: 'announcement-details', params: { id: announcement.id } });
+};
+
+// Function to navigate to a specific announcement
+const setCurrentAnnouncement = (index) => {
+    currentAnnouncementIndex.value = index;
+};
+
+// Compute the current visible announcement with improved transition handling
+const visibleAnnouncement = computed(() => {
+    // Using a keyed version to ensure Vue properly handles the transitions
+    const announcement = announcements.value[currentAnnouncementIndex.value];
+    return [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }];
+});
+
+// Featured resources data
+const allFeaturedResources = ref([
+    {
+        id: 1,
+        title: 'Introduction to Astrophysics',
+        description: 'A comprehensive guide to understanding the cosmos',
+        type: 'E-Book',
+        author: 'Dr. Sarah Johnson',
+        image: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.8
+    },
+    {
+        id: 2,
+        title: 'World History: Ancient Civilizations',
+        description: "Explore the rise and fall of the world's greatest empires",
+        type: 'Book',
+        author: 'Prof. Michael Chen',
+        image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.6
+    },
+    {
+        id: 3,
+        title: 'Advanced Calculus Explained',
+        description: 'Step-by-step video tutorials for complex mathematical concepts',
+        type: 'Video Series',
+        author: 'Prof. Emma Rodriguez',
+        image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.9
+    },
+    {
+        id: 4,
+        title: 'The Art of Literature',
+        description: 'Analysis of classic and contemporary literary works',
+        type: 'E-Book',
+        author: 'Dr. James Wilson',
+        image: 'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.5
+    },
+    {
+        id: 5,
+        title: 'Environmental Science Today',
+        description: 'Understanding our changing planet and sustainable practices',
+        type: 'E-Book',
+        author: 'Dr. Emily Chang',
+        image: 'https://images.unsplash.com/photo-1500829243541-74b677fecc30?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.7
+    },
+    {
+        id: 6,
+        title: 'Introduction to Psychology',
+        description: 'Understanding the human mind and behavior patterns',
+        type: 'Video Series',
+        author: 'Prof. Robert Thompson',
+        image: 'https://images.unsplash.com/photo-1555443805-658637491dd4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.8
+    },
+    {
+        id: 7,
+        title: 'Modern Economics',
+        description: 'Key principles of microeconomics and macroeconomics',
+        type: 'Book',
+        author: 'Dr. Alicia Rodriguez',
+        image: 'https://images.unsplash.com/photo-1520695287272-b7f8af46d367?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.3
+    },
+    {
+        id: 8,
+        title: 'Introduction to Computer Science',
+        description: 'Foundations of algorithms and programming concepts',
+        type: 'E-Book',
+        author: 'Prof. Jason Taylor',
+        image: 'https://images.unsplash.com/photo-1517134191118-9d595e4c8c2b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.9
+    },
+    {
+        id: 9,
+        title: 'Art Through The Ages',
+        description: 'A journey through artistic movements across different eras',
+        type: 'Book',
+        author: 'Dr. Sophia Martinez',
+        image: 'https://images.unsplash.com/photo-1545989253-02cc26577f88?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        rating: 4.6
+    }
+]);
+
+// Pagination state for featured resources
+// Categories data
+const categories = ref([
+    { id: 1, name: 'Science', count: 247, icon: 'pi pi-flask', color: '#FF6B6B' },
+    { id: 2, name: 'Mathematics', count: 183, icon: 'pi pi-calculator', color: '#4ECDC4' },
+    { id: 3, name: 'Literature', count: 325, icon: 'pi pi-book', color: '#8A2BE2' },
+    { id: 4, name: 'History', count: 210, icon: 'pi pi-globe', color: '#FFA62B' },
+    { id: 5, name: 'Computer Science', count: 176, icon: 'pi pi-desktop', color: '#45B7D1' },
+    { id: 6, name: 'Arts & Music', count: 154, icon: 'pi pi-palette', color: '#FF8C94' }
+]);
+
+// Pagination state for featured resources
+const resourcesPerPage = 6;
+const currentPage = ref(1);
+const first = ref(0);
+const totalPages = computed(() => Math.ceil(allFeaturedResources.value.length / resourcesPerPage));
+
+// Compute the current page of featured resources
+const featuredResources = computed(() => {
+    const start = first.value;
+    const end = start + resourcesPerPage;
+    return allFeaturedResources.value.slice(start, end);
+});
+
+// Function to handle page change from PrimeVue Paginator
+const onPageChange = (event) => {
+    first.value = event.first;
+    currentPage.value = event.page + 1;
+};
+
+// Carousel responsive options
+const carouselResponsiveOptions = ref([
+    {
+        breakpoint: '1024px',
+        numVisible: 3,
+        numScroll: 1
+    },
+    {
+        breakpoint: '768px',
+        numVisible: 2,
+        numScroll: 1
+    },
+    {
+        breakpoint: '560px',
+        numVisible: 1,
+        numScroll: 1
+    }
+]);
+
+// New arrivals data
+const newArrivals = ref([
+    {
+        id: 1,
+        title: 'Quantum Computing Fundamentals',
+        author: 'Dr. Alan Turing',
+        cover: 'https://plus.unsplash.com/premium_photo-1664006988924-16f386bcd40e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9va3xlbnwwfHwwfHx8MA%3D%3D'
+    },
+    {
+        id: 2,
+        title: 'The Modern Periodic Table',
+        author: 'Marie Curie',
+        cover: 'https://images.unsplash.com/photo-1532153975070-2e9ab71f1b14?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+        id: 3,
+        title: 'Behavioral Psychology',
+        author: 'Dr. Jordan Peterson',
+        cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+        id: 4,
+        title: 'The Digital Revolution',
+        author: 'Steve Jobs',
+        cover: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+        id: 5,
+        title: 'Machine Learning Essentials',
+        author: 'Andrew Ng',
+        cover: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    }
+]);
+
+// Quick links
+const quickLinks = ref([
+    { id: 1, name: 'My Borrowed Books', icon: 'pi pi-bookmark', route: '/student/borrowed' },
+    { id: 2, name: 'Reading Lists', icon: 'pi pi-list', route: '/student/reading-lists' },
+    { id: 3, name: 'Study Resources', icon: 'pi pi-file-pdf', route: '/resources/study' },
+    { id: 4, name: 'Educational Videos', icon: 'pi pi-video', route: '/resources/videos' }
+]);
+
+// Rotate announcements every 5 seconds
+let announcementInterval;
+onMounted(() => {
+    announcementInterval = setInterval(() => {
+        nextAnnouncement();
+    }, 5000);
+});
+
+// Functions for announcement navigation with smoother transitions
+const nextAnnouncement = () => {
+    // Small timeout to ensure Vue has completed any ongoing transitions
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length;
+    }, 50);
+};
+
+const prevAnnouncement = () => {
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
+    }, 50);
+};
+
+// Direct navigation to a specific announcement
+const goToAnnouncement = (index) => {
+    if (index === currentAnnouncementIndex.value) return; // Skip if already on this announcement
+    setTimeout(() => {
+        currentAnnouncementIndex.value = index;
+    }, 50);
+};
+
+// Function to search resources
+const searchResources = () => {
+    if (searchQuery.value.trim()) {
+        // Implement search functionality here
+        console.log('Searching for:', searchQuery.value);
+        // router.push({ name: 'search', query: { q: searchQuery.value } });
+    }
+};
+
+// Function to view a specific resource
+const viewResource = (resource) => {
+    console.log('Viewing resource:', resource);
+    // router.push({ name: 'resource-details', params: { id: resource.id } });
+};
+
+// Function to browse a category
+const browseCategory = (category) => {
+    console.log('Browsing category:', category);
+    // router.push({ name: 'category', params: { id: category.id } });
+};
+
+// Function to view all new arrivals
+const seeAllNewArrivals = () => {
+    console.log('Viewing all new arrivals');
+    // router.push({ name: 'new-arrivals' });
+};
+
+// Function to view a specific book
+const viewBook = (book) => {
+    console.log('Viewing book:', book);
+    // router.push({ name: 'book-details', params: { id: book.id } });
+};
+
+// Function to navigate to a specific route
+const navigateTo = (route) => {
+    console.log('Navigating to:', route);
+    router.push(route);
+};
+
+// Function to reset filters
+const resetFilters = () => {
+    console.log('Resetting all filters');
+    // Reset filter implementation would go here
+};
+
+// Function for quick search from hero section
+const quickSearch = (term) => {
+    console.log('Quick searching for:', term);
+    searchQuery.value = term;
+    searchResources();
+};
+
+onMounted(() => {
+    authStore.authCheck(); // Only runs on the login page
+});
+</script>
+
 <template>
     <div class="bg-slate-50 font-sans pb-12 text-gray-800">
         <!-- Top Navigation Bar -->
@@ -31,14 +346,26 @@
                     </a>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a
-                        href="/auth/login"
-                        class="px-5 py-2 text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-sky-50 transition-colors border border-sky-100 hover:border-sky-200"
-                        data-tooltip="Sign in to your account"
-                    >
-                        <i class="pi pi-sign-in"></i>
-                        <span>Log In</span>
-                    </a>
+                    <template v-if="auth.isAuthenticated">
+                        <button
+                            @click="logout"
+                            class="px-5 py-2 text-red-600 hover:text-red-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-red-50 transition-colors border border-red-100 hover:border-red-200"
+                            data-tooltip="Sign out of your account"
+                        >
+                            <i class="pi pi-sign-out"></i>
+                            <span>Log Out</span>
+                        </button>
+                    </template>
+                    <template v-else>
+                        <a
+                            href="/auth/login"
+                            class="px-5 py-2 text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-sky-50 transition-colors border border-sky-100 hover:border-sky-200"
+                            data-tooltip="Sign in to your account"
+                        >
+                            <i class="pi pi-sign-in"></i>
+                            <span>Log In</span>
+                        </a>
+                    </template>
                 </div>
             </div>
         </header>
@@ -352,15 +679,9 @@
                                 </div>
                             </div>
                         </div>
-                    </div>                    <div class="mt-8 flex justify-center">
-                        <Paginator 
-                            :rows="resourcesPerPage" 
-                            :totalRecords="allFeaturedResources.length" 
-                            v-model:first="first" 
-                            :rowsPerPageOptions="[6, 9, 12]"
-                            @page="onPageChange($event)"
-                            class="border-none"
-                        />
+                    </div>
+                    <div class="mt-8 flex justify-center">
+                        <Paginator :rows="resourcesPerPage" :totalRecords="allFeaturedResources.length" v-model:first="first" :rowsPerPageOptions="[6, 9, 12]" @page="onPageChange($event)" class="border-none" />
                     </div>
                 </div>
             </div>
@@ -408,10 +729,11 @@
                 <button @click="seeAllNewArrivals" class="border border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors px-5 py-2.5 rounded-lg font-medium">See All</button>
             </div>
 
-            <div class="p-2 bg-white shadow-sm rounded-lg">                <Carousel 
-                    :value="newArrivals" 
-                    :numVisible="3" 
-                    :numScroll="1" 
+            <div class="p-2 bg-white shadow-sm rounded-lg">
+                <Carousel
+                    :value="newArrivals"
+                    :numVisible="3"
+                    :numScroll="1"
                     :responsiveOptions="carouselResponsiveOptions"
                     circular
                     :autoplayInterval="5000"
@@ -480,309 +802,6 @@
         </section>
     </div>
 </template>
-
-<script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-// Import PrimeVue components
-import Carousel from 'primevue/carousel';
-import Paginator from 'primevue/paginator';
-
-const router = useRouter();
-const title = ref('FLIPPER INTERNATIONAL SCHOOL');
-const searchQuery = ref('');
-const currentAnnouncementIndex = ref(0);
-const showAnnouncements = ref(true);
-
-// Announcements data
-const announcements = ref([
-    { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
-    { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
-    { id: 3, message: 'Join our Book Club meeting every Friday at 4 PM in Room 204' },
-    { id: 4, message: 'New educational videos on Mathematics added to our digital collection' }
-]);
-
-// Functions to manage announcements
-const dismissAnnouncement = () => {
-    showAnnouncements.value = false;
-};
-
-const learnMoreAboutAnnouncement = (announcement) => {
-    console.log('Learn more about announcement:', announcement);
-    // Here you would navigate to detailed announcement page or show a modal
-    // For example: router.push({ name: 'announcement-details', params: { id: announcement.id } });
-};
-
-// Function to navigate to a specific announcement
-const setCurrentAnnouncement = (index) => {
-    currentAnnouncementIndex.value = index;
-};
-
-// Compute the current visible announcement with improved transition handling
-const visibleAnnouncement = computed(() => {
-    // Using a keyed version to ensure Vue properly handles the transitions
-    const announcement = announcements.value[currentAnnouncementIndex.value];
-    return [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }];
-});
-
-// Featured resources data
-const allFeaturedResources = ref([
-    {
-        id: 1,
-        title: 'Introduction to Astrophysics',
-        description: 'A comprehensive guide to understanding the cosmos',
-        type: 'E-Book',
-        author: 'Dr. Sarah Johnson',
-        image: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.8
-    },
-    {
-        id: 2,
-        title: 'World History: Ancient Civilizations',
-        description: "Explore the rise and fall of the world's greatest empires",
-        type: 'Book',
-        author: 'Prof. Michael Chen',
-        image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.6
-    },
-    {
-        id: 3,
-        title: 'Advanced Calculus Explained',
-        description: 'Step-by-step video tutorials for complex mathematical concepts',
-        type: 'Video Series',
-        author: 'Prof. Emma Rodriguez',
-        image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.9
-    },
-    {
-        id: 4,
-        title: 'The Art of Literature',
-        description: 'Analysis of classic and contemporary literary works',
-        type: 'E-Book',
-        author: 'Dr. James Wilson',
-        image: 'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.5
-    },
-    {
-        id: 5,
-        title: 'Environmental Science Today',
-        description: 'Understanding our changing planet and sustainable practices',
-        type: 'E-Book',
-        author: 'Dr. Emily Chang',
-        image: 'https://images.unsplash.com/photo-1500829243541-74b677fecc30?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.7
-    },
-    {
-        id: 6,
-        title: 'Introduction to Psychology',
-        description: 'Understanding the human mind and behavior patterns',
-        type: 'Video Series',
-        author: 'Prof. Robert Thompson',
-        image: 'https://images.unsplash.com/photo-1555443805-658637491dd4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.8
-    },
-    {
-        id: 7,
-        title: 'Modern Economics',
-        description: 'Key principles of microeconomics and macroeconomics',
-        type: 'Book',
-        author: 'Dr. Alicia Rodriguez',
-        image: 'https://images.unsplash.com/photo-1520695287272-b7f8af46d367?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.3
-    },
-    {
-        id: 8,
-        title: 'Introduction to Computer Science',
-        description: 'Foundations of algorithms and programming concepts',
-        type: 'E-Book',
-        author: 'Prof. Jason Taylor',
-        image: 'https://images.unsplash.com/photo-1517134191118-9d595e4c8c2b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.9
-    },
-    {
-        id: 9,
-        title: 'Art Through The Ages',
-        description: 'A journey through artistic movements across different eras',
-        type: 'Book',
-        author: 'Dr. Sophia Martinez',
-        image: 'https://images.unsplash.com/photo-1545989253-02cc26577f88?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        rating: 4.6
-    }
-]);
-
-// Pagination state for featured resources
-// Categories data
-const categories = ref([
-    { id: 1, name: 'Science', count: 247, icon: 'pi pi-flask', color: '#FF6B6B' },
-    { id: 2, name: 'Mathematics', count: 183, icon: 'pi pi-calculator', color: '#4ECDC4' },
-    { id: 3, name: 'Literature', count: 325, icon: 'pi pi-book', color: '#8A2BE2' },
-    { id: 4, name: 'History', count: 210, icon: 'pi pi-globe', color: '#FFA62B' },
-    { id: 5, name: 'Computer Science', count: 176, icon: 'pi pi-desktop', color: '#45B7D1' },
-    { id: 6, name: 'Arts & Music', count: 154, icon: 'pi pi-palette', color: '#FF8C94' }
-]);
-
-// Pagination state for featured resources
-const resourcesPerPage = 6;
-const currentPage = ref(1);
-const first = ref(0);
-const totalPages = computed(() => Math.ceil(allFeaturedResources.value.length / resourcesPerPage));
-
-// Compute the current page of featured resources
-const featuredResources = computed(() => {
-    const start = first.value;
-    const end = start + resourcesPerPage;
-    return allFeaturedResources.value.slice(start, end);
-});
-
-// Function to handle page change from PrimeVue Paginator
-const onPageChange = (event) => {
-    first.value = event.first;
-    currentPage.value = event.page + 1;
-};
-
-// Carousel responsive options
-const carouselResponsiveOptions = ref([
-    {
-        breakpoint: '1024px',
-        numVisible: 3,
-        numScroll: 1
-    },
-    {
-        breakpoint: '768px',
-        numVisible: 2,
-        numScroll: 1
-    },
-    {
-        breakpoint: '560px',
-        numVisible: 1,
-        numScroll: 1
-    }
-]);
-
-// New arrivals data
-const newArrivals = ref([
-    {
-        id: 1,
-        title: 'Quantum Computing Fundamentals',
-        author: 'Dr. Alan Turing',
-        cover: 'https://plus.unsplash.com/premium_photo-1664006988924-16f386bcd40e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9va3xlbnwwfHwwfHx8MA%3D%3D'
-    },
-    {
-        id: 2,
-        title: 'The Modern Periodic Table',
-        author: 'Marie Curie',
-        cover: 'https://images.unsplash.com/photo-1532153975070-2e9ab71f1b14?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-        id: 3,
-        title: 'Behavioral Psychology',
-        author: 'Dr. Jordan Peterson',
-        cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-        id: 4,
-        title: 'The Digital Revolution',
-        author: 'Steve Jobs',
-        cover: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-        id: 5,
-        title: 'Machine Learning Essentials',
-        author: 'Andrew Ng',
-        cover: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    }
-]);
-
-// Quick links
-const quickLinks = ref([
-    { id: 1, name: 'My Borrowed Books', icon: 'pi pi-bookmark', route: '/student/borrowed' },
-    { id: 2, name: 'Reading Lists', icon: 'pi pi-list', route: '/student/reading-lists' },
-    { id: 3, name: 'Study Resources', icon: 'pi pi-file-pdf', route: '/resources/study' },
-    { id: 4, name: 'Educational Videos', icon: 'pi pi-video', route: '/resources/videos' }
-]);
-
-// Rotate announcements every 5 seconds
-let announcementInterval;
-onMounted(() => {
-    announcementInterval = setInterval(() => {
-        nextAnnouncement();
-    }, 5000);
-});
-
-// Functions for announcement navigation with smoother transitions
-const nextAnnouncement = () => {
-    // Small timeout to ensure Vue has completed any ongoing transitions
-    setTimeout(() => {
-        currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length;
-    }, 50);
-};
-
-const prevAnnouncement = () => {
-    setTimeout(() => {
-        currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
-    }, 50);
-};
-
-// Direct navigation to a specific announcement
-const goToAnnouncement = (index) => {
-    if (index === currentAnnouncementIndex.value) return; // Skip if already on this announcement
-    setTimeout(() => {
-        currentAnnouncementIndex.value = index;
-    }, 50);
-};
-
-// Function to search resources
-const searchResources = () => {
-    if (searchQuery.value.trim()) {
-        // Implement search functionality here
-        console.log('Searching for:', searchQuery.value);
-        // router.push({ name: 'search', query: { q: searchQuery.value } });
-    }
-};
-
-// Function to view a specific resource
-const viewResource = (resource) => {
-    console.log('Viewing resource:', resource);
-    // router.push({ name: 'resource-details', params: { id: resource.id } });
-};
-
-// Function to browse a category
-const browseCategory = (category) => {
-    console.log('Browsing category:', category);
-    // router.push({ name: 'category', params: { id: category.id } });
-};
-
-// Function to view all new arrivals
-const seeAllNewArrivals = () => {
-    console.log('Viewing all new arrivals');
-    // router.push({ name: 'new-arrivals' });
-};
-
-// Function to view a specific book
-const viewBook = (book) => {
-    console.log('Viewing book:', book);
-    // router.push({ name: 'book-details', params: { id: book.id } });
-};
-
-// Function to navigate to a specific route
-const navigateTo = (route) => {
-    console.log('Navigating to:', route);
-    router.push(route);
-};
-
-// Function to reset filters
-const resetFilters = () => {
-    console.log('Resetting all filters');
-    // Reset filter implementation would go here
-};
-
-// Function for quick search from hero section
-const quickSearch = (term) => {
-    console.log('Quick searching for:', term);
-    searchQuery.value = term;
-    searchResources();
-};
-</script>
 
 <style scoped>
 /* Animation classes */

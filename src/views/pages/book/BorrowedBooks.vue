@@ -106,14 +106,24 @@ const returnItem = async () => {
             item.status = 'returned';
             item.return_date = new Date().toISOString().slice(0, 10);
         }
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Item returned successfully', life: 3000 });
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Item returned successfully',
+            life: 3000
+        });
         returnDialog.value = false;
 
         // Remove from the list or update status
         borrowedItems.value = borrowedItems.value.filter((i) => i.id !== currentItem.value.id);
     } catch (error) {
         console.error('Error returning item:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to return item', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to return item',
+            life: 3000
+        });
     }
 };
 
@@ -127,11 +137,21 @@ const extendBorrowingPeriod = async () => {
             item.due_date = currentDueDate.toISOString().slice(0, 10);
             item.renewals_count += 1;
         }
-        toast.add({ severity: 'success', summary: 'Success', detail: `Borrowing period extended by ${extendDays.value} days`, life: 3000 });
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: `Borrowing period extended by ${extendDays.value} days`,
+            life: 3000
+        });
         extendDialog.value = false;
     } catch (error) {
         console.error('Error extending borrowing period:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to extend borrowing period', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to extend borrowing period',
+            life: 3000
+        });
     }
 };
 
@@ -168,7 +188,9 @@ const getSeverity = (dueDate) => {
             <div class="card">
                 <Toast />
                 <h5>Currently Borrowed Items</h5>
-                <p class="text-gray-600 mb-4">View and manage your borrowed books and other library resources.</p>
+                <p class="text-gray-600 mb-4">
+                    View and manage your borrowed books and other library resources.
+                </p>
 
                 <DataTable
                     v-model:selection="selectedItems"
@@ -181,13 +203,15 @@ const getSeverity = (dueDate) => {
                     responsiveLayout="scroll"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} items"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    class="p-datatable-sm"
-                >
+                    class="p-datatable-sm">
                     <template #empty>
                         <div class="flex flex-column align-items-center p-5">
                             <i class="pi pi-info-circle text-primary" style="font-size: 2rem"></i>
                             <p>You don't have any borrowed items at the moment.</p>
-                            <Button label="Browse Library" icon="pi pi-search" @click="router.push('/books')" />
+                            <Button
+                                label="Browse Library"
+                                icon="pi pi-search"
+                                @click="router.push('/books')" />
                         </div>
                     </template>
 
@@ -212,13 +236,20 @@ const getSeverity = (dueDate) => {
                         </template>
                     </Column>
 
-                    <Column field="borrow_date" header="Borrowed On" sortable style="width: 10rem"></Column>
+                    <Column
+                        field="borrow_date"
+                        header="Borrowed On"
+                        sortable
+                        style="width: 10rem"></Column>
 
                     <Column field="due_date" header="Due Date" sortable style="width: 12rem">
                         <template #body="slotProps">
                             <div class="flex align-items-center">
                                 <span>{{ slotProps.data.due_date }}</span>
-                                <Tag :value="getDaysRemaining(slotProps.data.due_date) + ' days'" :severity="getSeverity(slotProps.data.due_date)" class="ml-2" />
+                                <Tag
+                                    :value="getDaysRemaining(slotProps.data.due_date) + ' days'"
+                                    :severity="getSeverity(slotProps.data.due_date)"
+                                    class="ml-2" />
                             </div>
                         </template>
                     </Column>
@@ -232,16 +263,35 @@ const getSeverity = (dueDate) => {
                     <Column style="width: 14rem">
                         <template #body="slotProps">
                             <div class="flex">
-                                <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-text p-button-sm" @click="viewDetails(slotProps.data)" />
-                                <Button icon="pi pi-calendar-plus" tooltip="Extend" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="confirmExtend(slotProps.data)" />
-                                <Button icon="pi pi-check" tooltip="Return" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-primary p-button-sm" @click="confirmReturn(slotProps.data)" />
+                                <Button
+                                    icon="pi pi-eye"
+                                    tooltip="View Details"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-text p-button-sm"
+                                    @click="viewDetails(slotProps.data)" />
+                                <Button
+                                    icon="pi pi-calendar-plus"
+                                    tooltip="Extend"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-success p-button-sm"
+                                    @click="confirmExtend(slotProps.data)" />
+                                <Button
+                                    icon="pi pi-check"
+                                    tooltip="Return"
+                                    tooltipOptions="{ position: 'top' }"
+                                    class="p-button-rounded p-button-primary p-button-sm"
+                                    @click="confirmReturn(slotProps.data)" />
                             </div>
                         </template>
                     </Column>
                 </DataTable>
 
                 <!-- Return Dialog -->
-                <Dialog v-model:visible="returnDialog" :style="{ width: '450px' }" header="Confirm Return" :modal="true">
+                <Dialog
+                    v-model:visible="returnDialog"
+                    :style="{ width: '450px' }"
+                    header="Confirm Return"
+                    :modal="true">
                     <div class="confirmation-content">
                         <i class="pi pi-check-circle mr-3" style="font-size: 2rem" />
                         <span
@@ -250,26 +300,50 @@ const getSeverity = (dueDate) => {
                         >
                     </div>
                     <template #footer>
-                        <Button label="No" icon="pi pi-times" class="p-button-text" @click="returnDialog = false" />
-                        <Button label="Yes" icon="pi pi-check" class="p-button-text" @click="returnItem" />
+                        <Button
+                            label="No"
+                            icon="pi pi-times"
+                            class="p-button-text"
+                            @click="returnDialog = false" />
+                        <Button
+                            label="Yes"
+                            icon="pi pi-check"
+                            class="p-button-text"
+                            @click="returnItem" />
                     </template>
                 </Dialog>
 
                 <!-- Extend Dialog -->
-                <Dialog v-model:visible="extendDialog" :style="{ width: '450px' }" header="Extend Borrowing Period" :modal="true">
+                <Dialog
+                    v-model:visible="extendDialog"
+                    :style="{ width: '450px' }"
+                    header="Extend Borrowing Period"
+                    :modal="true">
                     <div class="p-fluid">
                         <div class="field">
                             <label for="extendDays">How many days would you like to extend?</label>
                             <div class="p-inputgroup">
-                                <InputNumber id="extendDays" v-model="extendDays" :min="1" :max="30" />
+                                <InputNumber
+                                    id="extendDays"
+                                    v-model="extendDays"
+                                    :min="1"
+                                    :max="30" />
                                 <span class="p-inputgroup-addon">days</span>
                             </div>
                             <small>Current due date: {{ currentItem?.due_date }}</small>
                         </div>
                     </div>
                     <template #footer>
-                        <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="extendDialog = false" />
-                        <Button label="Extend" icon="pi pi-check" class="p-button-text" @click="extendBorrowingPeriod" />
+                        <Button
+                            label="Cancel"
+                            icon="pi pi-times"
+                            class="p-button-text"
+                            @click="extendDialog = false" />
+                        <Button
+                            label="Extend"
+                            icon="pi pi-check"
+                            class="p-button-text"
+                            @click="extendBorrowingPeriod" />
                     </template>
                 </Dialog>
             </div>

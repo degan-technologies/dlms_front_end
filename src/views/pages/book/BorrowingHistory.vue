@@ -177,16 +177,32 @@ const formatDate = (dateString) => {
         <div class="col-12">
             <div class="card">
                 <h5>Borrowing History</h5>
-                <p class="text-gray-600 mb-4">View your complete library borrowing history and transaction details.</p>
+                <p class="text-gray-600 mb-4">
+                    View your complete library borrowing history and transaction details.
+                </p>
 
                 <div class="flex justify-content-between mb-4">
                     <div class="flex align-items-center">
                         <span class="mr-2">Filter by: </span>
-                        <Dropdown v-model="selectedDateFilter" :options="dateFilterOptions" optionLabel="label" optionValue="value" class="w-12rem" @change="onDateFilterChange" />
+                        <Dropdown
+                            v-model="selectedDateFilter"
+                            :options="dateFilterOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-12rem"
+                            @change="onDateFilterChange" />
                     </div>
                     <div>
-                        <Button icon="pi pi-file-pdf" label="Export PDF" class="p-button-outlined p-button-danger mr-2" @click="exportPDF" />
-                        <Button icon="pi pi-file-excel" label="Export Excel" class="p-button-outlined p-button-success" @click="exportExcel" />
+                        <Button
+                            icon="pi pi-file-pdf"
+                            label="Export PDF"
+                            class="p-button-outlined p-button-danger mr-2"
+                            @click="exportPDF" />
+                        <Button
+                            icon="pi pi-file-excel"
+                            label="Export Excel"
+                            class="p-button-outlined p-button-success"
+                            @click="exportExcel" />
                     </div>
                 </div>
 
@@ -202,8 +218,7 @@ const formatDate = (dateString) => {
                     responsiveLayout="scroll"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} items"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    class="p-datatable-sm"
-                >
+                    class="p-datatable-sm">
                     <template #empty>
                         <div class="flex flex-column align-items-center p-5">
                             <i class="pi pi-history text-primary" style="font-size: 2rem"></i>
@@ -223,7 +238,11 @@ const formatDate = (dateString) => {
                     <Column field="title" header="Title" sortable>
                         <template #body="slotProps">
                             <div class="flex align-items-center">
-                                <Avatar :image="slotProps.data.cover_image_url" shape="circle" class="mr-2" style="width: 2rem; height: 2rem" />
+                                <Avatar
+                                    :image="slotProps.data.cover_image_url"
+                                    shape="circle"
+                                    class="mr-2"
+                                    style="width: 2rem; height: 2rem" />
                                 <div>
                                     <span class="font-bold block">{{ slotProps.data.title }}</span>
                                     <small>{{ slotProps.data.author }}</small>
@@ -252,7 +271,9 @@ const formatDate = (dateString) => {
 
                     <Column field="status" header="Status" sortable style="width: 11rem">
                         <template #body="slotProps">
-                            <Tag :value="getStatusLabel(slotProps.data.status)" :severity="getStatusSeverity(slotProps.data.status)" />
+                            <Tag
+                                :value="getStatusLabel(slotProps.data.status)"
+                                :severity="getStatusSeverity(slotProps.data.status)" />
                         </template>
                         <template #filter>
                             <Dropdown
@@ -267,21 +288,29 @@ const formatDate = (dateString) => {
                                 optionValue="value"
                                 placeholder="Select Status"
                                 class="p-column-filter"
-                                showClear
-                            />
+                                showClear />
                         </template>
                     </Column>
 
                     <Column field="fine_amount" header="Fine" sortable style="width: 8rem">
                         <template #body="slotProps">
-                            <span v-if="slotProps.data.fine_amount > 0" class="text-red-500 font-medium">${{ slotProps.data.fine_amount.toFixed(2) }}</span>
+                            <span
+                                v-if="slotProps.data.fine_amount > 0"
+                                class="text-red-500 font-medium"
+                                >${{ slotProps.data.fine_amount.toFixed(2) }}</span
+                            >
                             <span v-else class="text-green-500 font-medium">$0.00</span>
                         </template>
                     </Column>
 
                     <Column style="width: 5rem">
                         <template #body="slotProps">
-                            <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-text p-button-sm" @click="viewDetails(slotProps.data)" />
+                            <Button
+                                icon="pi pi-eye"
+                                tooltip="View Details"
+                                tooltipOptions="{ position: 'top' }"
+                                class="p-button-rounded p-button-text p-button-sm"
+                                @click="viewDetails(slotProps.data)" />
                         </template>
                     </Column>
                 </DataTable>

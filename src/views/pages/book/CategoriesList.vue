@@ -1,4 +1,5 @@
 <script setup>
+import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
@@ -13,34 +14,53 @@ const submitted = ref(false);
 const loading = ref(true);
 
 onMounted(() => {
-    loadCategories();
+    loadCategories(1, rows.value);
 });
 
-const loadCategories = async () => {
+const totalRecords = ref(0);
+const first = ref(0);
+const rows = ref(10); // Default rows per page
+const rowsPerPageOptions = [5, 10, 20, 50];
+
+const loadCategories = async (page, pageSize = 10) => {
     loading.value = true;
     try {
-        // In a real app, this would be an API call
-        setTimeout(() => {
-            categories.value = [
-                { id: 1, name: 'Fiction', description: 'Literary works that are not based on facts', books_count: 120 },
-                { id: 2, name: 'Non-Fiction', description: 'Literary works based on facts', books_count: 95 },
-                { id: 3, name: 'Science Fiction', description: 'Fiction based on imagined future scientific advances', books_count: 56 },
-                { id: 4, name: 'Mystery', description: 'Fiction dealing with the solution of a crime or puzzle', books_count: 78 },
-                { id: 5, name: 'Biography', description: "Account of someone's life written by someone else", books_count: 42 },
-                { id: 6, name: 'History', description: 'Study of past events', books_count: 67 },
-                { id: 7, name: 'Computer Science', description: 'Study of computers and computing technologies', books_count: 85 },
-                { id: 8, name: 'Mathematics', description: 'Study of numbers, quantities, and shapes', books_count: 35 },
-                { id: 9, name: 'Self-Help', description: 'Books that aim to help readers solve personal problems', books_count: 23 },
-                { id: 10, name: 'Poetry', description: 'Literary work in which expression of feelings and ideas is given intensity', books_count: 19 }
-            ];
-            loading.value = false;
-        }, 1000);
+        const response = await axiosInstance.get('/categories', {
+            params: {
+                page: page, // your backend uses 1-based indexing
+                pageSize: pageSize
+            }
+        });
+
+        const meta = response.data.meta;
+
+        categories.value = response.data.data.map((cat) => ({
+            ...cat,
+            description: cat.description || 'No description available'
+        }));
+
+        totalRecords.value = meta.total;
+        first.value = (meta.current_page - 1) * meta.per_page; // For PrimeVue pagination binding
+        rows.value = meta.per_page; // Ensure frontend and backend stay in sync
     } catch (error) {
         console.error('Error loading categories', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load categories', life: 3000 });
+    } finally {
         loading.value = false;
     }
 };
+
+// Handle paginator change
+const onPage = (event) => {
+    first.value = event.first;
+    rows.value = event.rows;
+    const page = Math.floor(event.first / event.rows) + 1;
+    loadCategories(page, event.rows);
+};
+
+// Initial load
+onMounted(() => {
+    loadCategories(0, rows.value);
+});
 
 const openNew = () => {
     category.value = {};
@@ -53,30 +73,64 @@ const hideDialog = () => {
     submitted.value = false;
 };
 
-const saveCategory = () => {
+const saveCategory = async () => {
     submitted.value = true;
 
-    if (category.value.name?.trim()) {
-        if (category.value.id) {
-            // Update existing category
-            const index = categories.value.findIndex((c) => c.id === category.value.id);
-            categories.value[index] = { ...category.value };
-            toast.add({ severity: 'success', summary: 'Success', detail: 'Category Updated', life: 3000 });
-        } else {
-            // Create new category
-            category.value.id = categories.value.length ? Math.max(...categories.value.map((c) => c.id)) + 1 : 1;
-            category.value.books_count = 0;
-            categories.value.push({ ...category.value });
-            toast.add({ severity: 'success', summary: 'Success', detail: 'Category Created', life: 3000 });
-        }
+    if (!category.value.category_name) return;
 
+    try {
+        if (category.value.id) {
+            // UPDATE
+
+            await axiosInstance.put(
+                `/categories/${category.value.id}`,
+                {
+                    category_name: category.value.category_name,
+                    description: category.value.description
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category Updated',
+                life: 3000
+            });
+        } else {
+            // ADD
+            await axiosInstance.post('/categories', {
+                category_name: category.value.category_name,
+                description: category.value.description
+            });
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category Created',
+                life: 3000
+            });
+        }
         categoryDialog.value = false;
-        category.value = {};
+        loadCategories(); // Assuming this fetches and updates your table
+        category.value = { id: null, category_name: '', description: '' };
+        submitted.value = false;
+    } catch (error) {
+        console.error(error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Operation failed',
+            life: 3000
+        });
     }
 };
 
-const editCategory = (editCategory) => {
-    category.value = { ...editCategory };
+const editCategory = (selectedCategory) => {
+    category.value = { ...selectedCategory };
     categoryDialog.value = true;
 };
 
@@ -85,22 +139,57 @@ const confirmDeleteCategory = (editCategory) => {
     deleteCategoryDialog.value = true;
 };
 
-const deleteCategory = () => {
-    categories.value = categories.value.filter((c) => c.id !== category.value.id);
-    deleteCategoryDialog.value = false;
-    category.value = {};
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Category Deleted', life: 3000 });
+const deleteCategory = async () => {
+    try {
+        await axiosInstance.delete(`/categories/${category.value.id}`);
+        categories.value = categories.value.filter((c) => c.id !== category.value.id);
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Category Deleted',
+            life: 3000
+        });
+    } catch (error) {
+        console.error('Delete failed:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete category',
+            life: 3000
+        });
+    } finally {
+        deleteCategoryDialog.value = false;
+        category.value = {};
+    }
 };
 
 const confirmDeleteSelected = () => {
     deleteCategoriesDialog.value = true;
 };
 
-const deleteSelectedCategories = () => {
-    categories.value = categories.value.filter((c) => !selectedCategories.value.includes(c));
-    deleteCategoriesDialog.value = false;
-    selectedCategories.value = [];
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Categories Deleted', life: 3000 });
+const deleteSelectedCategories = async () => {
+    try {
+        const ids = selectedCategories.value.map((cat) => cat.id);
+        await axiosInstance.post('/categories/delete-multiple', { ids }); // POST for bulk
+        categories.value = categories.value.filter((c) => !ids.includes(c.id));
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Categories Deleted',
+            life: 3000
+        });
+    } catch (error) {
+        console.error('Bulk delete failed:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete categories',
+            life: 3000
+        });
+    } finally {
+        deleteCategoriesDialog.value = false;
+        selectedCategories.value = [];
+    }
 };
 </script>
 
@@ -116,7 +205,7 @@ const deleteSelectedCategories = () => {
 
                     <template #end>
                         <Button label="New" icon="pi pi-plus" class="p-button-success mr-2" @click="openNew" />
-                        <Button label="Delete" icon="pi pi-trash" class="p-button-danger" @click="confirmDeleteSelected" :disabled="!selectedCategories.value || !selectedCategories.value.length" />
+                        <Button label="Delete" icon="pi pi-trash" class="p-button-danger" @click="confirmDeleteSelected" :disabled="!selectedCategories || !selectedCategories.length" />
                     </template>
                 </Toolbar>
 
@@ -125,9 +214,13 @@ const deleteSelectedCategories = () => {
                     v-model:selection="selectedCategories"
                     dataKey="id"
                     :paginator="true"
-                    :rows="10"
+                    v-model:rows="rows"
+                    v-model:first="first"
+                    :lazy="true"
                     :loading="loading"
-                    :rowsPerPageOptions="[5, 10, 25]"
+                    :totalRecords="totalRecords"
+                    :rowsPerPageOptions="rowsPerPageOptions"
+                    @page="onPage"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
                     responsiveLayout="scroll"
@@ -141,7 +234,7 @@ const deleteSelectedCategories = () => {
 
                     <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                     <Column field="id" header="ID" sortable style="min-width: 5rem"></Column>
-                    <Column field="name" header="Name" sortable style="min-width: 16rem"></Column>
+                    <Column field="category_name" header="Name" sortable style="min-width: 16rem"></Column>
                     <Column field="description" header="Description" sortable style="min-width: 18rem"></Column>
                     <Column field="books_count" header="Books" sortable style="min-width: 8rem">
                         <template #body="slotProps">
@@ -160,20 +253,30 @@ const deleteSelectedCategories = () => {
     </div>
 
     <!-- Category Dialog -->
-    <Dialog v-model:visible="categoryDialog" :style="{ width: '450px' }" header="Category Details" :modal="true" class="p-fluid">
-        <div class="field">
-            <label for="name">Name</label>
-            <InputText id="name" v-model.trim="category.name" required autofocus :class="{ 'p-invalid': submitted && !category.name }" />
-            <small class="p-error" v-if="submitted && !category.name">Name is required.</small>
-        </div>
-        <div class="field">
-            <label for="description">Description</label>
-            <Textarea id="description" v-model="category.description" rows="3" cols="20" />
+    <Dialog v-model:visible="categoryDialog" :style="{ width: '500px' }" header="Category Details" :modal="true" class="p-fluid">
+        <div class="p-3">
+            <div class="formgrid grid gap-4">
+                <!-- Category Name -->
+                <div class="field col-12">
+                    <label for="category_name" class="font-semibold text-sm text-gray-700">Category Name</label>
+                    <InputText id="category_name" v-model.trim="category.category_name" required autofocus :class="{ 'p-invalid': submitted && !category.category_name }" class="w-full" />
+                    <small class="p-error" v-if="submitted && !category.category_name"> Name is required.</small>
+                </div>
+
+                <!-- Description -->
+                <div class="field col-12">
+                    <label for="description" class="font-semibold text-sm text-gray-700">Description</label>
+                    <Textarea id="description" v-model="category.description" rows="4" autoResize class="w-full" />
+                </div>
+            </div>
         </div>
 
+        <!-- Dialog Footer -->
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" class="p-button-text" @click="saveCategory" />
+            <div class="flex justify-content-end gap-2">
+                <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" class="p-button p-button-primary" @click="saveCategory" />
+            </div>
         </template>
     </Dialog>
 

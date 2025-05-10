@@ -42,7 +42,7 @@ const model = computed(() => [
         items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/dashboard' }]
     },
     // Admin menu - only show for admin or librarian roles
-    hasRole(ROLE.ADMIN) || hasRole(ROLE.LIBRARIAN)
+    hasRole(ROLE.ADMIN)
         ? {
               label: 'Admin',
               items: [
@@ -52,16 +52,18 @@ const model = computed(() => [
               ]
           }
         : null,
-    {
-        label: 'Library Catalog',
-        items: [
-            { label: 'All Books', icon: 'pi pi-fw pi-list', to: '/books' },
-            { label: 'E-Books', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks' },
-            { label: 'Digital Assets', icon: 'pi pi-fw pi-video', to: '/books/assets' },
-            { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/books/categories' },
-            { label: 'Publishers', icon: 'pi pi-fw pi-building', to: '/books/publishers' }
-        ]
-    },
+    hasRole(ROLE.ADMIN) || hasRole(ROLE.LIBRARIAN)
+        ? {
+              label: 'Library Catalog',
+              items: [
+                  { label: 'All Books', icon: 'pi pi-fw pi-list', to: '/books' },
+                  { label: 'E-Books', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks' },
+                  { label: 'Digital Assets', icon: 'pi pi-fw pi-video', to: '/books/assets' },
+                  { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/books/categories' },
+                  { label: 'Publishers', icon: 'pi pi-fw pi-building', to: '/books/publishers' }
+              ]
+          }
+        : null,
     {
         label: 'My Account',
         items: [

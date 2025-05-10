@@ -38,10 +38,22 @@ onMounted(() => {
 const initFilters = () => {
     filters.value = {
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-        author: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-        'category.name': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-        file_format: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+        title: {
+            operator: FilterOperator.AND,
+            constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
+        },
+        author: {
+            operator: FilterOperator.AND,
+            constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
+        },
+        'category.name': {
+            operator: FilterOperator.AND,
+            constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
+        },
+        file_format: {
+            operator: FilterOperator.OR,
+            constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
+        }
     };
     globalFilterValue.value = '';
 };
@@ -289,7 +301,9 @@ const deleteEbook = async (ebook) => {
 
 // Bulk actions
 const deleteSelectedEbooks = () => {
-    const confirmed = window.confirm(`Are you sure you want to delete ${selectedEbooks.value.length} selected e-books?`);
+    const confirmed = window.confirm(
+        `Are you sure you want to delete ${selectedEbooks.value.length} selected e-books?`
+    );
     if (confirmed) {
         // In a real app, make API calls to delete
         // await Promise.all(selectedEbooks.value.map(ebook => fetch(`/api/books/ebooks/${ebook.id}`, { method: 'DELETE' })));
@@ -316,7 +330,9 @@ const getDrmTypeLabel = (drmType) => {
         <div class="col-12">
             <div class="card">
                 <h5>E-Books Collection</h5>
-                <p class="text-muted-color mb-4">Browse, search and manage electronic books in the library</p>
+                <p class="text-muted-color mb-4">
+                    Browse, search and manage electronic books in the library
+                </p>
 
                 <DataTable
                     v-model:filters="filters"
@@ -329,22 +345,47 @@ const getDrmTypeLabel = (drmType) => {
                     :loading="loading"
                     dataKey="id"
                     filterDisplay="menu"
-                    :globalFilterFields="['title', 'author', 'isbn', 'category.name', 'file_format']"
+                    :globalFilterFields="[
+                        'title',
+                        'author',
+                        'isbn',
+                        'category.name',
+                        'file_format'
+                    ]"
                     responsiveLayout="scroll"
                     @page="onPage"
                     @sort="onSort"
-                    :lazy="true"
-                >
+                    :lazy="true">
                     <template #header>
-                        <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
+                        <div
+                            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
                             <span class="p-input-icon-left mb-2 md:mb-0">
                                 <i class="pi pi-search" />
-                                <InputText v-model="globalFilterValue" placeholder="Search e-books..." @input="onGlobalFilterChange" />
+                                <InputText
+                                    v-model="globalFilterValue"
+                                    placeholder="Search e-books..."
+                                    @input="onGlobalFilterChange" />
                             </span>
                             <div class="flex">
-                                <Button type="button" icon="pi pi-filter-slash" label="Clear Filters" class="p-button-outlined mr-2" @click="clearFilter" />
-                                <Button type="button" icon="pi pi-trash" label="Delete Selected" class="p-button-danger p-button-outlined mr-2" :disabled="!selectedEbooks.length" @click="deleteSelectedEbooks" />
-                                <Button type="button" icon="pi pi-plus" label="Add New E-Book" class="p-button-success" @click="createNewEbook" />
+                                <Button
+                                    type="button"
+                                    icon="pi pi-filter-slash"
+                                    label="Clear Filters"
+                                    class="p-button-outlined mr-2"
+                                    @click="clearFilter" />
+                                <Button
+                                    type="button"
+                                    icon="pi pi-trash"
+                                    label="Delete Selected"
+                                    class="p-button-danger p-button-outlined mr-2"
+                                    :disabled="!selectedEbooks.length"
+                                    @click="deleteSelectedEbooks" />
+                                <Button
+                                    type="button"
+                                    icon="pi pi-plus"
+                                    label="Add New E-Book"
+                                    class="p-button-success"
+                                    @click="createNewEbook" />
                             </div>
                         </div>
                     </template>
@@ -355,7 +396,10 @@ const getDrmTypeLabel = (drmType) => {
 
                     <Column header="Cover" style="min-width: 8rem">
                         <template #body="{ data }">
-                            <img :src="data.cover_image_url" :alt="data.title" class="book-thumbnail shadow-2" />
+                            <img
+                                :src="data.cover_image_url"
+                                :alt="data.title"
+                                class="book-thumbnail shadow-2" />
                         </template>
                     </Column>
 
@@ -367,19 +411,39 @@ const getDrmTypeLabel = (drmType) => {
                             </div>
                         </template>
                         <template #filter="{ filterModel, filterCallback }">
-                            <InputText v-model="filterModel.value" @input="filterCallback()" class="p-column-filter" placeholder="Search by title" />
+                            <InputText
+                                v-model="filterModel.value"
+                                @input="filterCallback()"
+                                class="p-column-filter"
+                                placeholder="Search by title" />
                         </template>
                     </Column>
 
                     <Column field="author" header="Author" sortable style="min-width: 10rem">
                         <template #filter="{ filterModel, filterCallback }">
-                            <InputText v-model="filterModel.value" @input="filterCallback()" class="p-column-filter" placeholder="Search by author" />
+                            <InputText
+                                v-model="filterModel.value"
+                                @input="filterCallback()"
+                                class="p-column-filter"
+                                placeholder="Search by author" />
                         </template>
                     </Column>
 
-                    <Column field="category.name" header="Category" sortable style="min-width: 10rem">
+                    <Column
+                        field="category.name"
+                        header="Category"
+                        sortable
+                        style="min-width: 10rem">
                         <template #filter="{ filterModel, filterCallback }">
-                            <Dropdown v-model="filterModel.value" @change="filterCallback()" :options="categories" optionLabel="name" optionValue="name" placeholder="Select Category" class="p-column-filter" style="width: 100%" />
+                            <Dropdown
+                                v-model="filterModel.value"
+                                @change="filterCallback()"
+                                :options="categories"
+                                optionLabel="name"
+                                optionValue="name"
+                                placeholder="Select Category"
+                                class="p-column-filter"
+                                style="width: 100%" />
                         </template>
                     </Column>
 
@@ -388,7 +452,15 @@ const getDrmTypeLabel = (drmType) => {
                             <Tag :value="data.file_format" />
                         </template>
                         <template #filter="{ filterModel, filterCallback }">
-                            <Dropdown v-model="filterModel.value" @change="filterCallback()" :options="fileFormats" optionLabel="name" optionValue="code" placeholder="Select Format" class="p-column-filter" style="width: 100%" />
+                            <Dropdown
+                                v-model="filterModel.value"
+                                @change="filterCallback()"
+                                :options="fileFormats"
+                                optionLabel="name"
+                                optionValue="code"
+                                placeholder="Select Format"
+                                class="p-column-filter"
+                                style="width: 100%" />
                         </template>
                     </Column>
 
@@ -398,9 +470,15 @@ const getDrmTypeLabel = (drmType) => {
                         </template>
                     </Column>
 
-                    <Column field="is_downloadable" header="Download" sortable style="min-width: 8rem">
+                    <Column
+                        field="is_downloadable"
+                        header="Download"
+                        sortable
+                        style="min-width: 8rem">
                         <template #body="{ data }">
-                            <Badge :value="data.is_downloadable ? 'Yes' : 'No'" :severity="data.is_downloadable ? 'success' : 'info'" />
+                            <Badge
+                                :value="data.is_downloadable ? 'Yes' : 'No'"
+                                :severity="data.is_downloadable ? 'success' : 'info'" />
                         </template>
                     </Column>
 
@@ -410,15 +488,39 @@ const getDrmTypeLabel = (drmType) => {
                         </template>
                     </Column>
 
-                    <Column field="download_count" header="Downloads" sortable style="min-width: 8rem"></Column>
+                    <Column
+                        field="download_count"
+                        header="Downloads"
+                        sortable
+                        style="min-width: 8rem"></Column>
 
                     <Column style="min-width: 12rem">
                         <template #body="{ data }">
                             <div class="flex gap-2">
-                                <Button icon="pi pi-eye" class="p-button-rounded p-button-text" tooltip="View Details" tooltipOptions="{ position: 'top' }" @click="viewEbook(data)" />
-                                <Button icon="pi pi-book" class="p-button-rounded p-button-text p-button-success" tooltip="Read Online" tooltipOptions="{ position: 'top' }" @click="readEbook(data)" />
-                                <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-plain" tooltip="Edit" tooltipOptions="{ position: 'top' }" @click="editEbook(data)" />
-                                <Button icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" tooltip="Delete" tooltipOptions="{ position: 'top' }" @click="confirmDeleteEbook(data)" />
+                                <Button
+                                    icon="pi pi-eye"
+                                    class="p-button-rounded p-button-text"
+                                    tooltip="View Details"
+                                    tooltipOptions="{ position: 'top' }"
+                                    @click="viewEbook(data)" />
+                                <Button
+                                    icon="pi pi-book"
+                                    class="p-button-rounded p-button-text p-button-success"
+                                    tooltip="Read Online"
+                                    tooltipOptions="{ position: 'top' }"
+                                    @click="readEbook(data)" />
+                                <Button
+                                    icon="pi pi-pencil"
+                                    class="p-button-rounded p-button-text p-button-plain"
+                                    tooltip="Edit"
+                                    tooltipOptions="{ position: 'top' }"
+                                    @click="editEbook(data)" />
+                                <Button
+                                    icon="pi pi-trash"
+                                    class="p-button-rounded p-button-text p-button-danger"
+                                    tooltip="Delete"
+                                    tooltipOptions="{ position: 'top' }"
+                                    @click="confirmDeleteEbook(data)" />
                             </div>
                         </template>
                     </Column>

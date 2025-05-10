@@ -163,12 +163,20 @@ const submitForm = async () => {
     submitted.value = true;
 
     // Form validation
-    if (!book.value.title || !book.value.availability_status || !book.value.library_branch_id || !book.value.category_id) {
+    if (
+        !book.value.title ||
+        !book.value.availability_status ||
+        !book.value.library_branch_id ||
+        !book.value.category_id
+    ) {
         return;
     }
 
     // Validate publication year
-    if (book.value.publication_year && (book.value.publication_year < 1000 || book.value.publication_year > currentYear)) {
+    if (
+        book.value.publication_year &&
+        (book.value.publication_year < 1000 || book.value.publication_year > currentYear)
+    ) {
         return;
     }
 
@@ -223,8 +231,14 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="title" class="font-bold">Title*</label>
-                                        <InputText id="title" v-model="book.title" :class="{ 'p-invalid': submitted && !book.title }" placeholder="Enter book title" />
-                                        <small v-if="submitted && !book.title" class="p-error">Title is required</small>
+                                        <InputText
+                                            id="title"
+                                            v-model="book.title"
+                                            :class="{ 'p-invalid': submitted && !book.title }"
+                                            placeholder="Enter book title" />
+                                        <small v-if="submitted && !book.title" class="p-error"
+                                            >Title is required</small
+                                        >
                                     </div>
                                 </div>
 
@@ -232,7 +246,10 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="isbn" class="font-bold">ISBN</label>
-                                        <InputText id="isbn" v-model="book.isbn" placeholder="Enter ISBN (optional)" />
+                                        <InputText
+                                            id="isbn"
+                                            v-model="book.isbn"
+                                            placeholder="Enter ISBN (optional)" />
                                     </div>
                                 </div>
 
@@ -240,16 +257,35 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="author" class="font-bold">Author</label>
-                                        <InputText id="author" v-model="book.author" placeholder="Author name" />
+                                        <InputText
+                                            id="author"
+                                            v-model="book.author"
+                                            placeholder="Author name" />
                                     </div>
                                 </div>
 
                                 <!-- Publication Year -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publication_year" class="font-bold">Publication Year</label>
-                                        <InputNumber id="publication_year" v-model="book.publication_year" :min="1000" :max="currentYear" placeholder="Publication year" />
-                                        <small v-if="book.publication_year && (book.publication_year < 1000 || book.publication_year > currentYear)" class="p-error"> Publication year must be between 1000 and {{ currentYear }} </small>
+                                        <label for="publication_year" class="font-bold"
+                                            >Publication Year</label
+                                        >
+                                        <InputNumber
+                                            id="publication_year"
+                                            v-model="book.publication_year"
+                                            :min="1000"
+                                            :max="currentYear"
+                                            placeholder="Publication year" />
+                                        <small
+                                            v-if="
+                                                book.publication_year &&
+                                                (book.publication_year < 1000 ||
+                                                    book.publication_year > currentYear)
+                                            "
+                                            class="p-error">
+                                            Publication year must be between 1000 and
+                                            {{ currentYear }}
+                                        </small>
                                     </div>
                                 </div>
 
@@ -257,7 +293,10 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="edition" class="font-bold">Edition</label>
-                                        <InputText id="edition" v-model="book.edition" placeholder="Book edition" />
+                                        <InputText
+                                            id="edition"
+                                            v-model="book.edition"
+                                            placeholder="Book edition" />
                                     </div>
                                 </div>
 
@@ -265,7 +304,13 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="language" class="font-bold">Language</label>
-                                        <Dropdown id="language" v-model="book.language" :options="languages" optionLabel="name" optionValue="code" placeholder="Select language" />
+                                        <Dropdown
+                                            id="language"
+                                            v-model="book.language"
+                                            :options="languages"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select language" />
                                     </div>
                                 </div>
                             </div>
@@ -279,7 +324,11 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="pages" class="font-bold">Number of Pages</label>
-                                        <InputNumber id="pages" v-model="book.pages" :min="1" placeholder="Number of pages" />
+                                        <InputNumber
+                                            id="pages"
+                                            v-model="book.pages"
+                                            :min="1"
+                                            placeholder="Number of pages" />
                                     </div>
                                 </div>
 
@@ -287,7 +336,13 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="cover_type" class="font-bold">Cover Type</label>
-                                        <Dropdown id="cover_type" v-model="book.cover_type" :options="coverTypes" optionLabel="name" optionValue="code" placeholder="Select cover type" />
+                                        <Dropdown
+                                            id="cover_type"
+                                            v-model="book.cover_type"
+                                            :options="coverTypes"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select cover type" />
                                     </div>
                                 </div>
 
@@ -295,15 +350,24 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="dimensions" class="font-bold">Dimensions</label>
-                                        <InputText id="dimensions" v-model="book.dimensions" placeholder="e.g., 9 x 6 x 1 inches" />
+                                        <InputText
+                                            id="dimensions"
+                                            v-model="book.dimensions"
+                                            placeholder="e.g., 9 x 6 x 1 inches" />
                                     </div>
                                 </div>
 
                                 <!-- Weight -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="weight_grams" class="font-bold">Weight (grams)</label>
-                                        <InputNumber id="weight_grams" v-model="book.weight_grams" :min="1" placeholder="Weight in grams" />
+                                        <label for="weight_grams" class="font-bold"
+                                            >Weight (grams)</label
+                                        >
+                                        <InputNumber
+                                            id="weight_grams"
+                                            v-model="book.weight_grams"
+                                            :min="1"
+                                            placeholder="Weight in grams" />
                                     </div>
                                 </div>
                             </div>
@@ -316,7 +380,9 @@ const cancelEdit = () => {
                                 <!-- Library Branch -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="library_branch_id" class="font-bold">Library Branch*</label>
+                                        <label for="library_branch_id" class="font-bold"
+                                            >Library Branch*</label
+                                        >
                                         <Dropdown
                                             id="library_branch_id"
                                             v-model="book.library_branch_id"
@@ -324,9 +390,14 @@ const cancelEdit = () => {
                                             optionLabel="name"
                                             optionValue="id"
                                             placeholder="Select library branch"
-                                            :class="{ 'p-invalid': submitted && !book.library_branch_id }"
-                                        />
-                                        <small v-if="submitted && !book.library_branch_id" class="p-error">Library branch is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !book.library_branch_id
+                                            }" />
+                                        <small
+                                            v-if="submitted && !book.library_branch_id"
+                                            class="p-error"
+                                            >Library branch is required</small
+                                        >
                                     </div>
                                 </div>
 
@@ -334,7 +405,13 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="shelf_id" class="font-bold">Shelf</label>
-                                        <Dropdown id="shelf_id" v-model="book.shelf_id" :options="shelves" optionLabel="name" optionValue="id" placeholder="Select shelf" />
+                                        <Dropdown
+                                            id="shelf_id"
+                                            v-model="book.shelf_id"
+                                            :options="shelves"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select shelf" />
                                     </div>
                                 </div>
 
@@ -342,24 +419,48 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="category_id" class="font-bold">Category*</label>
-                                        <Dropdown id="category_id" v-model="book.category_id" :options="categories" optionLabel="name" optionValue="id" placeholder="Select category" :class="{ 'p-invalid': submitted && !book.category_id }" />
-                                        <small v-if="submitted && !book.category_id" class="p-error">Category is required</small>
+                                        <Dropdown
+                                            id="category_id"
+                                            v-model="book.category_id"
+                                            :options="categories"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select category"
+                                            :class="{
+                                                'p-invalid': submitted && !book.category_id
+                                            }" />
+                                        <small v-if="submitted && !book.category_id" class="p-error"
+                                            >Category is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Publisher -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publisher_id" class="font-bold">Publisher</label>
-                                        <Dropdown id="publisher_id" v-model="book.publisher_id" :options="publishers" optionLabel="name" optionValue="id" placeholder="Select publisher" />
+                                        <label for="publisher_id" class="font-bold"
+                                            >Publisher</label
+                                        >
+                                        <Dropdown
+                                            id="publisher_id"
+                                            v-model="book.publisher_id"
+                                            :options="publishers"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select publisher" />
                                     </div>
                                 </div>
 
                                 <!-- Shelf Location Detail -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="shelf_location_detail" class="font-bold">Shelf Location Detail</label>
-                                        <InputText id="shelf_location_detail" v-model="book.shelf_location_detail" placeholder="e.g., Row 3, Position 12" />
+                                        <label for="shelf_location_detail" class="font-bold"
+                                            >Shelf Location Detail</label
+                                        >
+                                        <InputText
+                                            id="shelf_location_detail"
+                                            v-model="book.shelf_location_detail"
+                                            placeholder="e.g., Row 3, Position 12" />
                                     </div>
                                 </div>
 
@@ -367,14 +468,19 @@ const cancelEdit = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="barcode" class="font-bold">Barcode</label>
-                                        <InputText id="barcode" v-model="book.barcode" placeholder="Book barcode" />
+                                        <InputText
+                                            id="barcode"
+                                            v-model="book.barcode"
+                                            placeholder="Book barcode" />
                                     </div>
                                 </div>
 
                                 <!-- Status -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="availability_status" class="font-bold">Availability Status*</label>
+                                        <label for="availability_status" class="font-bold"
+                                            >Availability Status*</label
+                                        >
                                         <Dropdown
                                             id="availability_status"
                                             v-model="book.availability_status"
@@ -382,17 +488,27 @@ const cancelEdit = () => {
                                             optionLabel="name"
                                             optionValue="code"
                                             placeholder="Select status"
-                                            :class="{ 'p-invalid': submitted && !book.availability_status }"
-                                        />
-                                        <small v-if="submitted && !book.availability_status" class="p-error">Status is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !book.availability_status
+                                            }" />
+                                        <small
+                                            v-if="submitted && !book.availability_status"
+                                            class="p-error"
+                                            >Status is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Reference Only -->
                                 <div class="col-12 mb-3">
                                     <div class="field-checkbox">
-                                        <Checkbox id="reference_only" v-model="book.reference_only" :binary="true" />
-                                        <label for="reference_only" class="ml-2">Reference Only (Not for borrowing)</label>
+                                        <Checkbox
+                                            id="reference_only"
+                                            v-model="book.reference_only"
+                                            :binary="true" />
+                                        <label for="reference_only" class="ml-2"
+                                            >Reference Only (Not for borrowing)</label
+                                        >
                                     </div>
                                 </div>
                             </div>
@@ -405,16 +521,27 @@ const cancelEdit = () => {
                                 <!-- Cover Image URL -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="cover_image_url" class="font-bold">Cover Image URL</label>
-                                        <InputText id="cover_image_url" v-model="book.cover_image_url" placeholder="URL to the book cover image" />
+                                        <label for="cover_image_url" class="font-bold"
+                                            >Cover Image URL</label
+                                        >
+                                        <InputText
+                                            id="cover_image_url"
+                                            v-model="book.cover_image_url"
+                                            placeholder="URL to the book cover image" />
                                     </div>
                                 </div>
 
                                 <!-- Description -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="description" class="font-bold">Description</label>
-                                        <Textarea id="description" v-model="book.description" rows="5" placeholder="Book description" />
+                                        <label for="description" class="font-bold"
+                                            >Description</label
+                                        >
+                                        <Textarea
+                                            id="description"
+                                            v-model="book.description"
+                                            rows="5"
+                                            placeholder="Book description" />
                                     </div>
                                 </div>
                             </div>
@@ -422,8 +549,18 @@ const cancelEdit = () => {
 
                         <!-- Form Buttons -->
                         <div class="col-12 mt-4 flex justify-content-end">
-                            <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary mr-2" @click="cancelEdit" type="button" />
-                            <Button label="Save Changes" icon="pi pi-check" class="p-button-primary" type="submit" :loading="saveLoading" />
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                class="p-button-outlined p-button-secondary mr-2"
+                                @click="cancelEdit"
+                                type="button" />
+                            <Button
+                                label="Save Changes"
+                                icon="pi pi-check"
+                                class="p-button-primary"
+                                type="submit"
+                                :loading="saveLoading" />
                         </div>
                     </div>
                 </form>

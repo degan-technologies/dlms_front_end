@@ -160,7 +160,14 @@ watch(
         sessionStorage.removeItem('assetType');
 
         // Determine which viewer to open based on asset type and session flags
-        if ((shouldOpenPdfViewer && isPdf.value) || (assetType === 'pdf' && (newValue.media_type === 'pdf' || newValue.asset_type === 'worksheet' || newValue.asset_type === 'research_paper' || newValue.asset_type === 'presentation'))) {
+        if (
+            (shouldOpenPdfViewer && isPdf.value) ||
+            (assetType === 'pdf' &&
+                (newValue.media_type === 'pdf' ||
+                    newValue.asset_type === 'worksheet' ||
+                    newValue.asset_type === 'research_paper' ||
+                    newValue.asset_type === 'presentation'))
+        ) {
             showPdfViewer.value = true;
             showMediaPlayer.value = false;
             asset.value.view_count++;
@@ -168,7 +175,11 @@ watch(
             setTimeout(() => {
                 initPdfViewer();
             }, 100);
-        } else if ((shouldOpenVideoPlayer && isYouTube.value) || (assetType === 'video' && (newValue.media_type === 'mp4' || newValue.asset_type === 'video'))) {
+        } else if (
+            (shouldOpenVideoPlayer && isYouTube.value) ||
+            (assetType === 'video' &&
+                (newValue.media_type === 'mp4' || newValue.asset_type === 'video'))
+        ) {
             showMediaPlayer.value = true;
             showPdfViewer.value = false;
             asset.value.view_count++;
@@ -197,8 +208,10 @@ const fetchAssetDetails = async () => {
                 category: { id: 1, name: 'Computer Science' },
                 publisher: { id: 1, name: 'Educational Media Inc.' },
                 availability_status: 'available',
-                cover_image_url: 'https://via.placeholder.com/800x1200.png?text=Introduction+to+Programming', // Fixed image URL
-                description: 'A comprehensive video course introducing programming concepts for beginners.',
+                cover_image_url:
+                    'https://via.placeholder.com/800x1200.png?text=Introduction+to+Programming', // Fixed image URL
+                description:
+                    'A comprehensive video course introducing programming concepts for beginners.',
                 asset_type: 'video',
                 source_type: 'youtube',
                 media_url: 'https://www.youtube.com/embed/zOjov-2OZ0E',
@@ -209,7 +222,8 @@ const fetchAssetDetails = async () => {
                 physical_condition: 'Excellent',
                 location_details: 'Digital Media Section, Server 2',
                 acquisition_date: '2022-06-15',
-                usage_instructions: "Video can be streamed directly from the library's digital platform. Requires a modern web browser with HTML5 support.",
+                usage_instructions:
+                    "Video can be streamed directly from the library's digital platform. Requires a modern web browser with HTML5 support.",
                 restricted_access: false,
                 language: 'en',
                 library_branch: { id: 1, name: 'Main Branch' },
@@ -228,10 +242,13 @@ const fetchAssetDetails = async () => {
                     author: 'Dr. Emily Richards',
                     asset_type: 'worksheet',
                     source_type: 'pdf',
-                    media_url: 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf', // Fixed PDF URL
+                    media_url:
+                        'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf', // Fixed PDF URL
                     media_type: 'pdf',
-                    cover_image_url: 'https://via.placeholder.com/800x1200.png?text=Python+Programming+Handbook', // Fixed image URL
-                    description: 'A comprehensive guide to advanced Python programming techniques including design patterns, optimization and more.',
+                    cover_image_url:
+                        'https://via.placeholder.com/800x1200.png?text=Python+Programming+Handbook', // Fixed image URL
+                    description:
+                        'A comprehensive guide to advanced Python programming techniques including design patterns, optimization and more.',
                     isbn: '9780987654321',
                     shelf_id: 'DIG-P025'
                 };
@@ -351,7 +368,8 @@ const loadPdfScript = () => {
         script.async = true;
         script.onload = () => {
             // Set the worker source correctly
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
             pdfScriptLoaded.value = true;
             resolve();
         };
@@ -408,7 +426,10 @@ const renderPage = async (pageNumber) => {
         pdfCanvasContext.value = canvas.getContext('2d');
 
         // Calculate scale based on viewport
-        const viewport = page.getViewport({ scale: pdfViewerScale.value, rotation: pdfRotation.value });
+        const viewport = page.getViewport({
+            scale: pdfViewerScale.value,
+            rotation: pdfRotation.value
+        });
 
         // Adjust canvas dimensions to match viewport
         canvas.width = viewport.width;
@@ -424,7 +445,10 @@ const renderPage = async (pageNumber) => {
         await renderTask.promise;
 
         // After rendering, update the search results position if any
-        if (searchResults.value.length > 0 && pdfCurrentPage.value === searchResults.value[currentSearchIndex.value]?.pageNumber) {
+        if (
+            searchResults.value.length > 0 &&
+            pdfCurrentPage.value === searchResults.value[currentSearchIndex.value]?.pageNumber
+        ) {
             highlightSearchResult(currentSearchIndex.value);
         }
     } catch (error) {
@@ -502,7 +526,10 @@ const searchInPdf = async () => {
             // Simple search - in a real app, use more sophisticated regex or string matching
             if (text.toLowerCase().includes(searchText.value.toLowerCase())) {
                 // Find all occurrences
-                const regex = new RegExp(searchText.value.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+                const regex = new RegExp(
+                    searchText.value.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),
+                    'gi'
+                );
                 let match;
 
                 while ((match = regex.exec(text)) !== null) {
@@ -991,7 +1018,10 @@ const toggleDarkMode = () => {
 <template>
     <div class="card">
         <div class="flex align-items-center mb-4">
-            <Button icon="pi pi-arrow-left" class="p-button-text p-button-rounded mr-2" @click="goBack" />
+            <Button
+                icon="pi pi-arrow-left"
+                class="p-button-text p-button-rounded mr-2"
+                @click="goBack" />
             <h5 class="m-0" v-if="asset">{{ asset.title }}</h5>
             <h5 class="m-0" v-else>Digital Asset Details</h5>
         </div>
@@ -1004,19 +1034,42 @@ const toggleDarkMode = () => {
             <!-- Asset details view -->
             <div class="col-12 md:col-4 flex flex-column align-items-center">
                 <div class="asset-thumbnail-container mb-4">
-                    <i :class="[getAssetIcon(asset.asset_type), 'asset-type-icon']" v-if="!asset.cover_image_url"></i>
-                    <img v-else :src="asset.cover_image_url" :alt="asset.title" class="asset-thumbnail shadow-4" />
+                    <i
+                        :class="[getAssetIcon(asset.asset_type), 'asset-type-icon']"
+                        v-if="!asset.cover_image_url"></i>
+                    <img
+                        v-else
+                        :src="asset.cover_image_url"
+                        :alt="asset.title"
+                        class="asset-thumbnail shadow-4" />
                 </div>
 
                 <div class="w-full">
                     <div class="flex justify-content-center gap-2 mb-4">
-                        <Button v-if="isPdf" label="Open PDF" icon="pi pi-file-pdf" severity="warning" @click="toggleMediaPlayer" />
-                        <Button v-else-if="['video', 'audio', 'presentation'].includes(asset.asset_type)" label="Play/View" icon="pi pi-play" severity="info" @click="toggleMediaPlayer" />
-                        <Button label="Download" icon="pi pi-download" severity="secondary" @click="downloadAsset" />
+                        <Button
+                            v-if="isPdf"
+                            label="Open PDF"
+                            icon="pi pi-file-pdf"
+                            severity="warning"
+                            @click="toggleMediaPlayer" />
+                        <Button
+                            v-else-if="
+                                ['video', 'audio', 'presentation'].includes(asset.asset_type)
+                            "
+                            label="Play/View"
+                            icon="pi pi-play"
+                            severity="info"
+                            @click="toggleMediaPlayer" />
+                        <Button
+                            label="Download"
+                            icon="pi pi-download"
+                            severity="secondary"
+                            @click="downloadAsset" />
                     </div>
 
                     <!-- ISBN and Shelf ID Display -->
-                    <div class="flex flex-column align-items-center gap-2 mt-4 mb-4 p-3 surface-50 border-round">
+                    <div
+                        class="flex flex-column align-items-center gap-2 mt-4 mb-4 p-3 surface-50 border-round">
                         <div class="flex align-items-center gap-2">
                             <i class="pi pi-book text-primary" style="font-size: 1.2rem"></i>
                             <span class="font-bold">ISBN:</span>
@@ -1030,7 +1083,11 @@ const toggleDarkMode = () => {
                     </div>
 
                     <div class="flex justify-content-center mb-4">
-                        <Button icon="pi pi-pencil" label="Edit" class="p-button-outlined" @click="editAsset" />
+                        <Button
+                            icon="pi pi-pencil"
+                            label="Edit"
+                            class="p-button-outlined"
+                            @click="editAsset" />
                     </div>
 
                     <div v-if="asset.restricted_access" class="flex justify-content-center mb-4">
@@ -1053,7 +1110,10 @@ const toggleDarkMode = () => {
             <div class="col-12 md:col-8">
                 <h6 class="text-xl font-bold mb-2">{{ asset.title }}</h6>
                 <div class="flex align-items-center mb-4">
-                    <Tag :value="asset.asset_type" :icon="getAssetIcon(asset.asset_type)" class="mr-2" />
+                    <Tag
+                        :value="asset.asset_type"
+                        :icon="getAssetIcon(asset.asset_type)"
+                        class="mr-2" />
                     <span class="text-lg font-medium text-600">by {{ asset.author }}</span>
                 </div>
 
@@ -1068,11 +1128,17 @@ const toggleDarkMode = () => {
                         <ul class="asset-details-list">
                             <li><span>Asset Type:</span> {{ asset.asset_type }}</li>
                             <li><span>Format:</span> {{ asset.media_type }}</li>
-                            <li v-if="asset.duration_minutes"><span>Duration:</span> {{ asset.duration_minutes }} minutes</li>
+                            <li v-if="asset.duration_minutes">
+                                <span>Duration:</span> {{ asset.duration_minutes }} minutes
+                            </li>
                             <li><span>Creation Year:</span> {{ asset.publication_year }}</li>
-                            <li v-if="asset.manufacturer"><span>Producer:</span> {{ asset.manufacturer }}</li>
+                            <li v-if="asset.manufacturer">
+                                <span>Producer:</span> {{ asset.manufacturer }}
+                            </li>
                             <li v-if="asset.unique_id"><span>ID:</span> {{ asset.unique_id }}</li>
-                            <li><span>File Size:</span> {{ formatFileSize(asset.file_size_mb) }}</li>
+                            <li>
+                                <span>File Size:</span> {{ formatFileSize(asset.file_size_mb) }}
+                            </li>
                         </ul>
                     </div>
 
@@ -1108,21 +1174,45 @@ const toggleDarkMode = () => {
                         <h5 class="m-0">{{ asset.title }}</h5>
                     </div>
                     <div>
-                        <Button icon="pi pi-download" class="p-button-rounded p-button-outlined mr-2" tooltip="Download Video" tooltipOptions="{ position: 'left' }" @click="downloadAsset" />
-                        <Button icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text" tooltip="Close Player" tooltipOptions="{ position: 'left' }" @click="toggleMediaPlayer" />
+                        <Button
+                            icon="pi pi-download"
+                            class="p-button-rounded p-button-outlined mr-2"
+                            tooltip="Download Video"
+                            tooltipOptions="{ position: 'left' }"
+                            @click="downloadAsset" />
+                        <Button
+                            icon="pi pi-times"
+                            class="p-button-rounded p-button-danger p-button-text"
+                            tooltip="Close Player"
+                            tooltipOptions="{ position: 'left' }"
+                            @click="toggleMediaPlayer" />
                     </div>
                 </div>
 
                 <div class="youtube-player-container shadow-4 border-round overflow-hidden">
-                    <iframe :src="youtubeEmbedUrl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="youtube-iframe"></iframe>
+                    <iframe
+                        :src="youtubeEmbedUrl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        class="youtube-iframe"></iframe>
                 </div>
 
                 <div class="mt-4 p-3">
                     <div class="flex flex-column md:flex-row md:align-items-center gap-3 mb-3">
-                        <Tag :value="asset.asset_type" :icon="getAssetIcon(asset.asset_type)" severity="info" />
-                        <span class="text-600"><i class="pi pi-user mr-1"></i>{{ asset.author }}</span>
-                        <span class="text-600"><i class="pi pi-clock mr-1"></i>{{ asset.duration_minutes }} minutes</span>
-                        <span class="text-600"><i class="pi pi-calendar mr-1"></i>{{ asset.publication_year }}</span>
+                        <Tag
+                            :value="asset.asset_type"
+                            :icon="getAssetIcon(asset.asset_type)"
+                            severity="info" />
+                        <span class="text-600"
+                            ><i class="pi pi-user mr-1"></i>{{ asset.author }}</span
+                        >
+                        <span class="text-600"
+                            ><i class="pi pi-clock mr-1"></i
+                            >{{ asset.duration_minutes }} minutes</span
+                        >
+                        <span class="text-600"
+                            ><i class="pi pi-calendar mr-1"></i>{{ asset.publication_year }}</span
+                        >
                     </div>
 
                     <Divider />
@@ -1132,11 +1222,19 @@ const toggleDarkMode = () => {
 
                     <div class="mt-3 flex justify-content-between">
                         <div>
-                            <span class="p-badge p-badge-info"> <i class="pi pi-eye mr-1"></i>{{ asset.view_count }} views </span>
+                            <span class="p-badge p-badge-info">
+                                <i class="pi pi-eye mr-1"></i>{{ asset.view_count }} views
+                            </span>
                         </div>
                         <div>
-                            <Button icon="pi pi-share-alt" class="p-button-text p-button-sm" label="Share" />
-                            <Button icon="pi pi-bookmark" class="p-button-text p-button-sm" label="Save" />
+                            <Button
+                                icon="pi pi-share-alt"
+                                class="p-button-text p-button-sm"
+                                label="Share" />
+                            <Button
+                                icon="pi pi-bookmark"
+                                class="p-button-text p-button-sm"
+                                label="Save" />
                         </div>
                     </div>
                 </div>
@@ -1147,9 +1245,19 @@ const toggleDarkMode = () => {
         <div v-else-if="showPdfViewer && isPdf" class="col-12">
             <div :class="['pdf-container', { 'dark-mode': darkMode }]" ref="pdfElementRef">
                 <!-- Minimalist Canva-style top navigation bar -->
-                <div class="canva-navbar flex align-items-center justify-content-between" :class="{ 'fullscreen-header': isFullScreenPdf, 'study-mode-active': studyMode }">
+                <div
+                    class="canva-navbar flex align-items-center justify-content-between"
+                    :class="{
+                        'fullscreen-header': isFullScreenPdf,
+                        'study-mode-active': studyMode
+                    }">
                     <div class="flex align-items-center">
-                        <Button icon="pi pi-arrow-left" class="p-button-text p-button-rounded nav-button" @click="toggleMediaPlayer" tooltip="Back" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-arrow-left"
+                            class="p-button-text p-button-rounded nav-button"
+                            @click="toggleMediaPlayer"
+                            tooltip="Back"
+                            tooltipOptions="{ position: 'bottom' }" />
                         <div class="document-info">
                             <span class="document-title">{{ asset.title }}</span>
                         </div>
@@ -1157,40 +1265,103 @@ const toggleDarkMode = () => {
 
                     <div class="flex align-items-center nav-controls">
                         <!-- Page Navigation -->
-                        <Button icon="pi pi-chevron-left" class="p-button-text nav-button" @click="prevPage" :disabled="pdfCurrentPage <= 1" tooltip="Previous" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-chevron-left"
+                            class="p-button-text nav-button"
+                            @click="prevPage"
+                            :disabled="pdfCurrentPage <= 1"
+                            tooltip="Previous"
+                            tooltipOptions="{ position: 'bottom' }" />
                         <div class="page-indicator">
-                            <InputNumber v-model="pdfCurrentPage" :min="1" :max="pdfTotalPages" class="nav-input" :step="1" />
+                            <InputNumber
+                                v-model="pdfCurrentPage"
+                                :min="1"
+                                :max="pdfTotalPages"
+                                class="nav-input"
+                                :step="1" />
                             <span class="text-separator">/</span>
                             <span>{{ pdfTotalPages }}</span>
                         </div>
-                        <Button icon="pi pi-chevron-right" class="p-button-text nav-button" @click="nextPage" :disabled="pdfCurrentPage >= pdfTotalPages" tooltip="Next" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-chevron-right"
+                            class="p-button-text nav-button"
+                            @click="nextPage"
+                            :disabled="pdfCurrentPage >= pdfTotalPages"
+                            tooltip="Next"
+                            tooltipOptions="{ position: 'bottom' }" />
 
                         <!-- Search -->
                         <div class="nav-divider"></div>
                         <span class="p-input-icon-left nav-search">
                             <i class="pi pi-search"></i>
-                            <InputText v-model="searchText" placeholder="Search..." class="p-inputtext-sm" @keyup.enter="searchInPdf" />
+                            <InputText
+                                v-model="searchText"
+                                placeholder="Search..."
+                                class="p-inputtext-sm"
+                                @keyup.enter="searchInPdf" />
                         </span>
 
                         <!-- Zoom -->
                         <div class="nav-divider"></div>
-                        <Button icon="pi pi-search-minus" class="p-button-text nav-button" @click="zoomOut" :disabled="pdfViewerScale <= 0.5" tooltip="Zoom Out" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-search-minus"
+                            class="p-button-text nav-button"
+                            @click="zoomOut"
+                            :disabled="pdfViewerScale <= 0.5"
+                            tooltip="Zoom Out"
+                            tooltipOptions="{ position: 'bottom' }" />
                         <span class="zoom-level">{{ Math.round(pdfViewerScale * 100) }}%</span>
-                        <Button icon="pi pi-search-plus" class="p-button-text nav-button" @click="zoomIn" :disabled="pdfViewerScale >= 3" tooltip="Zoom In" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-search-plus"
+                            class="p-button-text nav-button"
+                            @click="zoomIn"
+                            :disabled="pdfViewerScale >= 3"
+                            tooltip="Zoom In"
+                            tooltipOptions="{ position: 'bottom' }" />
 
                         <!-- Study Mode Button -->
                         <div class="nav-divider"></div>
-                        <Button :class="['study-mode-button p-button-text', { 'study-mode-active': studyMode }]" @click="toggleStudyMode" tooltipOptions="{ position: 'bottom' }">
+                        <Button
+                            :class="[
+                                'study-mode-button p-button-text',
+                                { 'study-mode-active': studyMode }
+                            ]"
+                            @click="toggleStudyMode"
+                            tooltipOptions="{ position: 'bottom' }">
                             <i class="pi pi-book mr-2"></i>
                             <span>Study Mode</span>
                         </Button>
 
                         <!-- Display Options -->
                         <div class="nav-divider"></div>
-                        <Button v-if="!darkMode" icon="pi pi-moon" class="p-button-text nav-button" @click="toggleDarkMode" tooltip="Dark Mode" tooltipOptions="{ position: 'bottom' }" />
-                        <Button v-else icon="pi pi-sun" class="p-button-text nav-button" @click="toggleDarkMode" tooltip="Light Mode" tooltipOptions="{ position: 'bottom' }" />
-                        <Button v-if="!isFullScreenPdf" icon="pi pi-window-maximize" class="p-button-text nav-button" @click="toggleFullScreenPdf" tooltip="Fullscreen" tooltipOptions="{ position: 'bottom' }" />
-                        <Button v-else icon="pi pi-window-minimize" class="p-button-text nav-button" @click="toggleFullScreenPdf" tooltip="Exit Fullscreen" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-if="!darkMode"
+                            icon="pi pi-moon"
+                            class="p-button-text nav-button"
+                            @click="toggleDarkMode"
+                            tooltip="Dark Mode"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-else
+                            icon="pi pi-sun"
+                            class="p-button-text nav-button"
+                            @click="toggleDarkMode"
+                            tooltip="Light Mode"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-if="!isFullScreenPdf"
+                            icon="pi pi-window-maximize"
+                            class="p-button-text nav-button"
+                            @click="toggleFullScreenPdf"
+                            tooltip="Fullscreen"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-else
+                            icon="pi pi-window-minimize"
+                            class="p-button-text nav-button"
+                            @click="toggleFullScreenPdf"
+                            tooltip="Exit Fullscreen"
+                            tooltipOptions="{ position: 'bottom' }" />
                     </div>
                 </div>
 
@@ -1199,17 +1370,61 @@ const toggleDarkMode = () => {
                     <div class="study-timer">
                         <i class="pi pi-clock text-primary mr-1"></i>
                         <span>{{ formatStudyTime() }}</span>
-                        <Button v-if="!studyTimerActive" icon="pi pi-play" class="p-button-text p-button-sm timer-button" @click="startStudyTimer" tooltip="Start Timer" tooltipOptions="{ position: 'bottom' }" />
-                        <Button v-else icon="pi pi-pause" class="p-button-text p-button-sm timer-button" @click="pauseStudyTimer" tooltip="Pause Timer" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-if="!studyTimerActive"
+                            icon="pi pi-play"
+                            class="p-button-text p-button-sm timer-button"
+                            @click="startStudyTimer"
+                            tooltip="Start Timer"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-else
+                            icon="pi pi-pause"
+                            class="p-button-text p-button-sm timer-button"
+                            @click="pauseStudyTimer"
+                            tooltip="Pause Timer"
+                            tooltipOptions="{ position: 'bottom' }" />
                     </div>
 
                     <div class="flex align-items-center study-tools">
-                        <Button icon="pi pi-bookmark" class="p-button-text study-tool-button" @click="addBookmark" tooltip="Add Bookmark" tooltipOptions="{ position: 'bottom' }" />
-                        <Button icon="pi pi-file-edit" class="p-button-text study-tool-button" @click="addQuickNote" tooltip="Quick Note" tooltipOptions="{ position: 'bottom' }" />
-                        <Button icon="pi pi-highlight" class="p-button-text study-tool-button" @click="addTextHighlight" tooltip="Highlight" tooltipOptions="{ position: 'bottom' }" />
-                        <Button icon="pi pi-id-card" class="p-button-text study-tool-button" @click="openFlashcardDialog" tooltip="Create Flashcard" tooltipOptions="{ position: 'bottom' }" />
-                        <Button icon="pi pi-search" class="p-button-text study-tool-button" @click="openDictionary" tooltip="Dictionary" tooltipOptions="{ position: 'bottom' }" />
-                        <Button :class="['p-button-text study-tool-button', { 'study-tool-active': showStudyTools }]" @click="showStudyTools = !showStudyTools" tooltip="Study Panel" tooltipOptions="{ position: 'bottom' }">
+                        <Button
+                            icon="pi pi-bookmark"
+                            class="p-button-text study-tool-button"
+                            @click="addBookmark"
+                            tooltip="Add Bookmark"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-file-edit"
+                            class="p-button-text study-tool-button"
+                            @click="addQuickNote"
+                            tooltip="Quick Note"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-highlight"
+                            class="p-button-text study-tool-button"
+                            @click="addTextHighlight"
+                            tooltip="Highlight"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-id-card"
+                            class="p-button-text study-tool-button"
+                            @click="openFlashcardDialog"
+                            tooltip="Create Flashcard"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-search"
+                            class="p-button-text study-tool-button"
+                            @click="openDictionary"
+                            tooltip="Dictionary"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            :class="[
+                                'p-button-text study-tool-button',
+                                { 'study-tool-active': showStudyTools }
+                            ]"
+                            @click="showStudyTools = !showStudyTools"
+                            tooltip="Study Panel"
+                            tooltipOptions="{ position: 'bottom' }">
                             <i class="pi pi-th-large"></i>
                         </Button>
                     </div>
@@ -1218,11 +1433,20 @@ const toggleDarkMode = () => {
                 <!-- PDF Content Area -->
                 <div class="pdf-content-container grid">
                     <!-- PDF Content Area -->
-                    <div :class="{ 'col-12': !showSearchPanel && !showStudyTools, 'col-9': showSearchPanel || showStudyTools }">
+                    <div
+                        :class="{
+                            'col-12': !showSearchPanel && !showStudyTools,
+                            'col-9': showSearchPanel || showStudyTools
+                        }">
                         <!-- Vue PDF Viewer -->
 
-                        <div class="vue-pdf-container" :style="{ height: isFullScreenPdf ? 'calc(100vh - 130px)' : '700px' }">
-                            <VPdfViewer :src="asset.media_url" :theme="darkMode ? 'dark' : 'light'" class="vue-pdf-viewer" />
+                        <div
+                            class="vue-pdf-container"
+                            :style="{ height: isFullScreenPdf ? 'calc(100vh - 130px)' : '700px' }">
+                            <VPdfViewer
+                                :src="asset.media_url"
+                                :theme="darkMode ? 'dark' : 'light'"
+                                class="vue-pdf-viewer" />
                         </div>
                     </div>
 
@@ -1230,23 +1454,55 @@ const toggleDarkMode = () => {
                     <div class="col-3" v-if="showSearchPanel || showStudyTools">
                         <TabView>
                             <!-- Search Results Tab -->
-                            <TabPanel header="Search Results" :disabled="searchResults.length === 0" v-if="showSearchPanel">
+                            <TabPanel
+                                header="Search Results"
+                                :disabled="searchResults.length === 0"
+                                v-if="showSearchPanel">
                                 <div class="search-results p-3">
-                                    <h6 class="mb-3">Found {{ searchResults.length }} results for "{{ searchText }}"</h6>
-                                    <div v-if="searchInProgress" class="flex justify-content-center">
+                                    <h6 class="mb-3">
+                                        Found {{ searchResults.length }} results for "{{
+                                            searchText
+                                        }}"
+                                    </h6>
+                                    <div
+                                        v-if="searchInProgress"
+                                        class="flex justify-content-center">
                                         <ProgressSpinner style="height: 50px" strokeWidth="4" />
                                     </div>
                                     <ul class="list-none p-0 m-0">
-                                        <li v-for="(result, i) in searchResults" :key="i" :class="['p-2 border-round mb-2 cursor-pointer', i === currentSearchIndex ? 'surface-200' : 'surface-hover']" @click="goToSearchResult(i)">
+                                        <li
+                                            v-for="(result, i) in searchResults"
+                                            :key="i"
+                                            :class="[
+                                                'p-2 border-round mb-2 cursor-pointer',
+                                                i === currentSearchIndex
+                                                    ? 'surface-200'
+                                                    : 'surface-hover'
+                                            ]"
+                                            @click="goToSearchResult(i)">
                                             <div class="flex align-items-center">
-                                                <Badge :value="result.pageNumber" severity="info" class="mr-2" />
+                                                <Badge
+                                                    :value="result.pageNumber"
+                                                    severity="info"
+                                                    class="mr-2" />
                                                 <span class="font-medium">{{ result.text }}</span>
                                             </div>
                                         </li>
                                     </ul>
-                                    <div v-if="searchResults.length > 0" class="flex justify-content-between mt-3">
-                                        <Button icon="pi pi-arrow-up" label="Previous" class="p-button-sm p-button-outlined" @click="prevSearchResult" />
-                                        <Button icon="pi pi-arrow-down" iconPos="right" label="Next" class="p-button-sm p-button-outlined" @click="nextSearchResult" />
+                                    <div
+                                        v-if="searchResults.length > 0"
+                                        class="flex justify-content-between mt-3">
+                                        <Button
+                                            icon="pi pi-arrow-up"
+                                            label="Previous"
+                                            class="p-button-sm p-button-outlined"
+                                            @click="prevSearchResult" />
+                                        <Button
+                                            icon="pi pi-arrow-down"
+                                            iconPos="right"
+                                            label="Next"
+                                            class="p-button-sm p-button-outlined"
+                                            @click="nextSearchResult" />
                                     </div>
                                 </div>
                             </TabPanel>
@@ -1254,28 +1510,56 @@ const toggleDarkMode = () => {
                             <!-- Study Notes Tab -->
                             <TabPanel header="Study Notes" v-if="studyMode && showStudyTools">
                                 <div class="p-3">
-                                    <h6 class="mb-3 flex align-items-center"><i class="pi pi-book mr-2"></i>Study Notes</h6>
+                                    <h6 class="mb-3 flex align-items-center">
+                                        <i class="pi pi-book mr-2"></i>Study Notes
+                                    </h6>
 
                                     <!-- Add new note input -->
                                     <div class="mb-3">
-                                        <Textarea v-model="currentStudyNote" rows="3" class="w-full" placeholder="Take notes as you study..." />
-                                        <div class="flex justify-content-between align-items-center mt-2">
-                                            <small class="text-500">Page: {{ pdfCurrentPage }}</small>
-                                            <Button label="Add Note" icon="pi pi-plus" class="p-button-sm" @click="addStudyNote" :disabled="!currentStudyNote.trim()" />
+                                        <Textarea
+                                            v-model="currentStudyNote"
+                                            rows="3"
+                                            class="w-full"
+                                            placeholder="Take notes as you study..." />
+                                        <div
+                                            class="flex justify-content-between align-items-center mt-2">
+                                            <small class="text-500"
+                                                >Page: {{ pdfCurrentPage }}</small
+                                            >
+                                            <Button
+                                                label="Add Note"
+                                                icon="pi pi-plus"
+                                                class="p-button-sm"
+                                                @click="addStudyNote"
+                                                :disabled="!currentStudyNote.trim()" />
                                         </div>
                                     </div>
 
                                     <!-- Notes list -->
-                                    <div v-if="studyNotes.length === 0" class="text-center p-5 surface-ground border-round">
-                                        <i class="pi pi-file-edit mb-3" style="font-size: 2rem; color: var(--text-color-secondary)"></i>
+                                    <div
+                                        v-if="studyNotes.length === 0"
+                                        class="text-center p-5 surface-ground border-round">
+                                        <i
+                                            class="pi pi-file-edit mb-3"
+                                            style="
+                                                font-size: 2rem;
+                                                color: var(--text-color-secondary);
+                                            "></i>
                                         <p class="m-0">Your study notes will appear here</p>
                                     </div>
 
                                     <ul v-else class="list-none p-0 m-0">
-                                        <li v-for="(note, i) in studyNotes" :key="note.id" class="mb-3 p-3 border-round surface-ground">
+                                        <li
+                                            v-for="(note, i) in studyNotes"
+                                            :key="note.id"
+                                            class="mb-3 p-3 border-round surface-ground">
                                             <div class="flex justify-content-between">
-                                                <Badge :value="`Page ${note.pageNumber}`" severity="info" />
-                                                <small class="text-500">{{ new Date(note.timestamp).toLocaleString() }}</small>
+                                                <Badge
+                                                    :value="`Page ${note.pageNumber}`"
+                                                    severity="info" />
+                                                <small class="text-500">{{
+                                                    new Date(note.timestamp).toLocaleString()
+                                                }}</small>
                                             </div>
                                             <p class="line-height-3 mt-2 mb-0">{{ note.text }}</p>
                                         </li>
@@ -1286,16 +1570,31 @@ const toggleDarkMode = () => {
                             <!-- Bookmarks Tab -->
                             <TabPanel header="Bookmarks" :disabled="bookmarkedPages.length === 0">
                                 <div class="p-3">
-                                    <h6 class="mb-3 flex align-items-center"><i class="pi pi-bookmark mr-2"></i>Bookmarks</h6>
+                                    <h6 class="mb-3 flex align-items-center">
+                                        <i class="pi pi-bookmark mr-2"></i>Bookmarks
+                                    </h6>
 
                                     <ul class="list-none p-0 m-0">
-                                        <li v-for="(bookmark, index) in bookmarkedPages" :key="index" class="flex align-items-start p-3 border-round mb-2 surface-hover cursor-pointer" @click="jumpToBookmark(bookmark)">
+                                        <li
+                                            v-for="(bookmark, index) in bookmarkedPages"
+                                            :key="index"
+                                            class="flex align-items-start p-3 border-round mb-2 surface-hover cursor-pointer"
+                                            @click="jumpToBookmark(bookmark)">
                                             <div class="flex-grow-1">
                                                 <div class="flex align-items-center">
-                                                    <Badge severity="info" :value="`Page ${bookmark.page}`" class="mr-2" />
-                                                    <small class="text-500">{{ new Date(bookmark.timestamp).toLocaleString() }}</small>
+                                                    <Badge
+                                                        severity="info"
+                                                        :value="`Page ${bookmark.page}`"
+                                                        class="mr-2" />
+                                                    <small class="text-500">{{
+                                                        new Date(
+                                                            bookmark.timestamp
+                                                        ).toLocaleString()
+                                                    }}</small>
                                                 </div>
-                                                <p v-if="bookmark.note" class="mt-2 mb-1 line-height-3 p-2 surface-100 border-round">
+                                                <p
+                                                    v-if="bookmark.note"
+                                                    class="mt-2 mb-1 line-height-3 p-2 surface-100 border-round">
                                                     {{ bookmark.note }}
                                                 </p>
                                             </div>
@@ -1320,7 +1619,12 @@ const toggleDarkMode = () => {
     </div>
 
     <!-- Enhanced Bookmark Dialog -->
-    <Dialog v-model:visible="bookmarkDialogVisible" header="Add Bookmark" :style="{ width: '30rem' }" :modal="true" class="p-fluid">
+    <Dialog
+        v-model:visible="bookmarkDialogVisible"
+        header="Add Bookmark"
+        :style="{ width: '30rem' }"
+        :modal="true"
+        class="p-fluid">
         <div class="p-3">
             <div class="mb-3 text-center">
                 <i class="pi pi-bookmark text-primary" style="font-size: 2rem"></i>
@@ -1328,29 +1632,58 @@ const toggleDarkMode = () => {
             </div>
             <div class="field">
                 <label for="bookmarkNote" class="font-bold block mb-2">Add Note (optional)</label>
-                <Textarea id="bookmarkNote" v-model="bookmarkNote" rows="5" class="w-full" placeholder="Add notes about this page to help you remember why it's important..." autoResize />
+                <Textarea
+                    id="bookmarkNote"
+                    v-model="bookmarkNote"
+                    rows="5"
+                    class="w-full"
+                    placeholder="Add notes about this page to help you remember why it's important..."
+                    autoResize />
             </div>
         </div>
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" @click="bookmarkDialogVisible = false" class="p-button-text" />
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                @click="bookmarkDialogVisible = false"
+                class="p-button-text" />
             <Button label="Save Bookmark" icon="pi pi-check" @click="saveBookmark" autofocus />
         </template>
     </Dialog>
 
     <!-- Quick Note Dialog -->
-    <Dialog v-model:visible="quickNoteDialogVisible" header="Add Quick Note" :style="{ width: '30rem' }" :modal="true" class="p-fluid">
+    <Dialog
+        v-model:visible="quickNoteDialogVisible"
+        header="Add Quick Note"
+        :style="{ width: '30rem' }"
+        :modal="true"
+        class="p-fluid">
         <div class="p-3">
             <div class="mb-3">
                 <div class="flex align-items-center mb-2">
                     <i class="pi pi-file-edit text-primary mr-2"></i>
                     <span class="font-bold">Add a note for page {{ pdfCurrentPage }}</span>
                 </div>
-                <Textarea v-model="quickNoteText" rows="4" class="w-full" placeholder="Write your study note here..." autoResize />
+                <Textarea
+                    v-model="quickNoteText"
+                    rows="4"
+                    class="w-full"
+                    placeholder="Write your study note here..."
+                    autoResize />
             </div>
         </div>
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" @click="quickNoteDialogVisible = false" class="p-button-text" />
-            <Button label="Save Note" icon="pi pi-check" @click="saveQuickNote" autofocus :disabled="!quickNoteText.trim()" />
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                @click="quickNoteDialogVisible = false"
+                class="p-button-text" />
+            <Button
+                label="Save Note"
+                icon="pi pi-check"
+                @click="saveQuickNote"
+                autofocus
+                :disabled="!quickNoteText.trim()" />
         </template>
     </Dialog>
 </template>

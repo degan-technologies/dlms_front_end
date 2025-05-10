@@ -116,7 +116,9 @@ const hasActiveFilters = computed(() => {
         isReferenceOnly.value ||
         selectedBranch.value !== '' ||
         selectedLanguage.value !== '' ||
-        (yearFilters.value.range && (yearFilters.value.range[0] !== yearRange.value[0] || yearFilters.value.range[1] !== yearRange.value[1])) ||
+        (yearFilters.value.range &&
+            (yearFilters.value.range[0] !== yearRange.value[0] ||
+                yearFilters.value.range[1] !== yearRange.value[1])) ||
         filters.value.global.value
     );
 });
@@ -211,7 +213,11 @@ const activeFiltersList = computed(() => {
     }
 
     // Year range
-    if (yearFilters.value.range && (yearFilters.value.range[0] !== yearRange.value[0] || yearFilters.value.range[1] !== yearRange.value[1])) {
+    if (
+        yearFilters.value.range &&
+        (yearFilters.value.range[0] !== yearRange.value[0] ||
+            yearFilters.value.range[1] !== yearRange.value[1])
+    ) {
         activeFilters.push({
             type: 'year',
             label: `Year: ${yearFilters.value.range[0]} - ${yearFilters.value.range[1]}`,
@@ -321,9 +327,13 @@ const fetchBooks = async () => {
                     availability_status: 'available',
                     author: 'John Smith',
                     publication_year: 2020,
-                    description: 'A comprehensive guide to programming principles and practices for beginners and advanced developers alike. This book covers fundamental concepts, design patterns, and best practices.',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/51lxfl+cOvL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['programming', 'computer science', 'software development'] },
+                    description:
+                        'A comprehensive guide to programming principles and practices for beginners and advanced developers alike. This book covers fundamental concepts, design patterns, and best practices.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/51lxfl+cOvL._AC_UF1000,1000_QL80_.jpg',
+                    metadata: {
+                        keywords: ['programming', 'computer science', 'software development']
+                    },
                     language: 'en',
                     library_branch_id: 1,
                     library_branch: { id: 1, name: 'Main Library' },
@@ -351,8 +361,10 @@ const fetchBooks = async () => {
                     availability_status: 'checked_out',
                     author: 'Jane Doe',
                     publication_year: 2019,
-                    description: 'This book provides a thorough introduction to data structures and algorithms. It covers arrays, linked lists, trees, graphs, and various searching and sorting algorithms with practical examples.',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61B4hbYYv+L._AC_UF1000,1000_QL80_.jpg',
+                    description:
+                        'This book provides a thorough introduction to data structures and algorithms. It covers arrays, linked lists, trees, graphs, and various searching and sorting algorithms with practical examples.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/61B4hbYYv+L._AC_UF1000,1000_QL80_.jpg',
                     metadata: { keywords: ['data structures', 'algorithms', 'computer science'] },
                     language: 'en',
                     library_branch_id: 1,
@@ -381,8 +393,10 @@ const fetchBooks = async () => {
                     availability_status: 'available',
                     author: 'Robert Johnson',
                     publication_year: 2021,
-                    description: 'A comprehensive introduction to the fundamental principles of psychology. This book explores human behavior, cognitive processes, development, and psychological disorders.',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/71QKrIA4mCL._AC_UF1000,1000_QL80_.jpg',
+                    description:
+                        'A comprehensive introduction to the fundamental principles of psychology. This book explores human behavior, cognitive processes, development, and psychological disorders.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/71QKrIA4mCL._AC_UF1000,1000_QL80_.jpg',
                     metadata: { keywords: ['psychology', 'behavior', 'cognition'] },
                     language: 'en',
                     library_branch_id: 2,
@@ -413,7 +427,8 @@ const fetchBooks = async () => {
                     publication_year: 1925,
                     description:
                         "Set in the Jazz Age on Long Island, near New York City, the novel depicts first-person narrator Nick Carraway's interactions with mysterious millionaire Jay Gatsby and Gatsby's obsession to reunite with his former lover, Daisy Buchanan.",
-                    cover_image_url: 'https://m.media-amazon.com/images/I/71FTb9X6wsL._AC_UF1000,1000_QL80_.jpg',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/71FTb9X6wsL._AC_UF1000,1000_QL80_.jpg',
                     metadata: { keywords: ['classic', 'american literature', '20th century'] },
                     language: 'en',
                     library_branch_id: 1,
@@ -442,8 +457,10 @@ const fetchBooks = async () => {
                     availability_status: 'lost',
                     author: 'Michael Brown',
                     publication_year: 2018,
-                    description: 'A practical approach to calculus for engineering students. This book covers differential and integral calculus with applications in various engineering disciplines.',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61Gnycyr0FL._AC_UF1000,1000_QL80_.jpg',
+                    description:
+                        'A practical approach to calculus for engineering students. This book covers differential and integral calculus with applications in various engineering disciplines.',
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/61Gnycyr0FL._AC_UF1000,1000_QL80_.jpg',
                     metadata: { keywords: ['calculus', 'mathematics', 'engineering'] },
                     language: 'en',
                     library_branch_id: 3,
@@ -474,8 +491,11 @@ const fetchBooks = async () => {
                     publication_year: 1813,
                     description:
                         'Pride and Prejudice follows the turbulent relationship between Elizabeth Bennet, the daughter of a country gentleman, and Fitzwilliam Darcy, a rich aristocratic landowner. They must overcome the titular sins of pride and prejudice.',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['classic', 'romance', '19th century', 'english literature'] },
+                    cover_image_url:
+                        'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
+                    metadata: {
+                        keywords: ['classic', 'romance', '19th century', 'english literature']
+                    },
                     language: 'en',
                     library_branch_id: 1,
                     library_branch: { id: 1, name: 'Main Library' },
@@ -607,19 +627,39 @@ const formatStatus = (status) => {
 <template>
     <div class="card">
         <h5 class="m-0">Physical Books Collection</h5>
-        <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage the physical books available in the library.</p>
+        <p class="mt-2 mb-4 text-gray-600">
+            Browse, search, and manage the physical books available in the library.
+        </p>
 
         <!-- Enhanced Filter Section with E-commerce style -->
         <div class="filter-container mb-4">
             <!-- Search Bar with Advanced Filter Toggle -->
-            <div class="flex flex-column md:flex-row align-items-center justify-content-between gap-3 mb-3">
+            <div
+                class="flex flex-column md:flex-row align-items-center justify-content-between gap-3 mb-3">
                 <span class="p-input-icon-left w-full md:w-7">
                     <i class="pi pi-search" />
-                    <InputText v-model="filters.global.value" placeholder="Search books by title, author, ISBN, shelf ID..." class="w-full" />
+                    <InputText
+                        v-model="filters.global.value"
+                        placeholder="Search books by title, author, ISBN, shelf ID..."
+                        class="w-full" />
                 </span>
                 <div class="flex align-items-center gap-2">
-                    <Button type="button" icon="pi pi-filter" label="Filters" @click="displayFilters = !displayFilters" :class="{ 'p-button-outlined': !displayFilters, 'p-button-info': displayFilters }" />
-                    <Button type="button" icon="pi pi-filter-slash" class="p-button-text" @click="resetFilters" :disabled="!hasActiveFilters" title="Clear all filters" />
+                    <Button
+                        type="button"
+                        icon="pi pi-filter"
+                        label="Filters"
+                        @click="displayFilters = !displayFilters"
+                        :class="{
+                            'p-button-outlined': !displayFilters,
+                            'p-button-info': displayFilters
+                        }" />
+                    <Button
+                        type="button"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        @click="resetFilters"
+                        :disabled="!hasActiveFilters"
+                        title="Clear all filters" />
                 </div>
             </div>
 
@@ -633,9 +673,18 @@ const formatStatus = (status) => {
                             <h6>Category</h6>
                         </div>
                         <div class="filter-options">
-                            <div v-for="category in categories" :key="category.value" class="filter-option">
-                                <Checkbox :inputId="`category-${category.value}`" name="category" :value="category.value" v-model="selectedCategories" />
-                                <label :for="`category-${category.value}`" class="ml-2">{{ category.label }}</label>
+                            <div
+                                v-for="category in categories"
+                                :key="category.value"
+                                class="filter-option">
+                                <Checkbox
+                                    :inputId="`category-${category.value}`"
+                                    name="category"
+                                    :value="category.value"
+                                    v-model="selectedCategories" />
+                                <label :for="`category-${category.value}`" class="ml-2">{{
+                                    category.label
+                                }}</label>
                             </div>
                         </div>
                     </div>
@@ -647,10 +696,21 @@ const formatStatus = (status) => {
                             <h6>Availability</h6>
                         </div>
                         <div class="filter-options">
-                            <div v-for="status in statusOptions" :key="status.value" class="filter-option" v-show="status.value !== ''">
-                                <Checkbox :inputId="`status-${status.value}`" name="status" :value="status.value" v-model="selectedStatuses" />
+                            <div
+                                v-for="status in statusOptions"
+                                :key="status.value"
+                                class="filter-option"
+                                v-show="status.value !== ''">
+                                <Checkbox
+                                    :inputId="`status-${status.value}`"
+                                    name="status"
+                                    :value="status.value"
+                                    v-model="selectedStatuses" />
                                 <label :for="`status-${status.value}`" class="ml-2">
-                                    <Tag :value="status.label" :severity="getStatusSeverity(status.value)" class="mr-2" />
+                                    <Tag
+                                        :value="status.label"
+                                        :severity="getStatusSeverity(status.value)"
+                                        class="mr-2" />
                                 </label>
                             </div>
                         </div>
@@ -663,13 +723,27 @@ const formatStatus = (status) => {
                             <h6>Format</h6>
                         </div>
                         <div class="filter-options">
-                            <div v-for="cover in coverTypes" :key="cover.value" class="filter-option" v-show="cover.value !== ''">
-                                <Checkbox :inputId="`cover-${cover.value}`" name="cover" :value="cover.value" v-model="selectedCoverTypes" />
-                                <label :for="`cover-${cover.value}`" class="ml-2">{{ cover.label }}</label>
+                            <div
+                                v-for="cover in coverTypes"
+                                :key="cover.value"
+                                class="filter-option"
+                                v-show="cover.value !== ''">
+                                <Checkbox
+                                    :inputId="`cover-${cover.value}`"
+                                    name="cover"
+                                    :value="cover.value"
+                                    v-model="selectedCoverTypes" />
+                                <label :for="`cover-${cover.value}`" class="ml-2">{{
+                                    cover.label
+                                }}</label>
                             </div>
                             <!-- Reference Only is a format property too -->
                             <div class="filter-option mt-2">
-                                <Checkbox inputId="reference-only" name="reference" :binary="true" v-model="isReferenceOnly" />
+                                <Checkbox
+                                    inputId="reference-only"
+                                    name="reference"
+                                    :binary="true"
+                                    v-model="isReferenceOnly" />
                                 <label for="reference-only" class="ml-2">Reference Only</label>
                             </div>
                         </div>
@@ -682,8 +756,7 @@ const formatStatus = (status) => {
                             icon="pi pi-angle-down"
                             :icon-pos="showMoreFilters ? 'right' : 'right'"
                             class="p-button-text p-button-sm"
-                            @click="showMoreFilters = !showMoreFilters"
-                        />
+                            @click="showMoreFilters = !showMoreFilters" />
                     </div>
 
                     <!-- Additional Filters (only shown when "Show More Filters" is clicked) -->
@@ -696,7 +769,13 @@ const formatStatus = (status) => {
                                     <h6>Library Branch</h6>
                                 </div>
                                 <div class="filter-options">
-                                    <Dropdown v-model="selectedBranch" :options="branchOptions" optionLabel="label" optionValue="value" placeholder="All Branches" class="w-full mb-2" />
+                                    <Dropdown
+                                        v-model="selectedBranch"
+                                        :options="branchOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="All Branches"
+                                        class="w-full mb-2" />
                                 </div>
                             </div>
 
@@ -707,7 +786,13 @@ const formatStatus = (status) => {
                                     <h6>Language</h6>
                                 </div>
                                 <div class="filter-options">
-                                    <Dropdown v-model="selectedLanguage" :options="languageOptions" optionLabel="label" optionValue="value" placeholder="All Languages" class="w-full mb-2" />
+                                    <Dropdown
+                                        v-model="selectedLanguage"
+                                        :options="languageOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="All Languages"
+                                        class="w-full mb-2" />
                                 </div>
                             </div>
 
@@ -719,7 +804,13 @@ const formatStatus = (status) => {
                                 </div>
                                 <div class="filter-options">
                                     <div class="flex flex-column gap-2">
-                                        <Slider v-model="yearFilters.range" :min="yearRange[0]" :max="yearRange[1]" :step="1" range class="w-full" />
+                                        <Slider
+                                            v-model="yearFilters.range"
+                                            :min="yearRange[0]"
+                                            :max="yearRange[1]"
+                                            :step="1"
+                                            range
+                                            class="w-full" />
                                         <div class="flex justify-content-between">
                                             <span>{{ yearFilters.range[0] }}</span>
                                             <span>{{ yearFilters.range[1] }}</span>
@@ -737,7 +828,14 @@ const formatStatus = (status) => {
                             <h6 class="m-0">Active Filters:</h6>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <Tag v-for="(filter, index) in activeFiltersList" :key="index" :value="filter.label" :severity="filter.severity" class="active-filter" removable @remove="removeFilter(filter)" />
+                            <Tag
+                                v-for="(filter, index) in activeFiltersList"
+                                :key="index"
+                                :value="filter.label"
+                                :severity="filter.severity"
+                                class="active-filter"
+                                removable
+                                @remove="removeFilter(filter)" />
                         </div>
                     </div>
 
@@ -751,8 +849,17 @@ const formatStatus = (status) => {
 
         <Toolbar class="mb-4">
             <template v-slot:start>
-                <Button label="New Book" icon="pi pi-plus" severity="success" class="mr-2" @click="createBook" />
-                <Button label="Delete Selected" icon="pi pi-trash" severity="danger" :disabled="!selectedBooks.length" />
+                <Button
+                    label="New Book"
+                    icon="pi pi-plus"
+                    severity="success"
+                    class="mr-2"
+                    @click="createBook" />
+                <Button
+                    label="Delete Selected"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    :disabled="!selectedBooks.length" />
             </template>
             <template v-slot:end>
                 <Button icon="pi pi-file-excel" severity="success" @click="exportCSV" />
@@ -772,14 +879,20 @@ const formatStatus = (status) => {
             paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
             current-page-report-template="Showing {first} to {last} of {totalRecords} books"
             responsive-layout="stack"
-            :global-filter-fields="['title', 'author', 'isbn', 'category.name', 'publisher.name', 'description']"
+            :global-filter-fields="[
+                'title',
+                'author',
+                'isbn',
+                'category.name',
+                'publisher.name',
+                'description'
+            ]"
             v-model:filters="filters"
             @page="onPage($event)"
             @sort="onSort($event)"
             @filter="onFilter()"
             style-class="p-datatable-gridlines p-datatable-sm"
-            breakpoint="960px"
-        >
+            breakpoint="960px">
             <template #empty> No books found. </template>
             <template #loading> Loading books data. Please wait. </template>
 
@@ -787,7 +900,11 @@ const formatStatus = (status) => {
 
             <Column header="Cover" headerStyle="min-width:5rem; max-width:8rem">
                 <template #body="{ data }">
-                    <img :src="data.cover_image_url" :alt="data.title" class="shadow-2 border-round" style="width: 50px; height: 70px; object-fit: cover" />
+                    <img
+                        :src="data.cover_image_url"
+                        :alt="data.title"
+                        class="shadow-2 border-round"
+                        style="width: 50px; height: 70px; object-fit: cover" />
                 </template>
             </Column>
 
@@ -810,20 +927,30 @@ const formatStatus = (status) => {
 
             <Column field="author" header="Author" sortable></Column>
             <Column field="publisher.name" header="Publisher" sortable></Column>
-            <Column field="publication_year" header="Year" sortable headerStyle="width:6rem"></Column>
+            <Column
+                field="publication_year"
+                header="Year"
+                sortable
+                headerStyle="width:6rem"></Column>
 
             <Column field="category.name" header="Category" sortable></Column>
 
             <Column field="availability_status" header="Status" sortable headerStyle="width:8rem">
                 <template #body="{ data }">
-                    <Tag :value="formatStatus(data.availability_status)" :severity="getStatusSeverity(data.availability_status)" />
+                    <Tag
+                        :value="formatStatus(data.availability_status)"
+                        :severity="getStatusSeverity(data.availability_status)" />
                     <div v-if="data.reference_only" class="mt-1">
                         <Tag severity="info" value="Reference Only" />
                     </div>
                 </template>
             </Column>
 
-            <Column field="library_branch.name" header="Location" sortable headerStyle="min-width:10rem">
+            <Column
+                field="library_branch.name"
+                header="Location"
+                sortable
+                headerStyle="min-width:10rem">
                 <template #body="{ data }">
                     <div>
                         <span class="block">{{ data.library_branch.name }}</span>
@@ -843,17 +970,33 @@ const formatStatus = (status) => {
                 <template #header>Actions</template>
                 <template #body="{ data }">
                     <div class="flex flex-wrap justify-content-center gap-2">
-                        <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-info p-button-sm" @click="viewDetails(data)" />
+                        <Button
+                            icon="pi pi-eye"
+                            tooltip="View Details"
+                            tooltipOptions="{ position: 'top' }"
+                            class="p-button-rounded p-button-info p-button-sm"
+                            @click="viewDetails(data)" />
                         <Button
                             icon="pi pi-shopping-cart"
                             tooltip="Borrow"
                             tooltipOptions="{ position: 'top' }"
                             class="p-button-rounded p-button-warning p-button-sm"
                             @click="borrowBook(data)"
-                            :disabled="data.availability_status !== 'available' || data.reference_only"
-                        />
-                        <Button icon="pi pi-pencil" tooltip="Edit" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="editBook(data)" />
-                        <Button icon="pi pi-trash" tooltip="Delete" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-danger p-button-sm" @click="confirmDeleteBook(data)" />
+                            :disabled="
+                                data.availability_status !== 'available' || data.reference_only
+                            " />
+                        <Button
+                            icon="pi pi-pencil"
+                            tooltip="Edit"
+                            tooltipOptions="{ position: 'top' }"
+                            class="p-button-rounded p-button-success p-button-sm"
+                            @click="editBook(data)" />
+                        <Button
+                            icon="pi pi-trash"
+                            tooltip="Delete"
+                            tooltipOptions="{ position: 'top' }"
+                            class="p-button-rounded p-button-danger p-button-sm"
+                            @click="confirmDeleteBook(data)" />
                     </div>
                 </template>
             </Column>

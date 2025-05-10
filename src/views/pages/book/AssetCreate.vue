@@ -146,9 +146,13 @@ const fetchFormData = async () => {
 
 const updateMediaTypes = () => {
     if (asset.value.asset_type) {
-        filteredMediaTypes.value = mediaTypes.value.filter((mt) => mt.assetType === asset.value.asset_type || mt.assetType === 'other');
+        filteredMediaTypes.value = mediaTypes.value.filter(
+            (mt) => mt.assetType === asset.value.asset_type || mt.assetType === 'other'
+        );
         // Clear the media type if it doesn't match the new asset type
-        const validMediaType = filteredMediaTypes.value.find((mt) => mt.code === asset.value.media_type);
+        const validMediaType = filteredMediaTypes.value.find(
+            (mt) => mt.code === asset.value.media_type
+        );
         if (!validMediaType) {
             asset.value.media_type = '';
         }
@@ -166,7 +170,13 @@ const submitForm = async () => {
     submitted.value = true;
 
     // Form validation
-    if (!asset.value.title || !asset.value.availability_status || !asset.value.library_branch_id || !asset.value.category_id || !asset.value.asset_type) {
+    if (
+        !asset.value.title ||
+        !asset.value.availability_status ||
+        !asset.value.library_branch_id ||
+        !asset.value.category_id ||
+        !asset.value.asset_type
+    ) {
         return;
     }
 
@@ -205,7 +215,9 @@ const cancelForm = () => {
         <div class="col-12">
             <div class="card">
                 <h5>Add New Digital Asset</h5>
-                <p class="text-gray-600 mb-4">Enter details for a new digital asset in the library.</p>
+                <p class="text-gray-600 mb-4">
+                    Enter details for a new digital asset in the library.
+                </p>
 
                 <form @submit.prevent="submitForm" class="p-fluid">
                     <div class="grid formgrid">
@@ -217,15 +229,23 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="title" class="font-bold">Title*</label>
-                                        <InputText id="title" v-model="asset.title" :class="{ 'p-invalid': submitted && !asset.title }" placeholder="Enter asset title" />
-                                        <small v-if="submitted && !asset.title" class="p-error">Title is required</small>
+                                        <InputText
+                                            id="title"
+                                            v-model="asset.title"
+                                            :class="{ 'p-invalid': submitted && !asset.title }"
+                                            placeholder="Enter asset title" />
+                                        <small v-if="submitted && !asset.title" class="p-error"
+                                            >Title is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Asset Type -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="asset_type" class="font-bold">Asset Type*</label>
+                                        <label for="asset_type" class="font-bold"
+                                            >Asset Type*</label
+                                        >
                                         <Dropdown
                                             id="asset_type"
                                             v-model="asset.asset_type"
@@ -234,17 +254,27 @@ const cancelForm = () => {
                                             optionValue="code"
                                             placeholder="Select asset type"
                                             :class="{ 'p-invalid': submitted && !asset.asset_type }"
-                                            @change="handleAssetTypeChange"
-                                        />
-                                        <small v-if="submitted && !asset.asset_type" class="p-error">Asset type is required</small>
+                                            @change="handleAssetTypeChange" />
+                                        <small v-if="submitted && !asset.asset_type" class="p-error"
+                                            >Asset type is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Media Type -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="media_type" class="font-bold">Media Format</label>
-                                        <Dropdown id="media_type" v-model="asset.media_type" :options="filteredMediaTypes" optionLabel="name" optionValue="code" placeholder="Select media format" :disabled="!asset.asset_type" />
+                                        <label for="media_type" class="font-bold"
+                                            >Media Format</label
+                                        >
+                                        <Dropdown
+                                            id="media_type"
+                                            v-model="asset.media_type"
+                                            :options="filteredMediaTypes"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select media format"
+                                            :disabled="!asset.asset_type" />
                                     </div>
                                 </div>
 
@@ -252,16 +282,34 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="author" class="font-bold">Author/Creator</label>
-                                        <InputText id="author" v-model="asset.author" placeholder="Creator name" />
+                                        <InputText
+                                            id="author"
+                                            v-model="asset.author"
+                                            placeholder="Creator name" />
                                     </div>
                                 </div>
 
                                 <!-- Publication/Creation Year -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publication_year" class="font-bold">Creation Year</label>
-                                        <InputNumber id="publication_year" v-model="asset.publication_year" :min="1000" :max="currentYear" placeholder="Creation year" />
-                                        <small v-if="asset.publication_year && (asset.publication_year < 1000 || asset.publication_year > currentYear)" class="p-error"> Year must be between 1000 and {{ currentYear }} </small>
+                                        <label for="publication_year" class="font-bold"
+                                            >Creation Year</label
+                                        >
+                                        <InputNumber
+                                            id="publication_year"
+                                            v-model="asset.publication_year"
+                                            :min="1000"
+                                            :max="currentYear"
+                                            placeholder="Creation year" />
+                                        <small
+                                            v-if="
+                                                asset.publication_year &&
+                                                (asset.publication_year < 1000 ||
+                                                    asset.publication_year > currentYear)
+                                            "
+                                            class="p-error">
+                                            Year must be between 1000 and {{ currentYear }}
+                                        </small>
                                     </div>
                                 </div>
 
@@ -269,7 +317,13 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="language" class="font-bold">Language</label>
-                                        <Dropdown id="language" v-model="asset.language" :options="languages" optionLabel="name" optionValue="code" placeholder="Select language" />
+                                        <Dropdown
+                                            id="language"
+                                            v-model="asset.language"
+                                            :options="languages"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select language" />
                                     </div>
                                 </div>
                             </div>
@@ -282,8 +336,19 @@ const cancelForm = () => {
                                 <!-- Duration (for media) -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="duration_minutes" class="font-bold">Duration (minutes)</label>
-                                        <InputNumber id="duration_minutes" v-model="asset.duration_minutes" :min="1" placeholder="Length in minutes (for media)" :disabled="!['video', 'audio', 'presentation'].includes(asset.asset_type)" />
+                                        <label for="duration_minutes" class="font-bold"
+                                            >Duration (minutes)</label
+                                        >
+                                        <InputNumber
+                                            id="duration_minutes"
+                                            v-model="asset.duration_minutes"
+                                            :min="1"
+                                            placeholder="Length in minutes (for media)"
+                                            :disabled="
+                                                !['video', 'audio', 'presentation'].includes(
+                                                    asset.asset_type
+                                                )
+                                            " />
                                     </div>
                                 </div>
 
@@ -291,47 +356,81 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="unique_id" class="font-bold">Unique ID</label>
-                                        <InputText id="unique_id" v-model="asset.unique_id" placeholder="Asset identifier" />
+                                        <InputText
+                                            id="unique_id"
+                                            v-model="asset.unique_id"
+                                            placeholder="Asset identifier" />
                                     </div>
                                 </div>
 
                                 <!-- Manufacturer -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="manufacturer" class="font-bold">Manufacturer/Producer</label>
-                                        <InputText id="manufacturer" v-model="asset.manufacturer" placeholder="Producer or manufacturer" />
+                                        <label for="manufacturer" class="font-bold"
+                                            >Manufacturer/Producer</label
+                                        >
+                                        <InputText
+                                            id="manufacturer"
+                                            v-model="asset.manufacturer"
+                                            placeholder="Producer or manufacturer" />
                                     </div>
                                 </div>
 
                                 <!-- Physical Condition -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="physical_condition" class="font-bold">Condition</label>
-                                        <Dropdown id="physical_condition" v-model="asset.physical_condition" :options="conditionOptions" optionLabel="name" optionValue="code" placeholder="Select condition" />
+                                        <label for="physical_condition" class="font-bold"
+                                            >Condition</label
+                                        >
+                                        <Dropdown
+                                            id="physical_condition"
+                                            v-model="asset.physical_condition"
+                                            :options="conditionOptions"
+                                            optionLabel="name"
+                                            optionValue="code"
+                                            placeholder="Select condition" />
                                     </div>
                                 </div>
 
                                 <!-- Acquisition Date -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="acquisition_date" class="font-bold">Acquisition Date</label>
-                                        <Calendar id="acquisition_date" v-model="asset.acquisition_date" dateFormat="mm/dd/yy" placeholder="When the asset was acquired" :maxDate="new Date()" showIcon />
+                                        <label for="acquisition_date" class="font-bold"
+                                            >Acquisition Date</label
+                                        >
+                                        <Calendar
+                                            id="acquisition_date"
+                                            v-model="asset.acquisition_date"
+                                            dateFormat="mm/dd/yy"
+                                            placeholder="When the asset was acquired"
+                                            :maxDate="new Date()"
+                                            showIcon />
                                     </div>
                                 </div>
 
                                 <!-- Location Details -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="location_details" class="font-bold">Location Details</label>
-                                        <InputText id="location_details" v-model="asset.location_details" placeholder="Specific location details" />
+                                        <label for="location_details" class="font-bold"
+                                            >Location Details</label
+                                        >
+                                        <InputText
+                                            id="location_details"
+                                            v-model="asset.location_details"
+                                            placeholder="Specific location details" />
                                     </div>
                                 </div>
 
                                 <!-- Restricted Access -->
                                 <div class="col-12 mb-3">
                                     <div class="field-checkbox">
-                                        <Checkbox id="restricted_access" v-model="asset.restricted_access" :binary="true" />
-                                        <label for="restricted_access" class="ml-2 font-medium">Restricted Access</label>
+                                        <Checkbox
+                                            id="restricted_access"
+                                            v-model="asset.restricted_access"
+                                            :binary="true" />
+                                        <label for="restricted_access" class="ml-2 font-medium"
+                                            >Restricted Access</label
+                                        >
                                     </div>
                                 </div>
                             </div>
@@ -344,7 +443,9 @@ const cancelForm = () => {
                                 <!-- Library Branch -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="library_branch_id" class="font-bold">Library Branch*</label>
+                                        <label for="library_branch_id" class="font-bold"
+                                            >Library Branch*</label
+                                        >
                                         <Dropdown
                                             id="library_branch_id"
                                             v-model="asset.library_branch_id"
@@ -352,17 +453,30 @@ const cancelForm = () => {
                                             optionLabel="name"
                                             optionValue="id"
                                             placeholder="Select library branch"
-                                            :class="{ 'p-invalid': submitted && !asset.library_branch_id }"
-                                        />
-                                        <small v-if="submitted && !asset.library_branch_id" class="p-error">Library branch is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !asset.library_branch_id
+                                            }" />
+                                        <small
+                                            v-if="submitted && !asset.library_branch_id"
+                                            class="p-error"
+                                            >Library branch is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Shelf -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="shelf_id" class="font-bold">Shelf/Section</label>
-                                        <Dropdown id="shelf_id" v-model="asset.shelf_id" :options="shelves" optionLabel="name" optionValue="id" placeholder="Select shelf" />
+                                        <label for="shelf_id" class="font-bold"
+                                            >Shelf/Section</label
+                                        >
+                                        <Dropdown
+                                            id="shelf_id"
+                                            v-model="asset.shelf_id"
+                                            :options="shelves"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select shelf" />
                                     </div>
                                 </div>
 
@@ -370,23 +484,46 @@ const cancelForm = () => {
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
                                         <label for="category_id" class="font-bold">Category*</label>
-                                        <Dropdown id="category_id" v-model="asset.category_id" :options="categories" optionLabel="name" optionValue="id" placeholder="Select category" :class="{ 'p-invalid': submitted && !asset.category_id }" />
-                                        <small v-if="submitted && !asset.category_id" class="p-error">Category is required</small>
+                                        <Dropdown
+                                            id="category_id"
+                                            v-model="asset.category_id"
+                                            :options="categories"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select category"
+                                            :class="{
+                                                'p-invalid': submitted && !asset.category_id
+                                            }" />
+                                        <small
+                                            v-if="submitted && !asset.category_id"
+                                            class="p-error"
+                                            >Category is required</small
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Publisher -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="publisher_id" class="font-bold">Publisher/Distributor</label>
-                                        <Dropdown id="publisher_id" v-model="asset.publisher_id" :options="publishers" optionLabel="name" optionValue="id" placeholder="Select publisher" />
+                                        <label for="publisher_id" class="font-bold"
+                                            >Publisher/Distributor</label
+                                        >
+                                        <Dropdown
+                                            id="publisher_id"
+                                            v-model="asset.publisher_id"
+                                            :options="publishers"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            placeholder="Select publisher" />
                                     </div>
                                 </div>
 
                                 <!-- Status -->
                                 <div class="col-12 md:col-6 mb-3">
                                     <div class="field">
-                                        <label for="availability_status" class="font-bold">Availability Status*</label>
+                                        <label for="availability_status" class="font-bold"
+                                            >Availability Status*</label
+                                        >
                                         <Dropdown
                                             id="availability_status"
                                             v-model="asset.availability_status"
@@ -394,9 +531,14 @@ const cancelForm = () => {
                                             optionLabel="name"
                                             optionValue="code"
                                             placeholder="Select status"
-                                            :class="{ 'p-invalid': submitted && !asset.availability_status }"
-                                        />
-                                        <small v-if="submitted && !asset.availability_status" class="p-error">Status is required</small>
+                                            :class="{
+                                                'p-invalid': submitted && !asset.availability_status
+                                            }" />
+                                        <small
+                                            v-if="submitted && !asset.availability_status"
+                                            class="p-error"
+                                            >Status is required</small
+                                        >
                                     </div>
                                 </div>
                             </div>
@@ -409,24 +551,41 @@ const cancelForm = () => {
                                 <!-- Cover/Thumbnail Image URL -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="cover_image_url" class="font-bold">Thumbnail Image URL</label>
-                                        <InputText id="cover_image_url" v-model="asset.cover_image_url" placeholder="URL to the asset thumbnail or image" />
+                                        <label for="cover_image_url" class="font-bold"
+                                            >Thumbnail Image URL</label
+                                        >
+                                        <InputText
+                                            id="cover_image_url"
+                                            v-model="asset.cover_image_url"
+                                            placeholder="URL to the asset thumbnail or image" />
                                     </div>
                                 </div>
 
                                 <!-- Description -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="description" class="font-bold">Description</label>
-                                        <Textarea id="description" v-model="asset.description" rows="4" placeholder="Asset description" />
+                                        <label for="description" class="font-bold"
+                                            >Description</label
+                                        >
+                                        <Textarea
+                                            id="description"
+                                            v-model="asset.description"
+                                            rows="4"
+                                            placeholder="Asset description" />
                                     </div>
                                 </div>
 
                                 <!-- Usage Instructions -->
                                 <div class="col-12 mb-3">
                                     <div class="field">
-                                        <label for="usage_instructions" class="font-bold">Usage Instructions</label>
-                                        <Textarea id="usage_instructions" v-model="asset.usage_instructions" rows="4" placeholder="Instructions for using this asset" />
+                                        <label for="usage_instructions" class="font-bold"
+                                            >Usage Instructions</label
+                                        >
+                                        <Textarea
+                                            id="usage_instructions"
+                                            v-model="asset.usage_instructions"
+                                            rows="4"
+                                            placeholder="Instructions for using this asset" />
                                     </div>
                                 </div>
                             </div>
@@ -434,8 +593,18 @@ const cancelForm = () => {
 
                         <!-- Form Buttons -->
                         <div class="col-12 mt-4 flex justify-content-end">
-                            <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary mr-2" @click="cancelForm" type="button" />
-                            <Button label="Save Asset" icon="pi pi-check" class="p-button-primary" type="submit" :loading="loading" />
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                class="p-button-outlined p-button-secondary mr-2"
+                                @click="cancelForm"
+                                type="button" />
+                            <Button
+                                label="Save Asset"
+                                icon="pi pi-check"
+                                class="p-button-primary"
+                                type="submit"
+                                :loading="loading" />
                         </div>
                     </div>
                 </form>
