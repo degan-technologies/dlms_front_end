@@ -73,7 +73,7 @@ const model = computed(() => [
                   { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/admin/roles' },
                 //   { label: 'Manage Admins', icon: 'pi pi-fw pi-id-card', to: '/admin/manage' },
 
-                  { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/admin/settings' }
+                  { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/userprofile' }
               ]
           }
         : null,

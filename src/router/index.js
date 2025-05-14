@@ -228,9 +228,10 @@ const router = createRouter({
             component: () => import('@/views/pages/auth/ForgotPassword.vue')
         },
         {
-            path: '/auth/reset-password',
+            path: '/reset-password',
             name: 'reset-password',
-            component: () => import('@/views/pages/auth/ResetPassword.vue')
+            component: () => import('@/views/pages/ResetPassword.vue'),
+            props: (route) => ({ email: route.query.email })
         },
         {
             path: '/auth/verify-email',
