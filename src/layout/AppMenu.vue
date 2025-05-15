@@ -93,7 +93,8 @@ const model = computed(() => [
         items: [
             { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/books/borrowed' },
             { label: 'Borrowing History', icon: 'pi pi-fw pi-clock', to: '/books/history' },
-            { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' }
+            { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' },
+            { label: 'Penality Fee History', icon: 'pi pi-fw pi-exclamation-triangle', to: '/books/fines' }
         ]
     },
     // Library Management - only for librarians (assuming role ID 2 is librarian)

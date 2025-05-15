@@ -243,8 +243,8 @@ const deleteSelectedCategories = async () => {
                     </Column>
                     <Column style="min-width: 8rem">
                         <template #body="slotProps">
-                            <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editCategory(slotProps.data)" />
-                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="confirmDeleteCategory(slotProps.data)" :disabled="slotProps.data.books_count > 0" />
+                            <Button icon="pi pi-pencil" v-tooltip="'Edit'" class="p-button-rounded p-button-success mr-2" @click="editCategory(slotProps.data)" />
+                            <Button icon="pi pi-trash"  v-tooltip="'Delete'" class="p-button-rounded p-button-danger" @click="confirmDeleteCategory(slotProps.data)" :disabled="slotProps.data.books_count > 0" />
                         </template>
                     </Column>
                 </DataTable>

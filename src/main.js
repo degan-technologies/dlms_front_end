@@ -21,6 +21,8 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Badge from 'primevue/badge';
 import Toast from 'primevue/toast';
+import Tooltip from 'primevue/tooltip';
+
 
 import '@/assets/styles.scss';
 
@@ -50,5 +52,7 @@ app.component('InputText', InputText);
 app.component('Textarea', Textarea);
 app.component('Badge', Badge);
 app.component('Toast', Toast);
+
+app.directive('tooltip', Tooltip);
 
 app.mount('#app');

@@ -3,35 +3,34 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+import { useToast } from 'primevue/usetoast';
+const toast = useToast();
 const books = ref([]);
-const loading = ref(true);
+
+import { useHomeStore } from '@/stores/homeStore';
+import { storeToRefs } from 'pinia';
+const homeStore = useHomeStore();
+const { loading, allFeaturedResources, totalRecords, resourcesPerPage, first, currentPage } = storeToRefs(homeStore);
 const filters = ref({
     global: { value: null, matchMode: 'contains' },
     title: { value: null, matchMode: 'contains' },
     author: { value: null, matchMode: 'contains' },
     isbn: { value: null, matchMode: 'contains' },
-    category: { value: null, matchMode: 'contains' }
+    category_name: { value: null, matchMode: 'contains' }
 });
-const totalRecords = ref(0);
+
 const selectedBooks = ref([]);
 const lazyParams = ref({
     first: 0,
     rows: 10,
-    sortField: 'title',
+    sortField: 'created_at',
     sortOrder: 1,
     filters: {}
 });
 
-// Book type filter options
-const bookTypes = ref([
-    { label: 'All Types', value: '' },
-    { label: 'Fiction', value: 'fiction' },
-    { label: 'Non-Fiction', value: 'non-fiction' },
-    { label: 'Reference', value: 'reference' },
-    { label: 'Textbook', value: 'textbook' },
-    { label: 'Biography', value: 'biography' },
-    { label: 'Other', value: 'other' }
-]);
+const sortField = ref('title'); // Define sortField as a ref
+const sortDirection = ref('asc'); // Define sortDirection as a ref
+
 const selectedBookType = ref('');
 
 // Cover type filter options
@@ -53,8 +52,6 @@ const statusOptions = ref([
     { label: 'Lost', value: 'lost' },
     { label: 'Damaged', value: 'damaged' }
 ]);
-const selectedStatus = ref('');
-
 // Branch filter options
 const branchOptions = ref([
     { label: 'All Branches', value: '' },
@@ -75,12 +72,6 @@ const languageOptions = ref([
 ]);
 const selectedLanguage = ref('');
 
-// Reference only filter
-const referenceOptions = ref([
-    { label: 'All Books', value: null },
-    { label: 'Reference Only', value: true },
-    { label: 'Borrowable', value: false }
-]);
 const selectedReference = ref(null);
 
 // Publication year range
@@ -116,9 +107,7 @@ const hasActiveFilters = computed(() => {
         isReferenceOnly.value ||
         selectedBranch.value !== '' ||
         selectedLanguage.value !== '' ||
-        (yearFilters.value.range &&
-            (yearFilters.value.range[0] !== yearRange.value[0] ||
-                yearFilters.value.range[1] !== yearRange.value[1])) ||
+        (yearFilters.value.range && (yearFilters.value.range[0] !== yearRange.value[0] || yearFilters.value.range[1] !== yearRange.value[1])) ||
         filters.value.global.value
     );
 });
@@ -213,11 +202,7 @@ const activeFiltersList = computed(() => {
     }
 
     // Year range
-    if (
-        yearFilters.value.range &&
-        (yearFilters.value.range[0] !== yearRange.value[0] ||
-            yearFilters.value.range[1] !== yearRange.value[1])
-    ) {
+    if (yearFilters.value.range && (yearFilters.value.range[0] !== yearRange.value[0] || yearFilters.value.range[1] !== yearRange.value[1])) {
         activeFilters.push({
             type: 'year',
             label: `Year: ${yearFilters.value.range[0]} - ${yearFilters.value.range[1]}`,
@@ -284,263 +269,103 @@ const resetFilters = () => {
 };
 
 // Enhanced apply filters function that collects all filter values
-const applyFilters = () => {
-    // Create a real filter object for the backend
-    const filterParams = {
-        search: filters.value.global.value,
-        categories: selectedCategories.value.length ? selectedCategories.value : null,
-        statuses: selectedStatuses.value.length ? selectedStatuses.value : null,
-        coverTypes: selectedCoverTypes.value.length ? selectedCoverTypes.value : null,
-        isReferenceOnly: isReferenceOnly.value || null,
-        branch: selectedBranch.value || null,
-        language: selectedLanguage.value || null,
-        yearFrom: yearFilters.value.range ? yearFilters.value.range[0] : null,
-        yearTo: yearFilters.value.range ? yearFilters.value.range[1] : null
+function applyFilters() {
+    console.log('🔥 applyFilters() triggered');
+
+    // Build raw params
+    let params = {
+        // pagination from lazyParams
+        page: Math.floor(lazyParams.value.first / lazyParams.value.rows) + 1,
+        per_page: lazyParams.value.rows,
+        sort_by: lazyParams.value.sortField,
+        sort_direction: lazyParams.value.sortOrder === 1 ? 'asc' : 'desc',
+
+        global: filters.value.global.value,
+        item_type: selectedBookType.value,
+        cover_type: selectedCoverType.value,
+        availability_status: selectedStatuses.value.length ? selectedStatuses.value.join(',') : null,
+        library_branch_id: selectedBranch.value,
+        language: selectedLanguage.value,
+        reference_only: selectedReference.value,
+
+        category: selectedCategories.value.length ? selectedCategories.value.join(',') : null,
+
+        year_from: yearFilters.value.range[0],
+        year_to: yearFilters.value.range[1]
     };
 
-    // Log the filter params (would be sent to API in real app)
-    console.log('Filter params:', filterParams);
+    // Strip out any null or empty-string fields
+    Object.keys(params).forEach((key) => {
+        if (params[key] == null || params[key] === '') {
+            delete params[key];
+        }
+    });
 
-    // Reset pagination to first page when applying filters
+    console.log('→ applyFilters cleaned params:', params);
+
+    // reset pagination UI
+    first.value = 0;
     lazyParams.value.first = 0;
 
-    // In a real app, this would update the lazyParams filters
-    // and pass them to the fetchBooks method
-    fetchBooks();
-};
+    // send to store
+    homeStore.fetchBookItem(params);
+}
 
-onMounted(() => {
-    fetchBooks();
+const featuredResources = computed(() => allFeaturedResources.value);
+
+onMounted(async () => {
+    applyFilters();
+    try {
+        await homeStore.fetchBookItem();
+        // 1) Console-log
+        console.log('DEBUG: fetched resources →', allFeaturedResources.value);
+
+        // 2) Show count in a toast
+        toast.add({
+            severity: 'success',
+            summary: 'Fetched',
+            detail: `${allFeaturedResources.value.length} resources loaded`,
+            life: 3000
+        });
+    } catch (e) {
+        console.error('DEBUG: fetchBookItem error →', e);
+        toast.add({
+            severity: 'error',
+            summary: 'Fetch Error',
+            detail: 'Failed to load resources. See console for details.',
+            life: 5000
+        });
+    }
+    // Log to verify data
 });
 
-const fetchBooks = async () => {
-    loading.value = true;
-    try {
-        // Simulated API call - replace with actual API call
-        setTimeout(() => {
-            // Mock data with real cover images
-            books.value = [
-                {
-                    id: 1,
-                    title: 'The Art of Programming',
-                    isbn: '9780123456789',
-                    availability_status: 'available',
-                    author: 'John Smith',
-                    publication_year: 2020,
-                    description:
-                        'A comprehensive guide to programming principles and practices for beginners and advanced developers alike. This book covers fundamental concepts, design patterns, and best practices.',
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/51lxfl+cOvL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: {
-                        keywords: ['programming', 'computer science', 'software development']
-                    },
-                    language: 'en',
-                    library_branch_id: 1,
-                    library_branch: { id: 1, name: 'Main Library' },
-                    shelf_id: 'CS-A3',
-                    shelf: { id: 3, name: 'Computer Science Section' },
-                    category_id: 5,
-                    category: { name: 'Programming' },
-                    publisher_id: 2,
-                    publisher: { name: 'Tech Publishing House' },
-                    edition: '3rd Edition',
-                    pages: 450,
-                    cover_type: 'hardcover',
-                    dimensions: '9 x 6 x 1.2 inches',
-                    weight_grams: 680,
-                    barcode: 'LIB-12345678',
-                    shelf_location_detail: 'CS-A3-45',
-                    reference_only: false,
-                    checkout_count: 12,
-                    book_type: 'textbook'
-                },
-                {
-                    id: 2,
-                    title: 'Data Structures and Algorithms',
-                    isbn: '9781234567890',
-                    availability_status: 'checked_out',
-                    author: 'Jane Doe',
-                    publication_year: 2019,
-                    description:
-                        'This book provides a thorough introduction to data structures and algorithms. It covers arrays, linked lists, trees, graphs, and various searching and sorting algorithms with practical examples.',
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/61B4hbYYv+L._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['data structures', 'algorithms', 'computer science'] },
-                    language: 'en',
-                    library_branch_id: 1,
-                    library_branch: { id: 1, name: 'Main Library' },
-                    shelf_id: 'CS-B2',
-                    shelf: { id: 3, name: 'Computer Science Section' },
-                    category_id: 5,
-                    category: { name: 'Programming' },
-                    publisher_id: 2,
-                    publisher: { name: 'Tech Publishing House' },
-                    edition: '2nd Edition',
-                    pages: 380,
-                    cover_type: 'paperback',
-                    dimensions: '9 x 6 x 0.8 inches',
-                    weight_grams: 520,
-                    barcode: 'LIB-23456789',
-                    shelf_location_detail: 'CS-B2-12',
-                    reference_only: false,
-                    checkout_count: 24,
-                    book_type: 'textbook'
-                },
-                {
-                    id: 3,
-                    title: 'Introduction to Psychology',
-                    isbn: '9782345678901',
-                    availability_status: 'available',
-                    author: 'Robert Johnson',
-                    publication_year: 2021,
-                    description:
-                        'A comprehensive introduction to the fundamental principles of psychology. This book explores human behavior, cognitive processes, development, and psychological disorders.',
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/71QKrIA4mCL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['psychology', 'behavior', 'cognition'] },
-                    language: 'en',
-                    library_branch_id: 2,
-                    library_branch: { id: 2, name: 'South Branch' },
-                    shelf_id: 'SS-C1',
-                    shelf: { id: 5, name: 'Social Sciences Section' },
-                    category_id: 8,
-                    category: { name: 'Psychology' },
-                    publisher_id: 3,
-                    publisher: { name: 'Academic Press' },
-                    edition: '5th Edition',
-                    pages: 520,
-                    cover_type: 'hardcover',
-                    dimensions: '10 x 7 x 1.5 inches',
-                    weight_grams: 820,
-                    barcode: 'LIB-34567890',
-                    shelf_location_detail: 'SS-C1-78',
-                    reference_only: true,
-                    checkout_count: 8,
-                    book_type: 'textbook'
-                },
-                {
-                    id: 4,
-                    title: 'The Great Gatsby',
-                    isbn: '9780743273565',
-                    availability_status: 'reserved',
-                    author: 'F. Scott Fitzgerald',
-                    publication_year: 1925,
-                    description:
-                        "Set in the Jazz Age on Long Island, near New York City, the novel depicts first-person narrator Nick Carraway's interactions with mysterious millionaire Jay Gatsby and Gatsby's obsession to reunite with his former lover, Daisy Buchanan.",
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/71FTb9X6wsL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['classic', 'american literature', '20th century'] },
-                    language: 'en',
-                    library_branch_id: 1,
-                    library_branch: { id: 1, name: 'Main Library' },
-                    shelf_id: 'FIC-D4',
-                    shelf: { id: 2, name: 'Fiction Section' },
-                    category_id: 1,
-                    category: { name: 'Fiction' },
-                    publisher_id: 4,
-                    publisher: { name: 'Scribner' },
-                    edition: 'First Edition',
-                    pages: 180,
-                    cover_type: 'paperback',
-                    dimensions: '8 x 5.2 x 0.5 inches',
-                    weight_grams: 280,
-                    barcode: 'LIB-45678901',
-                    shelf_location_detail: 'FIC-D4-23',
-                    reference_only: false,
-                    checkout_count: 18,
-                    book_type: 'fiction'
-                },
-                {
-                    id: 5,
-                    title: 'Calculus for Engineers',
-                    isbn: '9784567890123',
-                    availability_status: 'lost',
-                    author: 'Michael Brown',
-                    publication_year: 2018,
-                    description:
-                        'A practical approach to calculus for engineering students. This book covers differential and integral calculus with applications in various engineering disciplines.',
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/61Gnycyr0FL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: { keywords: ['calculus', 'mathematics', 'engineering'] },
-                    language: 'en',
-                    library_branch_id: 3,
-                    library_branch: { id: 3, name: 'North Branch' },
-                    shelf_id: 'MS-E1',
-                    shelf: { id: 7, name: 'Mathematics Section' },
-                    category_id: 10,
-                    category: { name: 'Mathematics' },
-                    publisher_id: 5,
-                    publisher: { name: 'Engineering Educational Press' },
-                    edition: '4th Edition',
-                    pages: 680,
-                    cover_type: 'hardcover',
-                    dimensions: '11 x 8.5 x 1.8 inches',
-                    weight_grams: 1200,
-                    barcode: 'LIB-56789012',
-                    shelf_location_detail: 'MS-E1-56',
-                    reference_only: false,
-                    checkout_count: 32,
-                    book_type: 'textbook'
-                },
-                {
-                    id: 6,
-                    title: 'Pride and Prejudice',
-                    isbn: '9780141439518',
-                    availability_status: 'available',
-                    author: 'Jane Austen',
-                    publication_year: 1813,
-                    description:
-                        'Pride and Prejudice follows the turbulent relationship between Elizabeth Bennet, the daughter of a country gentleman, and Fitzwilliam Darcy, a rich aristocratic landowner. They must overcome the titular sins of pride and prejudice.',
-                    cover_image_url:
-                        'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
-                    metadata: {
-                        keywords: ['classic', 'romance', '19th century', 'english literature']
-                    },
-                    language: 'en',
-                    library_branch_id: 1,
-                    library_branch: { id: 1, name: 'Main Library' },
-                    shelf_id: 'FIC-A2',
-                    shelf: { id: 2, name: 'Fiction Section' },
-                    category_id: 1,
-                    category: { name: 'Fiction' },
-                    publisher_id: 6,
-                    publisher: { name: 'Penguin Classics' },
-                    edition: 'Revised Edition',
-                    pages: 416,
-                    cover_type: 'paperback',
-                    dimensions: '7.8 x 5.1 x 0.7 inches',
-                    weight_grams: 320,
-                    barcode: 'LIB-67890123',
-                    shelf_location_detail: 'FIC-A2-15',
-                    reference_only: false,
-                    checkout_count: 42,
-                    book_type: 'fiction'
-                }
-            ];
-            totalRecords.value = 45; // Total count for pagination
-            loading.value = false;
-        }, 1000);
-    } catch (error) {
-        console.error('Failed to fetch books:', error);
-    } finally {
-        loading.value = false;
-    }
-};
+// Make featured books a computed property
 
-const onPage = (event) => {
-    lazyParams.value = { ...lazyParams.value, ...event };
-    fetchBooks();
-};
+// Use featuredBooks in the template or logic to avoid unused variable error
 
-const onSort = (event) => {
-    lazyParams.value = { ...lazyParams.value, ...event };
-    fetchBooks();
-};
+// 1) On page change
+function onPage(event) {
+    lazyParams.value.first = event.first;
+    lazyParams.value.rows = event.rows;
+    currentPage.value = event.page + 1;
+    resourcesPerPage.value = event.rows;
+    applyFilters();
+}
 
-const onFilter = () => {
+function onSort(event) {
+    // only allow these real columns:
+    const valid = ['author', 'isbn', 'publication_year', 'created_at'];
+    sortField.value = valid.includes(event.sortField) ? event.sortField : 'created_at';
+
+    sortDirection.value = event.sortOrder === 1 ? 'asc' : 'desc';
+    applyFilters();
+}
+
+function onFilter() {
+    // PrimeVue column filters or global filter
     lazyParams.value.first = 0;
-    fetchBooks();
-};
+    applyFilters();
+}
 
 const viewDetails = (book) => {
     router.push(`/books/physical/${book.id}`);
@@ -627,21 +452,15 @@ const formatStatus = (status) => {
 <template>
     <div class="card">
         <h5 class="m-0">Physical Books Collection</h5>
-        <p class="mt-2 mb-4 text-gray-600">
-            Browse, search, and manage the physical books available in the library.
-        </p>
+        <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage the physical books available in the library.</p>
 
         <!-- Enhanced Filter Section with E-commerce style -->
         <div class="filter-container mb-4">
             <!-- Search Bar with Advanced Filter Toggle -->
-            <div
-                class="flex flex-column md:flex-row align-items-center justify-content-between gap-3 mb-3">
-                <span class="p-input-icon-left w-full md:w-7">
+            <div class="flex flex-column md:flex-row align-items-center justify-content-between gap-3 mb-3">
+                <span class="p-input-icon-left w-full md:w-full">
                     <i class="pi pi-search" />
-                    <InputText
-                        v-model="filters.global.value"
-                        placeholder="Search books by title, author, ISBN, shelf ID..."
-                        class="w-full" />
+                    <InputText v-model="filters.global.value" placeholder="Search books by title, author, ISBN, shelf ID..." class="w-full" />
                 </span>
                 <div class="flex align-items-center gap-2">
                     <Button
@@ -652,14 +471,9 @@ const formatStatus = (status) => {
                         :class="{
                             'p-button-outlined': !displayFilters,
                             'p-button-info': displayFilters
-                        }" />
-                    <Button
-                        type="button"
-                        icon="pi pi-filter-slash"
-                        class="p-button-text"
-                        @click="resetFilters"
-                        :disabled="!hasActiveFilters"
-                        title="Clear all filters" />
+                        }"
+                    />
+                    <Button type="button" icon="pi pi-filter-slash" class="p-button-text" @click="resetFilters" :disabled="!hasActiveFilters" title="Clear all filters" />
                 </div>
             </div>
 
@@ -673,18 +487,9 @@ const formatStatus = (status) => {
                             <h6>Category</h6>
                         </div>
                         <div class="filter-options">
-                            <div
-                                v-for="category in categories"
-                                :key="category.value"
-                                class="filter-option">
-                                <Checkbox
-                                    :inputId="`category-${category.value}`"
-                                    name="category"
-                                    :value="category.value"
-                                    v-model="selectedCategories" />
-                                <label :for="`category-${category.value}`" class="ml-2">{{
-                                    category.label
-                                }}</label>
+                            <div v-for="category in categories" :key="category.value" class="filter-option">
+                                <Checkbox :inputId="`category-${category.value}`" name="category" :value="category.value" v-model="selectedCategories" />
+                                <label :for="`category-${category.value}`" class="ml-2">{{ category.label }}</label>
                             </div>
                         </div>
                     </div>
@@ -696,21 +501,10 @@ const formatStatus = (status) => {
                             <h6>Availability</h6>
                         </div>
                         <div class="filter-options">
-                            <div
-                                v-for="status in statusOptions"
-                                :key="status.value"
-                                class="filter-option"
-                                v-show="status.value !== ''">
-                                <Checkbox
-                                    :inputId="`status-${status.value}`"
-                                    name="status"
-                                    :value="status.value"
-                                    v-model="selectedStatuses" />
+                            <div v-for="status in statusOptions" :key="status.value" class="filter-option" v-show="status.value !== ''">
+                                <Checkbox :inputId="`status-${status.value}`" name="status" :value="status.value" v-model="selectedStatuses" />
                                 <label :for="`status-${status.value}`" class="ml-2">
-                                    <Tag
-                                        :value="status.label"
-                                        :severity="getStatusSeverity(status.value)"
-                                        class="mr-2" />
+                                    <Tag :value="status.label" :severity="getStatusSeverity(status.value)" class="mr-2" />
                                 </label>
                             </div>
                         </div>
@@ -723,27 +517,13 @@ const formatStatus = (status) => {
                             <h6>Format</h6>
                         </div>
                         <div class="filter-options">
-                            <div
-                                v-for="cover in coverTypes"
-                                :key="cover.value"
-                                class="filter-option"
-                                v-show="cover.value !== ''">
-                                <Checkbox
-                                    :inputId="`cover-${cover.value}`"
-                                    name="cover"
-                                    :value="cover.value"
-                                    v-model="selectedCoverTypes" />
-                                <label :for="`cover-${cover.value}`" class="ml-2">{{
-                                    cover.label
-                                }}</label>
+                            <div v-for="cover in coverTypes" :key="cover.value" class="filter-option" v-show="cover.value !== ''">
+                                <Checkbox :inputId="`cover-${cover.value}`" name="cover" :value="cover.value" v-model="selectedCoverTypes" />
+                                <label :for="`cover-${cover.value}`" class="ml-2">{{ cover.label }}</label>
                             </div>
                             <!-- Reference Only is a format property too -->
                             <div class="filter-option mt-2">
-                                <Checkbox
-                                    inputId="reference-only"
-                                    name="reference"
-                                    :binary="true"
-                                    v-model="isReferenceOnly" />
+                                <Checkbox inputId="reference-only" name="reference" :binary="true" v-model="isReferenceOnly" />
                                 <label for="reference-only" class="ml-2">Reference Only</label>
                             </div>
                         </div>
@@ -756,7 +536,8 @@ const formatStatus = (status) => {
                             icon="pi pi-angle-down"
                             :icon-pos="showMoreFilters ? 'right' : 'right'"
                             class="p-button-text p-button-sm"
-                            @click="showMoreFilters = !showMoreFilters" />
+                            @click="showMoreFilters = !showMoreFilters"
+                        />
                     </div>
 
                     <!-- Additional Filters (only shown when "Show More Filters" is clicked) -->
@@ -769,13 +550,7 @@ const formatStatus = (status) => {
                                     <h6>Library Branch</h6>
                                 </div>
                                 <div class="filter-options">
-                                    <Dropdown
-                                        v-model="selectedBranch"
-                                        :options="branchOptions"
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        placeholder="All Branches"
-                                        class="w-full mb-2" />
+                                    <Dropdown v-model="selectedBranch" :options="branchOptions" optionLabel="label" optionValue="value" placeholder="All Branches" class="w-full mb-2" />
                                 </div>
                             </div>
 
@@ -786,13 +561,7 @@ const formatStatus = (status) => {
                                     <h6>Language</h6>
                                 </div>
                                 <div class="filter-options">
-                                    <Dropdown
-                                        v-model="selectedLanguage"
-                                        :options="languageOptions"
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        placeholder="All Languages"
-                                        class="w-full mb-2" />
+                                    <Dropdown v-model="selectedLanguage" :options="languageOptions" optionLabel="label" optionValue="value" placeholder="All Languages" class="w-full mb-2" />
                                 </div>
                             </div>
 
@@ -804,13 +573,7 @@ const formatStatus = (status) => {
                                 </div>
                                 <div class="filter-options">
                                     <div class="flex flex-column gap-2">
-                                        <Slider
-                                            v-model="yearFilters.range"
-                                            :min="yearRange[0]"
-                                            :max="yearRange[1]"
-                                            :step="1"
-                                            range
-                                            class="w-full" />
+                                        <Slider v-model="yearFilters.range" :min="yearRange[0]" :max="yearRange[1]" :step="1" range class="w-full" />
                                         <div class="flex justify-content-between">
                                             <span>{{ yearFilters.range[0] }}</span>
                                             <span>{{ yearFilters.range[1] }}</span>
@@ -828,14 +591,7 @@ const formatStatus = (status) => {
                             <h6 class="m-0">Active Filters:</h6>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <Tag
-                                v-for="(filter, index) in activeFiltersList"
-                                :key="index"
-                                :value="filter.label"
-                                :severity="filter.severity"
-                                class="active-filter"
-                                removable
-                                @remove="removeFilter(filter)" />
+                            <Tag v-for="(filter, index) in activeFiltersList" :key="index" :value="filter.label" :severity="filter.severity" class="active-filter" removable @remove="removeFilter(filter)" />
                         </div>
                     </div>
 
@@ -849,17 +605,8 @@ const formatStatus = (status) => {
 
         <Toolbar class="mb-4">
             <template v-slot:start>
-                <Button
-                    label="New Book"
-                    icon="pi pi-plus"
-                    severity="success"
-                    class="mr-2"
-                    @click="createBook" />
-                <Button
-                    label="Delete Selected"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    :disabled="!selectedBooks.length" />
+                <Button label="New Book" icon="pi pi-plus" severity="success" class="mr-2" @click="createBook" />
+                <Button label="Delete Selected" icon="pi pi-trash" severity="danger" :disabled="!selectedBooks.length" />
             </template>
             <template v-slot:end>
                 <Button icon="pi pi-file-excel" severity="success" @click="exportCSV" />
@@ -869,134 +616,134 @@ const formatStatus = (status) => {
         <!-- Enhanced Data Table -->
         <DataTable
             v-model:selection="selectedBooks"
-            :value="books"
+            :value="featuredResources"
             :paginator="true"
-            :rows="10"
+            :rows="resourcesPerPage"
             :loading="loading"
             :lazy="true"
             :total-records="totalRecords"
+            v-model:first="first"
+            :rowsPerPageOptions="[5, 10, 15, 20]"
             :row-hover="true"
             paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
             current-page-report-template="Showing {first} to {last} of {totalRecords} books"
             responsive-layout="stack"
-            :global-filter-fields="[
-                'title',
-                'author',
-                'isbn',
-                'category.name',
-                'publisher.name',
-                'description'
-            ]"
+            :global-filter-fields="['title', 'author', 'isbn', 'category.name', 'publisher.name', 'description']"
             v-model:filters="filters"
-            @page="onPage($event)"
-            @sort="onSort($event)"
-            @filter="onFilter()"
+            @page="onPage"
+            @sort="onSort"
+            @filter="onFilter"
             style-class="p-datatable-gridlines p-datatable-sm"
-            breakpoint="960px">
-            <template #empty> No books found. </template>
-            <template #loading> Loading books data. Please wait. </template>
+            breakpoint="960px"
+        >
+            <template #empty>
+                <div class="p-4 text-center">
+                    <i class="pi pi-folder-open text-primary" style="font-size: 3rem"></i>
+                    <p>No books found.</p>
+                </div>
+            </template>
 
             <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
 
             <Column header="Cover" headerStyle="min-width:5rem; max-width:8rem">
                 <template #body="{ data }">
-                    <img
-                        :src="data.cover_image_url"
-                        :alt="data.title"
-                        class="shadow-2 border-round"
-                        style="width: 50px; height: 70px; object-fit: cover" />
+                    <img :src="data.image || 'https://via.placeholder.com/50x70?text=No+Cover'" :alt="data.title || data.isbn" class="shadow-2 border-round" style="width: 50px; height: 70px; object-fit: cover" />
                 </template>
             </Column>
 
-            <Column field="title" header="Title" sortable :showFilterMenu="false">
+            <Column header="Title" sortable :showFilterMenu="false">
                 <template #body="{ data }">
                     <div class="flex align-items-center gap-2">
-                        <span>
-                            <i :class="getBookIcon(data)" style="font-size: 1.2rem"></i>
-                        </span>
+                        <i :class="getBookIcon(data)" style="font-size: 1.2rem" />
                         <div>
-                            <span class="font-bold block">{{ data.title }}</span>
-                            <div class="flex align-items-center gap-2 mt-1">
-                                <Badge value="ISBN" severity="info" />
-                                <span class="text-sm font-medium">{{ data.isbn }}</span>
-                            </div>
+                            <span class="font-bold block">
+                                {{ data.title || data.isbn }}
+                            </span>
+                            <small v-if="data.title"> <Badge value="ISBN" severity="info" /> {{ data.isbn }} </small>
                         </div>
                     </div>
                 </template>
             </Column>
-
-            <Column field="author" header="Author" sortable></Column>
-            <Column field="publisher.name" header="Publisher" sortable></Column>
-            <Column
-                field="publication_year"
-                header="Year"
-                sortable
-                headerStyle="width:6rem"></Column>
-
-            <Column field="category.name" header="Category" sortable></Column>
-
-            <Column field="availability_status" header="Status" sortable headerStyle="width:8rem">
+            <!-- Author -->
+            <Column header="Author" sortable>
                 <template #body="{ data }">
-                    <Tag
-                        :value="formatStatus(data.availability_status)"
-                        :severity="getStatusSeverity(data.availability_status)" />
-                    <div v-if="data.reference_only" class="mt-1">
-                        <Tag severity="info" value="Reference Only" />
-                    </div>
+                    {{ data.author || 'Unknown' }}
                 </template>
             </Column>
 
-            <Column
-                field="library_branch.name"
-                header="Location"
-                sortable
-                headerStyle="min-width:10rem">
+            <!-- Publisher -->
+            <Column header="Publisher" sortable>
+                <template #body="{ data }">
+                    {{ data.publisher?.publisher_name || 'Unknown' }}
+                </template>
+            </Column>
+
+            <!-- Year -->
+            <Column header="Year" sortable headerStyle="width:6rem">
+                <template #body="{ data }">
+                    {{ data.publication_year || '–' }}
+                </template>
+            </Column>
+
+            <!-- Category -->
+            <Column header="Category" sortable>
+                <template #body="{ data }">
+                    {{ data.category || 'Uncategorized' }}
+                </template>
+            </Column>
+
+            <!-- Status -->
+            <Column header="Status" sortable headerStyle="width:8rem">
+                <template #body="{ data }">
+                    <Tag :value="formatStatus(data.availability_status)" :severity="getStatusSeverity(data.availability_status)" />
+                </template>
+            </Column>
+
+            <!-- Location -->
+            <Column header="Location" sortable headerStyle="min-width:10rem">
                 <template #body="{ data }">
                     <div>
-                        <span class="block">{{ data.library_branch.name }}</span>
-                        <div class="flex gap-2 align-items-center mt-1">
+                        <div>Branch ID: {{ data.library_branch_id }}</div>
+                        <div class="flex align-items-center gap-2 mt-1">
                             <Badge value="SHELF" severity="success" />
-                            <span class="text-sm font-bold">{{ data.shelf_id }}</span>
+                            <span class="text-sm font-bold">
+                                {{ data.shelfCode || 'N/A' }}
+                            </span>
                         </div>
-                        <small class="text-500 block mt-1">{{ data.shelf_location_detail }}</small>
                     </div>
                 </template>
             </Column>
 
-            <Column field="pages" header="Pages" sortable headerStyle="width:6rem"></Column>
-            <Column field="cover_type" header="Cover" sortable headerStyle="width:8rem"></Column>
+            <!-- Pages with fallback -->
+            <Column header="Pages" sortable headerStyle="width:6rem">
+                <template #body="{ data }">
+                    {{ data.pages != null ? data.pages : '–' }}
+                </template>
+            </Column>
 
+            <!-- Cover Type with fallback -->
+            <Column header="Cover" sortable headerStyle="width:8rem">
+                <template #body="{ data }">
+                    {{ data.cover_type || 'Unknown' }}
+                </template>
+            </Column>
+
+            <!-- Actions remain the same -->
             <Column headerStyle="min-width:10rem; text-align:center" bodyStyle="text-align:center">
                 <template #header>Actions</template>
                 <template #body="{ data }">
                     <div class="flex flex-wrap justify-content-center gap-2">
-                        <Button
-                            icon="pi pi-eye"
-                            tooltip="View Details"
-                            tooltipOptions="{ position: 'top' }"
-                            class="p-button-rounded p-button-info p-button-sm"
-                            @click="viewDetails(data)" />
+                        <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-info p-button-sm" @click="viewDetails(data)" />
                         <Button
                             icon="pi pi-shopping-cart"
                             tooltip="Borrow"
                             tooltipOptions="{ position: 'top' }"
                             class="p-button-rounded p-button-warning p-button-sm"
                             @click="borrowBook(data)"
-                            :disabled="
-                                data.availability_status !== 'available' || data.reference_only
-                            " />
-                        <Button
-                            icon="pi pi-pencil"
-                            tooltip="Edit"
-                            tooltipOptions="{ position: 'top' }"
-                            class="p-button-rounded p-button-success p-button-sm"
-                            @click="editBook(data)" />
-                        <Button
-                            icon="pi pi-trash"
-                            tooltip="Delete"
-                            tooltipOptions="{ position: 'top' }"
-                            class="p-button-rounded p-button-danger p-button-sm"
-                            @click="confirmDeleteBook(data)" />
+                            :disabled="data.availability_status !== 'available' || data.reference_only"
+                        />
+                        <Button icon="pi pi-pencil" tooltip="Edit" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="editBook(data)" />
+                        <Button icon="pi pi-trash" tooltip="Delete" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-danger p-button-sm" @click="confirmDeleteBook(data)" />
                     </div>
                 </template>
             </Column>

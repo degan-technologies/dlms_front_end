@@ -80,6 +80,16 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/EBookReader.vue'),
                     meta: { requiresAuth: true }
                 },
+                // Reader routes for different content types
+
+                // Routes for bookmarks, notes, and collections
+
+                // {
+                //     path: '/history',
+                //     name: 'user-history',
+                //     component: () => import('@/views/pages/user/History.vue'),
+                //     meta: { requiresAuth: true }
+                // },
 
                 // Other Assets Management Routes
                 {
@@ -133,12 +143,42 @@ const router = createRouter({
                     name: 'borrowing-history',
                     component: () => import('@/views/pages/book/BorrowingHistory.vue'),
                     meta: { requiresAuth: true }
+                },
+                //fine related routes
+                {
+                    path: '/books/fines',
+                    name: 'fines-list',
+                    component: () => import('@/views/pages/book/PenalityFeeHistory.vue'),
+                    meta: { requiresAuth: true }
                 }
             ]
         },
 
         // Public Routes
-
+        {
+            path: '/bookmarks',
+            name: 'bookmarks',
+            component: () => import('@/views/pages/user/Bookmarks.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/my-notes',
+            name: 'my-notes',
+            component: () => import('@/views/pages/user/MyNotes.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/my-collection',
+            name: 'my-collection',
+            component: () => import('@/views/pages/user/MyCollection.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/reader/:id',
+            name: 'universal-reader',
+            component: () => import('@/views/pages/reader/Reader.vue'),
+            meta: { requiresAuth: true }
+        },
         // Authentication Routes
         {
             path: '/auth/login',
@@ -263,7 +303,7 @@ router.beforeEach(async (to, from, next) => {
             {
                 metaKey: 'isAdminOrLibrarian',
                 condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
-                condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
+                conditionSuperAdmin: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
                 redirect: '/auth/access-denied'
             }
         ];
