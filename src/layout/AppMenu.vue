@@ -58,7 +58,7 @@ const model = computed(() => [
         ? {
               items: [
                   { label: 'Manage Library Branch', icon: 'pi pi-fw pi-building', to: '/library/branches' },
-                  { label: 'Manage Admins', icon: 'pi pi-fw pi-user-plus', to: '/admins/manage' }
+                  { label: 'Manage Admins', icon: 'pi pi-fw pi-id-card', to: '/admin/manage' },
               ]
           }
         : null,
@@ -70,9 +70,10 @@ const model = computed(() => [
               items: [
                   { label: 'Manage Students', icon: 'pi pi-fw pi-users', to: '/students/manage' },
                   { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' },
-
                   { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/admin/roles' },
-                  { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/admin/settings' }
+                //   { label: 'Manage Admins', icon: 'pi pi-fw pi-id-card', to: '/admin/manage' },
+
+                  { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/userprofile' }
               ]
           }
         : null,
@@ -93,8 +94,7 @@ const model = computed(() => [
         items: [
             { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/books/borrowed' },
             { label: 'Borrowing History', icon: 'pi pi-fw pi-clock', to: '/books/history' },
-            { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' },
-            { label: 'Penality Fee History', icon: 'pi pi-fw pi-exclamation-triangle', to: '/books/fines' }
+            { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/profile' }
         ]
     },
     // Library Management - only for librarians (assuming role ID 2 is librarian)

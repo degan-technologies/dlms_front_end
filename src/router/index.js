@@ -16,7 +16,42 @@ const router = createRouter({
                     component: () => import('@/views/Dashboard.vue'),
                     meta: { requiresAuth: true }
                 },
-
+                {
+                    path: '/userprofile',
+                    name: 'userprofile',
+                    component: () => import('@/views/pages/UserProfile.vue'),
+                    meta: { requiresAuth: true }
+                },
+                // User Management Routes
+                
+                {
+                    path: '/students/manage',
+                    name: 'students-manage',
+                    component: () => import('@/views/pages/usermanagment/student/StudentManage.vue'),
+                    meta: { requiresAuth: true }
+                },
+                {
+                    path: '/staff/manage',
+                    name: 'staff-manage',
+                    component: () => import('@/views/pages/usermanagment/staff/StaffManage.vue'),
+                    meta: { requiresAuth: true }
+                },
+                {
+                    path: '/admin/manage',
+                    name: 'admin-manage',
+                    component: () => import('@/views/pages/usermanagment/admin/AdminManage.vue'),
+                    meta: { requiresAuth: true,   }
+                },
+                {
+                    path: '/auth/register',
+                    name: 'register',
+                    component: () => import('@/views/pages/usermanagment/student/Register.vue')
+                },
+                {
+                    path: '/auth/staffregister',
+                    name: 'staffregister',
+                    component: () => import('@/views/pages/usermanagment/staff/StaffRegister.vue')
+                },
                 // Book Management Routes
                 {
                     path: '/books',
@@ -68,6 +103,7 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/EBookEdit.vue'),
                     meta: { requiresAuth: true, isLibrarian: true }
                 },
+                
                 {
                     path: '/books/ebooks/:id',
                     name: 'ebook-details',
@@ -192,20 +228,17 @@ const router = createRouter({
             meta: { public: true }
         },
 
-        {
-            path: '/auth/register',
-            name: 'register',
-            component: () => import('@/views/pages/auth/Register.vue')
-        },
+      
         {
             path: '/auth/forgot-password',
             name: 'forgot-password',
             component: () => import('@/views/pages/auth/ForgotPassword.vue')
         },
         {
-            path: '/auth/reset-password',
+            path: '/reset-password',
             name: 'reset-password',
-            component: () => import('@/views/pages/auth/ResetPassword.vue')
+            component: () => import('@/views/pages/ResetPassword.vue'),
+            props: (route) => ({ email: route.query.email })
         },
         {
             path: '/auth/verify-email',

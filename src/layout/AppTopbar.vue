@@ -5,7 +5,9 @@ import { storeToRefs } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
 import AppConfigurator from './AppConfigurator.vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 const showProfileMenu = ref(false);
 const authStore = useAuthStore();
@@ -132,7 +134,7 @@ const logout = async () => {
                     <h4 class="text-lg font-semibold">{{ user?.user?.username || user?.user?.email }}</h4>
                 </div>
                 <div class="flex flex-col space-y-2">
-                    <Button label="Settings" icon="pi pi-cog" class="p-button-text" />
+                    <Button label="Settings" icon="pi pi-cog" class="p-button-text" @click="() => { showProfileMenu = false; router.push('/userprofile'); }" />
                     <Button label="Logout" :loading="loading" icon="pi pi-sign-out" class="p-button-danger" @click="logout" />
                 </div>
             </div>
