@@ -45,7 +45,7 @@ const logout = async () => {
                 <i class="pi pi-bars"></i>
             </button>
             <router-link to="/" class="layout-topbar-logo">
-                <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         fill-rule="evenodd"
                         clip-rule="evenodd"
@@ -61,8 +61,9 @@ const logout = async () => {
                             fill="var(--primary-color)"
                         />
                     </g>
-                </svg>
+                </svg> -->
 
+                <img src="https://resources.finalsite.net/images/f_auto,q_auto/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" style="display:block;max-width:300px;margin-top:4px;" />
                 <span>FIS</span>
             </router-link>
         </div>

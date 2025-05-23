@@ -22,6 +22,8 @@ const router = createRouter({
                     component: () => import('@/views/pages/UserProfile.vue'),
                     meta: { requiresAuth: true }
                 },
+               
+                
                 // User Management Routes
                 
                 {
@@ -208,6 +210,12 @@ const router = createRouter({
             component: () => import('@/views/pages/reader/Reader.vue'),
             meta: { requiresAuth: true }
         },
+        {
+            path: '/my-profile',
+            name: 'my-profile',
+            component: () => import('@/views/pages/usermanagment/StudentProfile.vue'),
+            meta: { requiresAuth: true }
+        },
         // Authentication Routes
         {
             path: '/auth/login',
@@ -221,7 +229,12 @@ const router = createRouter({
             meta: { public: true }
         },
 
-      
+        {
+            path: '/header',
+            name: 'header',
+            component: () => import('@/views/pages/home/Header.vue'),
+            meta: { public: true }
+        },
         {
             path: '/auth/forgot-password',
             name: 'forgot-password',
