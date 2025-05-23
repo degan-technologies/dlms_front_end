@@ -2,12 +2,13 @@
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Password from 'primevue/password';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-import Cookies from 'js-cookie'; // <-- Added import
+import Cookies from 'js-cookie';
 
-const firstName = ref('');
-const lastName = ref('');
+const first_name = ref('');
+const last_name = ref('');
 const department = ref('');
 const phone_no = ref('');
 const email = ref('');
@@ -17,14 +18,23 @@ const loading = ref(false);
 const errorMessage = ref('');
 const router = useRouter();
 
+const username = ref('');
+const password = ref('');
+const confirmPassword = ref('');
+
 const register = async () => {
     submitted.value = true;
 
     if (
-        !firstName.value ||
-        !lastName.value ||
+        !first_name.value ||
+        !last_name.value ||
+        !department.value ||
         !phone_no.value ||
         !email.value ||
+        !username.value ||
+        !password.value ||
+        !confirmPassword.value ||
+        password.value !== confirmPassword.value ||
         !acceptTerms.value
     ) {
         return;
@@ -35,11 +45,13 @@ const register = async () => {
         errorMessage.value = '';
 
         const payload = {
-            FirstName: firstName.value,
-            LastName: lastName.value,
+            first_name: first_name.value,
+            last_name: last_name.value,
             department: department.value,
             phone_no: phone_no.value,
-            email: email.value
+            email: email.value,
+            username: username.value,
+            password: password.value
         };
 
         // Get token from cookies or localStorage
@@ -123,8 +135,13 @@ const registerImportedStaff = async () => {
             return;
         }
 
+        // Transform imported staff to match API format
+        const transformedStaff = importedStaff.value.map(staff => ({
+            ...staff
+        }));
+
         const response = await axios.post('http://localhost:8000/api/staff/bulk', {
-            staff: importedStaff.value
+            staff: transformedStaff
         }, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -161,7 +178,8 @@ const registerImportedStaff = async () => {
                     <!-- File Upload Section -->
                     <div class="mb-6 p-4 border-2 border-dashed border-primary rounded-lg bg-surface-100 dark:bg-surface-800">
                         <div class="text-lg font-semibold mb-1 text-primary">Bulk Import Staff</div>
-                        <p class="mb-2 text-muted-color">Upload a CSV or Excel file to register multiple staff at once.</p>
+                        <p class="mb-2 text-muted-color">Upload a CSV or Excel file to register multiple staff at once.<br>
+                        <span class="text-xs text-muted-color">Required columns: first_name, last_name, department, phone_no, email, username, password</span></p>
                         <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="handleFileUpload" class="mb-1" />
                         <Button label="Register Imported Staff" class="mt-1" @click="registerImportedStaff" :disabled="!importedStaff.length" :loading="loading"></Button>
                         <div v-if="importedStaff.length" class="mt-1 text-green-600">Loaded {{ importedStaff.length }} staff from file.</div>
@@ -171,26 +189,51 @@ const registerImportedStaff = async () => {
                     <div>
                         <Message severity="error" v-if="errorMessage" class="mb-2">{{ errorMessage }}</Message>
 
+                        <!-- Username/password fields -->
                         <div class="flex gap-2 mb-1">
                             <div class="flex-1">
-                                <label for="firstName" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">First Name</label>
-                                <InputText id="firstName" type="text" placeholder="First name" class="w-full" v-model="firstName" :class="{ 'p-invalid': submitted && !firstName }" />
-                                <small v-if="submitted && !firstName" class="p-error block mb-2">First name is required.</small>
+                                <label for="username" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Username</label>
+                                <InputText id="username" type="text" placeholder="Username" class="w-full" v-model="username" :class="{ 'p-invalid': submitted && !username }" />
+                                <small v-if="submitted && !username" class="p-error block mb-2">Username is required.</small>
+                                <small v-else class="block mb-2 invisible">_</small>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mb-1">
+                            <div class="flex-1">
+                                <label for="password" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Password</label>
+                                <Password id="password" v-model="password" placeholder="Password" class="w-full" :class="{ 'p-invalid': submitted && !password }" toggleMask />
+                                <small v-if="submitted && !password" class="p-error block mb-2">Password is required.</small>
                                 <small v-else class="block mb-2 invisible">_</small>
                             </div>
                             <div class="flex-1">
-                                <label for="lastName" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Last Name</label>
-                                <InputText id="lastName" type="text" placeholder="Last name" class="w-full" v-model="lastName" :class="{ 'p-invalid': submitted && !lastName }" />
-                                <small v-if="submitted && !lastName" class="p-error block mb-2">Last name is required.</small>
+                                <label for="confirmPassword" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Confirm Password</label>
+                                <Password id="confirmPassword" v-model="confirmPassword" placeholder="Confirm Password" class="w-full" :class="{ 'p-invalid': submitted && (password !== confirmPassword) }" toggleMask />
+                                <small v-if="submitted && password !== confirmPassword" class="p-error block mb-2">Passwords must match.</small>
                                 <small v-else class="block mb-2 invisible">_</small>
                             </div>
                         </div>
 
+                        <!-- Rest of the form fields -->
+                        <div class="flex gap-2 mb-1">
+                            <div class="flex-1">
+                                <label for="first_name" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">First Name</label>
+                                <InputText id="first_name" type="text" placeholder="First name" class="w-full" v-model="first_name" :class="{ 'p-invalid': submitted && !first_name }" />
+                                <small v-if="submitted && !first_name" class="p-error block mb-2">First name is required.</small>
+                                <small v-else class="block mb-2 invisible">_</small>
+                            </div>
+                            <div class="flex-1">
+                                <label for="last_name" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Last Name</label>
+                                <InputText id="last_name" type="text" placeholder="Last name" class="w-full" v-model="last_name" :class="{ 'p-invalid': submitted && !last_name }" />
+                                <small v-if="submitted && !last_name" class="p-error block mb-2">Last name is required.</small>
+                                <small v-else class="block mb-2 invisible">_</small>
+                            </div>
+                        </div>
                         <div class="flex gap-2 mb-1">
                             <div class="flex-1">
                                 <label for="department" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Department</label>
-                                <InputText id="department" type="text" placeholder="Department (optional)" class="w-full" v-model="department" />
-                                <small class="block mb-2 invisible">_</small>
+                                <InputText id="department" type="text" placeholder="Department" class="w-full" v-model="department" :class="{ 'p-invalid': submitted && !department }" />
+                                <small v-if="submitted && !department" class="p-error block mb-2">Department is required.</small>
+                                <small v-else class="block mb-2 invisible">_</small>
                             </div>
                             <div class="flex-1">
                                 <label for="phone_no" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Phone Number</label>
@@ -199,7 +242,6 @@ const registerImportedStaff = async () => {
                                 <small v-else class="block mb-2 invisible">_</small>
                             </div>
                         </div>
-
                         <div class="flex gap-2 mb-1">
                             <div class="flex-1">
                                 <label for="email" class="block text-surface-900 dark:text-surface-0 text-base font-medium mb-1">Email</label>
@@ -208,7 +250,6 @@ const registerImportedStaff = async () => {
                                 <small v-else class="block mb-2 invisible">_</small>
                             </div>
                         </div>
-
                         <div class="mb-4 mt-2">
                             <Checkbox v-model="acceptTerms" id="acceptTerms" binary :class="{ 'p-invalid': submitted && !acceptTerms }" class="mr-2"></Checkbox>
                             <label for="acceptTerms" :class="{ 'p-error': submitted && !acceptTerms }"> I agree to the <a href="#" class="text-primary">terms and conditions</a> </label>
