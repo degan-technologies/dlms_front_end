@@ -23,46 +23,7 @@ const router = createRouter({
                     component: () => import('@/views/pages/UserProfile.vue'),
                     meta: { requiresAuth: true }
                 },
-
                 // User Management Routes
-
-                {
-                    path: '/students/manage',
-                    name: 'students-manage',
-                    component: () => import('@/views/pages/usermanagment/student/StudentManage.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/staff/manage',
-                    name: 'staff-manage',
-                    component: () => import('@/views/pages/usermanagment/staff/StaffManage.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/admin/manage',
-                    name: 'admin-manage',
-                    component: () => import('@/views/pages/usermanagment/admin/AdminManage.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/auth/register',
-                    name: 'register',
-                    component: () => import('@/views/pages/usermanagment/student/Register.vue')
-                },
-                {
-                    path: '/auth/staffregister',
-                    name: 'staffregister',
-                    component: () => import('@/views/pages/usermanagment/staff/StaffRegister.vue')
-                },
-                {
-                    path: '/userprofile',
-                    name: 'userprofile',
-                    component: () => import('@/views/pages/UserProfile.vue'),
-                    meta: { requiresAuth: true }
-                },
-
-                // User Management Routes
-
                 {
                     path: '/students/manage',
                     name: 'students-manage',
@@ -92,18 +53,18 @@ const router = createRouter({
                     component: () => import('@/views/pages/usermanagment/staff/StaffRegister.vue')
                 },
                 // Book Management Routes
-{
-                    path: '/books',
-                    name: 'books-list',
-                    component: () => import('@/views/pages/book/BooksList.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/physical/create',
-                    name: 'physical-book-create',
-                    component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
+                // {
+                //     path: '/books',
+                //     name: 'books-list',
+                //     component: () => import('@/views/pages/book/BooksList.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/physical/create',
+                //     name: 'physical-book-create',
+                //     component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
                 {
                     path: '/library/manage',
                     name: 'libray-manage',
@@ -117,39 +78,38 @@ const router = createRouter({
                     meta: { requiresAuth: true, isSuperAdmin: true }
                 },
 
-
                 // E-Book Management Routes
-                {
-                    path: '/books/ebooks',
-                    name: 'ebooks-list',
-                    component: () => import('@/views/pages/book/EBooksList.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/ebooks/create',
-                    name: 'ebook-create',
-                    component: () => import('@/views/pages/book/EBookCreate.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
-                {
-                    path: '/books/ebooks/edit/:id',
-                    name: 'ebook-edit',
-                    component: () => import('@/views/pages/book/EBookEdit.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
-                },
+                // {
+                //     path: '/books/ebooks',
+                //     name: 'ebooks-list',
+                //     component: () => import('@/views/pages/book/EBooksList.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/ebooks/create',
+                //     name: 'ebook-create',
+                //     component: () => import('@/views/pages/book/EBookCreate.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/books/ebooks/edit/:id',
+                //     name: 'ebook-edit',
+                //     component: () => import('@/views/pages/book/EBookEdit.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
 
-                {
-                    path: '/books/ebooks/:id',
-                    name: 'ebook-details',
-                    component: () => import('@/views/pages/book/EBookDetails.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/ebooks/read/:id',
-                    name: 'ebook-reader',
-                    component: () => import('@/views/pages/book/EBookReader.vue'),
-                    meta: { requiresAuth: true }
-                },
+                // {
+                //     path: '/books/ebooks/:id',
+                //     name: 'ebook-details',
+                //     component: () => import('@/views/pages/book/EBookDetails.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/ebooks/read/:id',
+                //     name: 'ebook-reader',
+                //     component: () => import('@/views/pages/book/EBookReader.vue'),
+                //     meta: { requiresAuth: true }
+                // },
                 // Reader routes for different content types
 
                 // Routes for bookmarks, notes, and collections
@@ -167,23 +127,23 @@ const router = createRouter({
                     name: 'assets-list',
                     component: () => import('@/views/pages/book/AssetsList.vue'),
                     meta: { requiresAuth: true }
-                }
+                },
 
                 // Category and Publisher Routes
 
                 // User borrowing and history routes
-                {
-                    path: '/books/borrowed',
-                    name: 'borrowed-books',
-                    component: () => import('@/views/pages/book/BorrowedBooks.vue'),
-                    meta: { requiresAuth: true }
-                },
-                {
-                    path: '/books/history',
-                    name: 'borrowing-history',
-                    component: () => import('@/views/pages/book/BorrowingHistory.vue'),
-                    meta: { requiresAuth: true }
-                },
+                // {
+                //     path: '/books/borrowed',
+                //     name: 'borrowed-books',
+                //     component: () => import('@/views/pages/book/BorrowedBooks.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/history',
+                //     name: 'borrowing-history',
+                //     component: () => import('@/views/pages/book/BorrowingHistory.vue'),
+                //     meta: { requiresAuth: true }
+                // },
                 {
                     path: '/librarianReply',
                     name: 'LibrarianReply',
@@ -338,67 +298,27 @@ const ROLE = {
     SUPER_ADMIN: 1,
     ADMIN: 2,
     LIBRARIAN: 3,
-    STAFF: 4,
+    TEACHER: 4,
     STUDENT: 5
 };
+
+// Variable to track if we've done the initial auth check
+let hasCheckedAuth = false;
 
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
     const accessToken = Cookies.get('access_token');
 
-    // Skip authentication checks for home page and auth routes
-    if (to.path === '/' || to.path.startsWith('/auth/')) {
-        return next();
-    }
-
-    // First time the app loads, check authentication status
-    if (isInitialLoad && !to.query.token) {
-        try {
-            // If we have a token but no user info, try to validate it
-            if (accessToken && (!authStore.getAuth.isAuthenticated || !authStore.getAuth.user)) {
-                const isAuthenticated = await authStore.authCheck();
-                if (!isAuthenticated) {
-                    Cookies.remove('access_token');
-                    isInitialLoad = false;
-                    return next('/auth/login');
-                }
-            } else if (!accessToken) {
-                isInitialLoad = false;
-                return next('/auth/login');
-            }
-        } catch (error) {
-            console.error('Auth validation failed on initial load:', error);
-            Cookies.remove('access_token');
-        } finally {
-            isInitialLoad = false;
-        }
-    }
-    // Define role constants outside the router guard for better maintainability
-    const ROLE = {
-        SUPER_ADMIN: 1,
-        ADMIN: 2,
-        LIBRARIAN: 3,
-        TEACHER: 4,
-        STUDENT: 5
-    };
-
-// Variable to track if we've done the initial auth check
-let hasCheckedAuth = false;
-
-    router.beforeEach(async (to, from, next) => {
-        const authStore = useAuthStore();
-        const accessToken = Cookies.get('access_token');
-
-        // Skip authentication checks for public routes
-        if (to.path === '/' || to.path.startsWith('/auth/') || to.path === '/pdf') {
+    // Skip authentication checks for public routes
+    if (to.path === '/' || to.path.startsWith('/auth/') || to.path === '/pdf') {
         if (to.path !== '/auth/access-denied' && accessToken && authStore.getAuth.isAuthenticated) {
             // If user is already authenticated and tries to access login page, redirect to dashboard
             if (to.path === '/auth/login') {
                 return next('/dashboard');
             }
         }
-            return next();
-        }
+        return next();
+    }
 
     // On initial app load or when refreshing a page, validate the token
     if (!hasCheckedAuth || !authStore.getAuth.user) {
@@ -429,111 +349,60 @@ let hasCheckedAuth = false;
         }
     }
 
-        const { isAuthenticated, user } = authStore.getAuth;
+    const { isAuthenticated, user } = authStore.getAuth;
 
-        // Check for public routes that don't require authentication
-        const isAuthRoute = to.path.startsWith('/auth/');
+    // If route requires authentication but user is not authenticated
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        Cookies.remove('access_token');
+        return next({
+            path: '/auth/login',
+            query: { redirect: to.fullPath }
+        });
+    }
 
-        // If route requires authentication but user is not authenticated
-        if (to.meta.requiresAuth && !isAuthenticated) {
-            Cookies.remove('access_token');
-            return next({
-                path: '/auth/login',
-                query: { redirect: to.fullPath } // Store the attempted URL for later redirection
-            });
+    // Role-based access control
+    if (isAuthenticated && user) {
+        const userRoles = user?.user?.roles || [];
+        console.log('User Roles:', userRoles);
+        const userRoleIds = userRoles.map((role) => role.id);
+
+        // Ensure super-admin has unrestricted access
+        if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
+            return next();
         }
 
-        // Role-based access control
-        if (isAuthenticated && user) {
-            const userRoles = user?.user?.roles || [];
-            console.log('User Roles:', userRoles);
-            const userRoleIds = userRoles.map((role) => role.id);
-
-            // Ensure super-admin has unrestricted access
-            if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
-                return next();
+        // Define conditions for access
+        const conditions = [
+            { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
+            { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
+            { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
+            { metaKey: 'isTeacher', condition: to.meta.isTeacher && !userRoleIds.includes(ROLE.TEACHER), redirect: '/auth/access-denied' },
+            { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
+            {
+                metaKey: 'isAdminOrLibrarian',
+                condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                redirect: '/auth/access-denied'
+            },
+            {
+                metaKey: 'isAdminOrSuperAdmin',
+                condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
+                redirect: '/auth/access-denied'
             }
+        ];
 
-            // Define conditions for access
-            const conditions = [
-                { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
-                { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
-                { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
-                { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
-                { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
-                {
-                    metaKey: 'isAdminOrLibrarian',
-                    condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
-                    // eslint-disable-next-line no-dupe-keys
-                    condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
-                    redirect: '/auth/access-denied'
-                }
-            ];
-            // Check for public routes that don't require authentication
-            const isAuthRoute = to.path.startsWith('/auth/');
-
-            // If route requires authentication but user is not authenticated
-            if (to.meta.requiresAuth && !isAuthenticated) {
-                Cookies.remove('access_token');
-                return next({
-                    path: '/auth/login',
-                    query: { redirect: to.fullPath } // Store the attempted URL for later redirection
-                });
-            }
-
-            // Role-based access control
-            if (isAuthenticated && user) {
-                const userRoles = user?.user?.roles || [];
-                console.log('User Roles:', userRoles);
-                const userRoleIds = userRoles.map((role) => role.id);
-
-                // Ensure super-admin has unrestricted access
-                if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
-                    return next();
-                }
-
-                // Define conditions for access
-                const conditions = [
-                    { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
-                    { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
-                    { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
-                    { metaKey: 'isTeacher', condition: to.meta.isTeacher && !userRoleIds.includes(ROLE.TEACHER), redirect: '/auth/access-denied' },
-                    { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
-                    {
-                        metaKey: 'isAdminOrLibrarian',
-                        condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
-                        condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
-                        redirect: '/auth/access-denied'
-                    }
-                ];
-
-                // Check each condition
-                for (const { condition, redirect } of conditions) {
-                    if (condition) {
-                        return next(redirect);
-                    }
-                }
-            }
-
-            // Redirect authenticated users away from auth pages
-            if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
-                return next('/dashboard');
-            }
-            // Check each condition
-            for (const { condition, redirect } of conditions) {
-                if (condition) {
-                    return next(redirect);
-                }
+        // Check each condition
+        for (const { condition, redirect } of conditions) {
+            if (condition) {
+                return next(redirect);
             }
         }
+    }
 
-        // Redirect authenticated users away from auth pages
-        if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
-            return next('/dashboard');
-        }
+    // Redirect authenticated users away from auth pages
+    if (to.path.startsWith('/auth/') && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
+        return next('/dashboard');
+    }
 
-        next();
-    });
     next();
 });
 

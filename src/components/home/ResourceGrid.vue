@@ -1,14 +1,3 @@
-<script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-import Paginator from 'primevue/paginator';
-
-const homeStore = useHomeStore();
-const { loading, featuredResources, totalRecords, resourcesPerPage, first } = storeToRefs(homeStore);
-
-const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = homeStore;
-</script>
-
 <template>
     <div class="lg:w-3/4">
         <!-- Enhanced Loading State -->
@@ -34,14 +23,13 @@ const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = home
                 <button @click="resetFilters" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">Clear filters</button>
             </div>
         </div>
-
-        <!-- Udemy-style Course Grid -->
+        <!-- Enhanced Udemy-style Course Grid -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div v-for="resource in resources" :key="resource.id" class="group cursor-pointer" @click="showResourcePreview(resource)">
-                <!-- Course Card -->
-                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                    <!-- Course Image -->
-                    <div class="relative h-44 overflow-hidden bg-gray-100">
+            <div v-for="resource in resources" :key="resource.id" class="group cursor-pointer h-full" @click="showResourcePreview(resource)">
+                <!-- Enhanced Course Card with Fixed Height -->
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full min-h-[480px] max-h-[480px]">
+                    <!-- Course Image with Enhanced Overlays -->
+                    <div class="relative h-40 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0">
                         <img
                             :src="resource.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'"
                             :alt="resource.title"
@@ -53,64 +41,148 @@ const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = home
                             "
                         />
 
+                        <!-- Gradient Overlay for Better Text Readability -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10"></div>
+
                         <!-- Course Type Badge -->
                         <div class="absolute top-3 left-3">
-                            <span class="px-2 py-1 bg-white text-xs font-bold rounded shadow-sm" :class="resource.resource_type === 'physical' ? 'text-green-600' : 'text-purple-600'">
-                                {{ resource.resource_type === 'physical' ? 'Book' : 'Course' }}
+                            <span class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-xs font-bold rounded-full shadow-md" :class="resource.resource_type === 'physical' ? 'text-green-700' : 'text-purple-700'">
+                                {{ resource.resource_type === 'physical' ? '📚 Physical Book' : '🎓 Digital Course' }}
                             </span>
                         </div>
 
-                        <!-- Availability Badge -->
+                        <!-- Enhanced Availability/Count Badge -->
                         <div class="absolute top-3 right-3">
-                            <span v-if="resource.resource_type === 'physical'" class="px-2 py-1 bg-white text-xs font-bold rounded shadow-sm" :class="resource.availability_status === 'available' ? 'text-green-600' : 'text-red-600'">
-                                {{ resource.available_books_count }} left
+                            <span
+                                v-if="resource.resource_type === 'physical'"
+                                class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-xs font-bold rounded-full shadow-md"
+                                :class="resource.availability_status === 'available' ? 'text-green-700' : 'text-red-700'"
+                            >
+                                {{ resource.available_books_count }}/{{ resource.total_books_count }} Available
                             </span>
-                            <span v-else class="px-2 py-1 bg-white text-purple-600 text-xs font-bold rounded shadow-sm"> {{ resource.downloadable_count }} lessons </span>
+                            <span v-else class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-purple-700 text-xs font-bold rounded-full shadow-md"> {{ resource.downloadable_count }} Lessons </span>
+                        </div>
+
+                        <!-- Content Type Indicators for eBooks -->
+                        <div v-if="resource.resource_type === 'ebook' && resource.ebook_types_breakdown" class="absolute bottom-3 left-3">
+                            <div class="flex gap-1">
+                                <span v-if="resource.ebook_types_breakdown.pdf > 0" class="px-2 py-1 bg-red-500/90 text-white text-xs font-bold rounded-full"> 📄 {{ resource.ebook_types_breakdown.pdf }} </span>
+                                <span v-if="resource.ebook_types_breakdown.video > 0" class="px-2 py-1 bg-blue-500/90 text-white text-xs font-bold rounded-full"> 🎥 {{ resource.ebook_types_breakdown.video }} </span>
+                                <span v-if="resource.ebook_types_breakdown.audio > 0" class="px-2 py-1 bg-green-500/90 text-white text-xs font-bold rounded-full"> 🎵 {{ resource.ebook_types_breakdown.audio }} </span>
+                            </div>
                         </div>
                     </div>
+                    <!-- Enhanced Course Content -->
+                    <div class="p-4 flex-1 flex flex-col">
+                        <!-- Educational Metadata Row -->
+                        <div class="flex flex-wrap gap-1.5 mb-2">
+                            <span v-if="resource.category" class="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-semibold border border-blue-200">
+                                <i class="pi pi-folder mr-1 text-xs"></i>
+                                {{ resource.category }}
+                            </span>
+                            <span v-if="resource.subject" class="inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-semibold border border-purple-200">
+                                <i class="pi pi-book mr-1 text-xs"></i>
+                                {{ resource.subject }}
+                            </span>
+                            <span v-if="resource.grade" class="inline-flex items-center px-2 py-1 bg-orange-50 text-orange-700 rounded-md text-xs font-semibold border border-orange-200">
+                                <i class="pi pi-chart-line mr-1 text-xs"></i>
+                                {{ resource.grade.replace('Grade ', 'Gr ') }}
+                            </span>
+                        </div>
 
-                    <!-- Course Content -->
-                    <div class="p-4">
                         <!-- Title -->
                         <h3 class="font-bold text-gray-900 text-base mb-2 line-clamp-2 leading-tight group-hover:text-purple-600 transition-colors">
                             {{ resource.title }}
                         </h3>
 
-                        <!-- Author -->
-                        <p v-if="resource.author" class="text-sm text-gray-600 mb-3">{{ resource.author }}</p>
+                        <!-- Author with enhanced styling -->
+                        <p v-if="resource.author" class="text-sm text-gray-600 mb-2 flex items-center">
+                            <i class="pi pi-user text-gray-400 mr-2"></i>
+                            {{ resource.author }}
+                        </p>
 
                         <!-- Description -->
-                        <p class="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                        <p class="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed flex-grow">
                             {{ resource.description || 'Comprehensive educational resource designed to enhance your learning experience.' }}
                         </p>
 
-                        <!-- Metadata Tags -->
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <span v-if="resource.subject" class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                                {{ resource.subject }}
-                            </span>
-                            <span v-if="resource.grade" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                {{ resource.grade.replace('Grade ', '') }}
-                            </span>
-                        </div>
-
-                        <!-- Bottom Section -->
-                        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                            <div class="flex items-center gap-1">
-                                <div class="w-2 h-2 rounded-full" :class="resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'bg-green-500' : 'bg-red-500') : 'bg-purple-500'"></div>
-                                <span class="text-xs font-medium" :class="resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'text-green-600' : 'text-red-600') : 'text-purple-600'">
-                                    {{ resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'Available' : 'Borrowed') : 'Online' }}
+                        <!-- Enhanced Metadata Section -->
+                        <div class="space-y-2 mb-3">
+                            <!-- Language and Library Info -->
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span v-if="resource.language" class="flex items-center">
+                                    <i class="pi pi-globe mr-1"></i>
+                                    {{ resource.language }}
+                                </span>
+                                <span v-if="resource.library" class="flex items-center">
+                                    <i class="pi pi-building mr-1"></i>
+                                    {{ resource.library }}
                                 </span>
                             </div>
 
-                            <!-- Rating/Status -->
-                            <div class="flex items-center gap-1">
-                                <i class="pi pi-star-fill text-yellow-400 text-xs"></i>
-                                <span class="text-xs font-bold text-gray-700">4.5</span>
+                            <!-- Content Summary for eBooks -->
+                            <div v-if="resource.resource_type === 'ebook' && resource.ebook_types_breakdown" class="bg-gray-50 rounded-lg p-2">
+                                <div class="text-xs text-gray-600 mb-1 font-medium">Content:</div>
+                                <div class="flex flex-wrap gap-1">
+                                    <span v-if="resource.ebook_types_breakdown.pdf > 0" class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                                        {{ resource.ebook_types_breakdown.pdf }} PDF{{ resource.ebook_types_breakdown.pdf > 1 ? 's' : '' }}
+                                    </span>
+                                    <span v-if="resource.ebook_types_breakdown.video > 0" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                        {{ resource.ebook_types_breakdown.video }} Video{{ resource.ebook_types_breakdown.video > 1 ? 's' : '' }}
+                                    </span>
+                                    <span v-if="resource.ebook_types_breakdown.audio > 0" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                        {{ resource.ebook_types_breakdown.audio }} Audio{{ resource.ebook_types_breakdown.audio > 1 ? 's' : '' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Physical Book Summary -->
+                            <div v-if="resource.resource_type === 'physical'" class="bg-gray-50 rounded-lg p-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-xs text-gray-600">
+                                        <span class="font-medium">Availability:</span>
+                                        <span :class="resource.availability_status === 'available' ? 'text-green-600' : 'text-red-600'" class="font-bold ml-1"> {{ resource.available_books_count }}/{{ resource.total_books_count }} </span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 rounded-full mr-1" :class="resource.availability_status === 'available' ? 'bg-green-500' : 'bg-red-500'"></div>
+                                        <span class="text-xs font-medium" :class="resource.availability_status === 'available' ? 'text-green-600' : 'text-red-600'">
+                                            {{ resource.availability_status === 'available' ? 'Available' : 'Limited' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Bottom Action Section -->
+                        <div class="pt-3 border-t border-gray-100 mt-auto">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <!-- Resource Type Indicator -->
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 rounded-full mr-2" :class="resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'bg-green-500' : 'bg-red-500') : 'bg-purple-500'"></div>
+                                        <span class="text-xs font-medium" :class="resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'text-green-600' : 'text-red-600') : 'text-purple-600'">
+                                            {{ resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'Ready' : 'Wait list') : 'Start now' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Button -->
+                                <button
+                                    class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200"
+                                    :class="
+                                        resource.resource_type === 'physical'
+                                            ? resource.availability_status === 'available'
+                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                            : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                    "
+                                    @click.stop="resource.resource_type === 'physical' ? requestBook(resource) : goToDetailsPage(resource)"
+                                >
+                                    {{ resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'Reserve' : 'Join List') : 'Start' }}
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <button v-if="resource.type.toLowerCase() === 'book'" @click="viewResource(resource)" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Details</button>
                 </div>
             </div>
         </div>
@@ -132,89 +204,210 @@ const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = home
                 currentPageReportTemplate="{first} to {last} of {totalRecords}"
             />
         </div>
-
         <!-- Resource Preview Modal -->
         <Dialog v-model:visible="previewModalVisible" :modal="true" :breakpoints="{ '1200px': '75vw', '960px': '85vw', '640px': '95vw' }" :style="{ width: '60rem' }" :showHeader="false" :dismissableMask="true" :closeOnEscape="true">
             <div v-if="selectedResource" class="bg-white">
                 <!-- Modal Header -->
-                <div class="flex items-start gap-4 p-6 border-b border-gray-200">
-                    <img :src="selectedResource.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'" :alt="selectedResource.title" class="w-20 h-20 object-cover rounded-lg" />
-                    <div class="flex-1">
-                        <h2 class="text-xl font-bold text-gray-900 mb-1">{{ selectedResource.title }}</h2>
-                        <p v-if="selectedResource.author" class="text-gray-600 mb-2">by {{ selectedResource.author }}</p>
-                        <div class="flex items-center gap-2">
-                            <span class="px-3 py-1 text-white text-xs font-bold rounded-full" :class="selectedResource.resource_type === 'physical' ? 'bg-green-600' : 'bg-purple-600'">
-                                {{ selectedResource.resource_type === 'physical' ? 'Book' : 'Course' }}
-                            </span>
-                            <span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">
-                                {{ selectedResource.resource_type === 'physical' ? `${selectedResource.available_books_count}/${selectedResource.total_books_count} Available` : `${selectedResource.downloadable_count} Lessons` }}
-                            </span>
+                <div class="flex items-start gap-6 p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                    <div class="w-24 h-32 flex-shrink-0">
+                        <img
+                            :src="selectedResource.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'"
+                            :alt="selectedResource.title"
+                            class="w-full h-full object-cover rounded-lg shadow-md"
+                        />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0 mr-4">
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2 leading-tight">{{ selectedResource.title }}</h2>
+                                <p v-if="selectedResource.author" class="text-gray-600 mb-3 text-lg">by {{ selectedResource.author }}</p>
+
+                                <!-- Enhanced metadata badges -->
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="px-3 py-1.5 text-white text-sm font-bold rounded-full" :class="selectedResource.resource_type === 'physical' ? 'bg-green-600' : 'bg-purple-600'">
+                                        {{ selectedResource.resource_type === 'physical' ? '📚 Physical Book' : '🎓 Digital Course' }}
+                                    </span>
+                                    <span v-if="selectedResource.category" class="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full border border-blue-200">
+                                        <i class="pi pi-folder mr-1"></i>{{ selectedResource.category }}
+                                    </span>
+                                    <span v-if="selectedResource.subject" class="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full border border-purple-200">
+                                        <i class="pi pi-book mr-1"></i>{{ selectedResource.subject }}
+                                    </span>
+                                    <span v-if="selectedResource.grade" class="px-3 py-1.5 bg-orange-100 text-orange-700 text-sm font-semibold rounded-full border border-orange-200">
+                                        <i class="pi pi-chart-line mr-1"></i>{{ selectedResource.grade }}
+                                    </span>
+                                    <span v-if="selectedResource.language" class="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
+                                        <i class="pi pi-globe mr-1"></i>{{ selectedResource.language }}
+                                    </span>
+                                </div>
+
+                                <!-- Resource statistics -->
+                                <div class="flex items-center gap-6 text-sm text-gray-600">
+                                    <span v-if="selectedResource.resource_type === 'physical'" class="flex items-center gap-1">
+                                        <i class="pi pi-bookmark text-gray-400"></i>
+                                        <span class="font-medium">{{ selectedResource.available_books_count }}/{{ selectedResource.total_books_count }} Available</span>
+                                    </span>
+                                    <span v-else class="flex items-center gap-1">
+                                        <i class="pi pi-play-circle text-gray-400"></i>
+                                        <span class="font-medium">{{ selectedResource.downloadable_count }} Lessons</span>
+                                    </span>
+                                    <span v-if="selectedResource.library" class="flex items-center gap-1">
+                                        <i class="pi pi-building text-gray-400"></i>
+                                        {{ selectedResource.library }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button @click="previewModalVisible = false" class="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0">
+                                <i class="pi pi-times text-gray-500"></i>
+                            </button>
                         </div>
                     </div>
-                    <button @click="previewModalVisible = false" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <i class="pi pi-times text-gray-500"></i>
-                    </button>
                 </div>
 
                 <!-- Modal Content -->
                 <div class="p-6">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Description -->
-                        <div class="lg:col-span-2">
-                            <h3 class="text-lg font-bold text-gray-900 mb-3">About this {{ selectedResource.resource_type === 'physical' ? 'book' : 'course' }}</h3>
-                            <p class="text-gray-600 leading-relaxed mb-4">
-                                {{ selectedResource.description || 'This educational resource provides valuable learning materials to enhance your knowledge and skills.' }}
-                            </p>
+                        <!-- Description and Content -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <i class="pi pi-info-circle text-blue-500"></i>
+                                    About this {{ selectedResource.resource_type === 'physical' ? 'book' : 'course' }}
+                                </h3>
+                                <p class="text-gray-600 leading-relaxed text-base">
+                                    {{ selectedResource.description || 'This educational resource provides valuable learning materials to enhance your knowledge and skills.' }}
+                                </p>
+                            </div>
 
                             <!-- Format Information for eBooks -->
-                            <div v-if="selectedResource.resource_type === 'ebook' && selectedResource.ebook_types_breakdown" class="space-y-2">
-                                <h4 class="font-semibold text-gray-900">Available formats:</h4>
-                                <div class="flex gap-2 flex-wrap">
-                                    <span v-if="selectedResource.ebook_types_breakdown.pdf > 0" class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"> 📄 {{ selectedResource.ebook_types_breakdown.pdf }} PDF </span>
-                                    <span v-if="selectedResource.ebook_types_breakdown.video > 0" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"> 🎥 {{ selectedResource.ebook_types_breakdown.video }} Videos </span>
-                                    <span v-if="selectedResource.ebook_types_breakdown.audio > 0" class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"> 🎵 {{ selectedResource.ebook_types_breakdown.audio }} Audio </span>
+                            <div v-if="selectedResource.resource_type === 'ebook' && selectedResource.ebook_types_breakdown" class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <i class="pi pi-file text-purple-500"></i>
+                                    Available Content Formats
+                                </h4>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div v-if="selectedResource.ebook_types_breakdown.pdf > 0" class="text-center p-3 bg-red-100 rounded-lg border border-red-200">
+                                        <i class="pi pi-file-pdf text-red-500 text-2xl mb-2 block"></i>
+                                        <div class="text-red-700 font-bold text-lg">{{ selectedResource.ebook_types_breakdown.pdf }}</div>
+                                        <div class="text-red-600 text-sm">PDF Documents</div>
+                                    </div>
+                                    <div v-if="selectedResource.ebook_types_breakdown.video > 0" class="text-center p-3 bg-blue-100 rounded-lg border border-blue-200">
+                                        <i class="pi pi-video text-blue-500 text-2xl mb-2 block"></i>
+                                        <div class="text-blue-700 font-bold text-lg">{{ selectedResource.ebook_types_breakdown.video }}</div>
+                                        <div class="text-blue-600 text-sm">Video Lessons</div>
+                                    </div>
+                                    <div v-if="selectedResource.ebook_types_breakdown.audio > 0" class="text-center p-3 bg-green-100 rounded-lg border border-green-200">
+                                        <i class="pi pi-volume-up text-green-500 text-2xl mb-2 block"></i>
+                                        <div class="text-green-700 font-bold text-lg">{{ selectedResource.ebook_types_breakdown.audio }}</div>
+                                        <div class="text-green-600 text-sm">Audio Files</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Physical Book Information -->
+                            <div v-if="selectedResource.resource_type === 'physical'" class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <i class="pi pi-bookmark text-green-500"></i>
+                                    Book Availability
+                                </h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-center p-3 bg-green-100 rounded-lg border border-green-200">
+                                        <div class="text-green-700 font-bold text-2xl">{{ selectedResource.available_books_count }}</div>
+                                        <div class="text-green-600 text-sm">Available Now</div>
+                                    </div>
+                                    <div class="text-center p-3 bg-gray-100 rounded-lg border border-gray-200">
+                                        <div class="text-gray-700 font-bold text-2xl">{{ selectedResource.total_books_count }}</div>
+                                        <div class="text-gray-600 text-sm">Total Copies</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 flex items-center justify-center">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full" :class="selectedResource.availability_status === 'available' ? 'bg-green-500' : 'bg-red-500'"></div>
+                                        <span class="text-sm font-medium" :class="selectedResource.availability_status === 'available' ? 'text-green-600' : 'text-red-600'">
+                                            {{ selectedResource.availability_status === 'available' ? 'Ready for reservation' : 'Limited availability' }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Details & Actions -->
-                        <div class="space-y-4">
-                            <!-- Details -->
+                        <!-- Details & Actions Sidebar -->
+                        <div class="space-y-6">
+                            <!-- Resource Details -->
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <h3 class="font-bold text-gray-900 mb-3">Details</h3>
-                                <div class="space-y-2 text-sm">
-                                    <div v-if="selectedResource.subject" class="flex justify-between">
-                                        <span class="text-gray-600">Subject:</span>
-                                        <span class="font-medium">{{ selectedResource.subject }}</span>
+                                <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <i class="pi pi-info text-blue-500"></i>
+                                    Resource Details
+                                </h3>
+                                <div class="space-y-3 text-sm">
+                                    <div v-if="selectedResource.subject" class="flex justify-between items-center">
+                                        <span class="text-gray-600 flex items-center gap-1">
+                                            <i class="pi pi-book text-gray-400"></i>
+                                            Subject:
+                                        </span>
+                                        <span class="font-medium text-gray-900">{{ selectedResource.subject }}</span>
                                     </div>
-                                    <div v-if="selectedResource.grade" class="flex justify-between">
-                                        <span class="text-gray-600">Grade:</span>
-                                        <span class="font-medium">{{ selectedResource.grade }}</span>
+                                    <div v-if="selectedResource.grade" class="flex justify-between items-center">
+                                        <span class="text-gray-600 flex items-center gap-1">
+                                            <i class="pi pi-chart-line text-gray-400"></i>
+                                            Grade:
+                                        </span>
+                                        <span class="font-medium text-gray-900">{{ selectedResource.grade }}</span>
                                     </div>
-                                    <div v-if="selectedResource.language" class="flex justify-between">
-                                        <span class="text-gray-600">Language:</span>
-                                        <span class="font-medium">{{ selectedResource.language }}</span>
+                                    <div v-if="selectedResource.language" class="flex justify-between items-center">
+                                        <span class="text-gray-600 flex items-center gap-1">
+                                            <i class="pi pi-globe text-gray-400"></i>
+                                            Language:
+                                        </span>
+                                        <span class="font-medium text-gray-900">{{ selectedResource.language }}</span>
+                                    </div>
+                                    <div v-if="selectedResource.category" class="flex justify-between items-center">
+                                        <span class="text-gray-600 flex items-center gap-1">
+                                            <i class="pi pi-folder text-gray-400"></i>
+                                            Category:
+                                        </span>
+                                        <span class="font-medium text-gray-900">{{ selectedResource.category }}</span>
+                                    </div>
+                                    <div v-if="selectedResource.library" class="flex justify-between items-center">
+                                        <span class="text-gray-600 flex items-center gap-1">
+                                            <i class="pi pi-building text-gray-400"></i>
+                                            Library:
+                                        </span>
+                                        <span class="font-medium text-gray-900">{{ selectedResource.library }}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Actions -->
                             <div class="space-y-3">
-                                <button v-if="selectedResource.resource_type === 'ebook'" @click="goToDetailsPage(selectedResource)" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
+                                <button
+                                    v-if="selectedResource.resource_type === 'ebook'"
+                                    @click="goToDetailsPage(selectedResource)"
+                                    class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
+                                >
+                                    <i class="pi pi-play-circle"></i>
                                     Start learning
                                 </button>
                                 <button
                                     v-else-if="selectedResource.resource_type === 'physical'"
                                     @click="requestBook(selectedResource)"
-                                    class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                                     :disabled="selectedResource.available_books_count === 0"
                                 >
+                                    <i class="pi pi-bookmark"></i>
                                     {{ selectedResource.available_books_count > 0 ? 'Reserve book' : 'Currently unavailable' }}
                                 </button>
 
                                 <div class="grid grid-cols-2 gap-3">
-                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">Save</button>
-                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">Share</button>
+                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                                        <i class="pi pi-heart"></i>
+                                        Save
+                                    </button>
+                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                                        <i class="pi pi-share-alt"></i>
+                                        Share
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -247,7 +440,7 @@ const router = useRouter();
 const toast = useToast();
 const loading = ref(true);
 const first = ref(0);
-const resourcesPerPage = ref(15); // Default per_page from API is 15
+const resourcesPerPage = ref(6); // Initial fetch limit of 6
 const totalRecords = ref(0);
 // We'll keep local bookmarks for non-authenticated users or fallback
 const bookmarkedResources = ref(JSON.parse(localStorage.getItem('bookmarkedResources') || '[]'));
@@ -621,7 +814,10 @@ const goToDetailsPage = (resource) => {
         previewModalVisible.value = false;
 
         if (resource.resource_type === 'ebook') {
-            router.push(`/ebook-details/${originalId}`);
+            // Close modal and navigate to EbookDetails page
+            setTimeout(() => {
+                router.push(`/ebook-details/${originalId}`);
+            }, 100);
         }
     }
 };

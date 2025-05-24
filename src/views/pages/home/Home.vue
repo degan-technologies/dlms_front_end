@@ -13,7 +13,7 @@ import ResourceGrid from '@/components/home/ResourceGrid.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 import { useAuthStore } from '@/stores/authStore';
-import { useHomeStore } from '@/stores/homeStore';
+// import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
 
 const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
@@ -27,14 +27,11 @@ const logout = authStore.logout;
 
 import Toast from 'primevue/toast';
 
-const homeStore = useHomeStore();
-
 // Mobile menu state
 const showMobileMenu = ref(false);
 let announcementInterval;
 onMounted(() => {
     authStore.authCheck();
-    homeStore.fetchBookItem();
 
     // Start announcement rotation
     announcementInterval = setInterval(() => {
@@ -375,7 +372,7 @@ const prevAnnouncement = () => {
     </div>
 </template>
 
-<script setup>
+<!-- <script setup>
 import HeroSection from '@/components/home/HeroSection.vue';
 import NewArrivals from '@/components/home/NewArrivals.vue';
 import QuickLinks from '@/components/home/QuickLinks.vue';
@@ -524,8 +521,7 @@ const dismissAnnouncement = () => {
         life: 3000
     });
 };
-</script>
--->
+</script> -->
 
 <style scoped>
 /* Line clamp utilities for text truncation */

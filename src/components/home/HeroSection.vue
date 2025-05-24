@@ -1,11 +1,4 @@
-<script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-
-const homeStore = useHomeStore();
-const { searchQuery } = storeToRefs(homeStore);
-const { searchResources, quickSearch } = homeStore;
-</script>
+<script setup></script>
 
 <template>
     <!-- Ocean-themed Hero Section for Flipper's International School -->
@@ -276,10 +269,6 @@ const { searchResources, quickSearch } = homeStore;
         </div>
     </section>
 </template>
-
-<script setup>
-// No additional JavaScript needed for this static hero section
-</script>
 
 <style scoped>
 /* Horizontal Wave Animations */
