@@ -15,7 +15,6 @@
                     </button>
                 </div>
 
-                <!-- Desktop Navigation Links -->
                 <div class="hidden md:flex items-center gap-4 lg:gap-8 ml-4 lg:ml-8">
                     <a href="#" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Browse all resources">
                         <i class="pi pi-book"></i>
@@ -357,7 +356,7 @@ import ReadingLists from '@/components/home/ReadingLists.vue';
 import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
-import ResourceModal from '@/components/home/ResourceModal.vue';
+//import ResourceModal from '@/components/home/ResourceModal.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 

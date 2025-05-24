@@ -7,7 +7,7 @@ export const useHomeStore = defineStore('home', () => {
     // Toast for notifications
     const toast = useToast();
 
-    // State
+    
     const loading = ref(false);
     const allFeaturedResources = ref([]);
     const totalRecords = ref(0);
