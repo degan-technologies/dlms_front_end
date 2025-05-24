@@ -1,31 +1,35 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router';
 import './bootstrap';
+import router from './router';
 
 import Aura from '@primeuix/themes/aura';
 import { createPinia } from 'pinia';
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 
 // PrimeVue components you use
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Paginator from 'primevue/paginator';
-import Dropdown from 'primevue/dropdown';
-import Button from 'primevue/button';
-import Toolbar from 'primevue/toolbar';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
 import Badge from 'primevue/badge';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
+import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
+import Paginator from 'primevue/paginator';
+import Textarea from 'primevue/textarea';
 import Toast from 'primevue/toast';
+import Toolbar from 'primevue/toolbar';
 import Tooltip from 'primevue/tooltip';
 
 import '@/assets/styles.scss';
 
+// Create and configure Pinia with persistence
 const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
+
 const app = createApp(App);
 
 app.use(pinia);
@@ -36,6 +40,7 @@ app.use(PrimeVue, {
         options: { darkModeSelector: '.app-dark' }
     }
 });
+
 app.use(ToastService);
 app.use(ConfirmationService);
 
@@ -55,5 +60,3 @@ app.component('Toast', Toast);
 app.directive('tooltip', Tooltip);
 
 app.mount('#app');
-
-

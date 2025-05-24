@@ -1,132 +1,267 @@
 <template>
-    <div class="lg:w-1/4 bg-white rounded-xl p-5 shadow-sm h-fit border border-gray-200">
-        <div class="mb-6">
-            <h3 class="font-semibold text-lg mb-3 flex items-center justify-between">
-                <span>Filters</span>
-                <button @click="resetFilters" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Reset</button>
-            </h3>
+    <div class="lg:w-1/4 bg-white shadow-sm border border-gray-200 overflow-hidden h-screen max-h-screen flex flex-col">
+        <!-- Udemy-style Simple Header -->
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Filter</h3>
+                <div class="flex items-center gap-2">
+                    <span v-if="getActiveFilterCount() > 0" class="bg-purple-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+                        {{ getActiveFilterCount() }}
+                    </span>
+                    <button @click="resetAndEmitFilters" class="text-purple-600 hover:text-purple-700 text-sm font-semibold transition-colors">Clear all</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="p-6 border-b border-gray-200 flex-shrink-0">
             <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="pi pi-search text-gray-400"></i>
+                </div>
                 <input
                     type="text"
                     v-model="filterKeyword"
-                    placeholder="Filter by keyword"
-                    class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    @keyup.enter="fetchBookItem"
+                    placeholder="Search for anything"
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    @keyup.enter="applyFilters"
                 />
-                <button @click="fetchBookItem" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-indigo-600">
-                    <i class="pi pi-search"></i>
-                </button>
             </div>
         </div>
 
-        <!-- Resource Type Filter -->
-        <div class="border-t border-gray-200 py-4">
-            <h4 class="font-medium mb-3">Resource Type</h4>
-            <div class="space-y-2">
-                <div v-for="type in resourceTypes" :key="type.id" class="flex items-center">
-                    <input :id="'filter-type-' + type.id" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded" :checked="activeFilters.itemType.includes(type.id)" @change="toggleFilter('itemType', type.id)" />
-                    <label :for="'filter-type-' + type.id" class="ml-2 text-gray-700">{{ type.name }}</label>
+        <!-- Filter Sections - Scrollable Container -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="space-y-0">
+                <!-- Resource Type -->
+                <div class="border-b border-gray-200">
+                    <button @click="openSection = openSection === 'resourceType' ? '' : 'resourceType'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Resource Type</span>
+                        <i :class="openSection === 'resourceType' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'resourceType'" class="px-6 pb-4">
+                        <div class="max-h-32 overflow-y-auto space-y-3">
+                            <label v-for="type in itemTypeOptions" :key="type.id" class="flex items-center cursor-pointer">
+                                <input type="checkbox" :value="type.id" v-model="activeFilters.itemType" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <span class="text-sm text-gray-700">{{ type.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div class="border-b border-gray-200">
+                    <button @click="openSection = openSection === 'category' ? '' : 'category'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Category</span>
+                        <i :class="openSection === 'category' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'category'" class="px-6 pb-4">
+                        <div class="max-h-40 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                            <label v-for="category in categoryOptions" :key="category.id" class="flex items-center cursor-pointer">
+                                <input type="checkbox" :value="category.id" v-model="activeFilters.categoryId" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <span class="text-sm text-gray-700">{{ category.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grade Level -->
+                <div class="border-b border-gray-200">
+                    <button @click="openSection = openSection === 'grade' ? '' : 'grade'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Grade Level</span>
+                        <i :class="openSection === 'grade' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'grade'" class="px-6 pb-4">
+                        <div class="max-h-32 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                            <label v-for="grade in gradeOptions" :key="grade.id" class="flex items-center cursor-pointer">
+                                <input type="checkbox" :value="grade.id" v-model="activeFilters.gradeLevel" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <span class="text-sm text-gray-700">{{ grade.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="border-b border-gray-200">
+                    <button @click="openSection = openSection === 'subject' ? '' : 'subject'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Subject</span>
+                        <i :class="openSection === 'subject' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'subject'" class="px-6 pb-4">
+                        <div class="max-h-40 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                            <label v-for="subject in subjectOptions" :key="subject.id" class="flex items-center cursor-pointer">
+                                <input type="checkbox" :value="subject.id" v-model="activeFilters.subject" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <span class="text-sm text-gray-700">{{ subject.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Language -->
+                <div>
+                    <button @click="openSection = openSection === 'language' ? '' : 'language'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Language</span>
+                        <i :class="openSection === 'language' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'language'" class="px-6 pb-4">
+                        <div class="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                            <select v-model="activeFilters.language" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                                <option value="">All Languages</option>
+                                <option v-for="language in languageOptions" :key="language.id" :value="language.id">
+                                    {{ language.name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Category Filter -->
-        <div class="border-t border-gray-200 py-4">
-            <h4 class="font-medium mb-3">Category</h4>
-            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                <div v-for="category in categories" :key="category.id" class="flex items-center">
-                    <input
-                        :id="'filter-category-' + category.id"
-                        type="checkbox"
-                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
-                        :checked="activeFilters.categoryId.includes(category.id)"
-                        @change="toggleFilter('categoryId', category.id)"
-                    />
-                    <label :for="'filter-category-' + category.id" class="ml-2 text-gray-700 flex items-center gap-2">
-                        {{ category.name }}
-                        <span class="text-xs text-gray-500">({{ category.count }})</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Language Filter -->
-        <div class="border-t border-gray-200 py-4">
-            <h4 class="font-medium mb-3">Language</h4>
-            <div class="space-y-2">
-                <div v-for="language in languages" :key="language.code" class="flex items-center">
-                    <input
-                        :id="'filter-lang-' + language.code"
-                        type="radio"
-                        name="language"
-                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                        :checked="activeFilters.language === language.code"
-                        @change="applyFilter('language', language.code)"
-                    />
-                    <label :for="'filter-lang-' + language.code" class="ml-2 text-gray-700">{{ language.name }}</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Grade Level Filter -->
-        <div class="border-t border-gray-200 py-4">
-            <h4 class="font-medium mb-3">Grade Level</h4>
-            <div class="grid grid-cols-2 gap-2">
-                <div v-for="grade in gradeOptions" :key="grade.id" class="flex items-center">
-                    <input :id="'filter-grade-' + grade.id" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded" :checked="activeFilters.gradeLevel.includes(grade.id)" @change="toggleFilter('gradeLevel', grade.id)" />
-                    <label :for="'filter-grade-' + grade.id" class="ml-2 text-gray-700">{{ grade.name }}</label>
-                </div>
-            </div>
-        </div>
-        <!-- Apply Button -->
-        <div class="pt-4 border-t border-gray-200">
-            <button @click="fetchBookItem" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 font-medium transition-colors">Apply Filters</button>
+        <!-- Apply Button at Bottom -->
+        <div class="p-6 bg-gray-50 border-t border-gray-200 flex-shrink-0">
+            <button @click="applyFilters" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="loading">
+                <span v-if="loading" class="inline-flex items-center gap-2">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    Applying...
+                </span>
+                <span v-else>Apply filters</span>
+            </button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-import { ref } from 'vue';
+import axiosInstance from '@/util/axios-config';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
 
-const homeStore = useHomeStore();
-const { activeFilters, filterKeyword } = storeToRefs(homeStore);
+// Define emits for parent communication
+const emit = defineEmits(['filtersChanged']);
 
-const { resetFilters, applyFilter, removeFilter, fetchBookItem } = homeStore;
+// Local state
+const filterKeyword = ref('');
+const loading = ref(false);
+const filtersLoading = ref(true);
+const toast = useToast();
+const openSection = ref('resourceType'); // Default open section
+const activeFilters = ref({
+    itemType: [],
+    categoryId: [],
+    language: '',
+    gradeLevel: [],
+    subject: []
+});
 
-// Filter options
-const resourceTypes = ref([
-    { id: 'physical', name: 'Physical Books' },
-    { id: 'ebook', name: 'eBooks' },
-    { id: 'pdf', name: 'PDF Documents' },
-    { id: 'video', name: 'Videos' },
-    { id: 'audio', name: 'Audio' }
-]);
+// Initialize with empty data that will be populated from API
+const filterOptions = ref({
+    ebook_types: [],
+    categories: [],
+    languages: [],
+    grades: [],
+    subjects: []
+});
 
-const categories = ref([
-    { id: 1, name: 'Science', count: 247 },
-    { id: 2, name: 'Mathematics', count: 183 },
-    { id: 3, name: 'Literature', count: 325 },
-    { id: 4, name: 'History', count: 210 },
-    { id: 5, name: 'Computer Science', count: 176 },
-    { id: 6, name: 'Arts & Music', count: 154 }
-]);
+// Fetch all filter options from the backend
+const fetchFilterOptions = async () => {
+    filtersLoading.value = true;
+    try {
+        const response = await axiosInstance.get('/constants/all');
 
-const languages = ref([
-    { name: 'All', code: '' },
-    { name: 'English', code: 'en' },
-    { name: 'French', code: 'fr' },
-    { name: 'Spanish', code: 'es' },
-    { name: 'Arabic', code: 'ar' }
-]);
+        // Update filter options with data from API
+        if (response.data) {
+            filterOptions.value = {
+                ebook_types: response.data.ebook_types?.data || [],
+                categories: response.data.categories?.data || [],
+                languages: response.data.languages?.data || [],
+                grades: response.data.grades?.data || [],
+                subjects: response.data.subjects?.data || []
+            };
+            console.log('Filter options loaded successfully:', filterOptions.value);
+        }
+    } catch (error) {
+        console.error('Failed to fetch filter options:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load filter options. Please try again.',
+            life: 3000
+        });
+    } finally {
+        filtersLoading.value = false;
+    }
+};
 
-const gradeOptions = ref([
-    { id: '9', name: 'Grade 9' },
-    { id: '10', name: 'Grade 10' },
-    { id: '11', name: 'Grade 11' },
-    { id: '12', name: 'Grade 12' }
-]);
+// Helper functions
+const resetFilters = () => {
+    activeFilters.value = {
+        itemType: [],
+        categoryId: [],
+        language: '',
+        gradeLevel: [],
+        subject: []
+    };
+    filterKeyword.value = '';
+    console.log('Filters reset');
+};
+
+const applyFilter = (filterType, value) => {
+    if (filterType === 'language') {
+        activeFilters.value.language = value;
+    } else {
+        if (!activeFilters.value[filterType].includes(value)) {
+            activeFilters.value[filterType].push(value);
+        }
+    }
+};
+
+const removeFilter = (filterType, value, index) => {
+    if (filterType === 'language') {
+        activeFilters.value.language = '';
+    } else {
+        activeFilters.value[filterType].splice(index, 1);
+    }
+};
+
+const fetchBookItem = () => {
+    console.log('Searching for:', filterKeyword.value);
+};
+
+// Computed properties for filter options
+const itemTypeOptions = computed(() => {
+    return filterOptions.value.ebook_types.map((type) => ({
+        id: type.id,
+        name: type.name
+    }));
+});
+
+const categoryOptions = computed(() => {
+    return filterOptions.value.categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        count: category.count || 0
+    }));
+});
+
+const languageOptions = computed(() => {
+    return filterOptions.value.languages.map((lang) => ({
+        id: lang.id,
+        name: lang.name,
+        code: lang.code
+    }));
+});
+
+const gradeOptions = computed(() => {
+    return filterOptions.value.grades.map((grade) => ({
+        id: grade.id,
+        name: `Grade ${grade.name}`
+    }));
+});
+
+const subjectOptions = computed(() => {
+    return filterOptions.value.subjects.map((subject) => ({
+        id: subject.id,
+        name: subject.name
+    }));
+});
 
 // Methods
 const toggleFilter = (filterType, value) => {
@@ -137,4 +272,136 @@ const toggleFilter = (filterType, value) => {
         removeFilter(filterType, null, index);
     }
 };
+
+// Apply all current filters
+const applyFilters = () => {
+    const filtersToEmit = {
+        itemType: activeFilters.value.itemType,
+        categoryId: activeFilters.value.categoryId,
+        language: activeFilters.value.language,
+        gradeLevel: activeFilters.value.gradeLevel,
+        subject: activeFilters.value.subject,
+        keyword: filterKeyword.value
+    };
+
+    console.log('Applying filters:', filtersToEmit);
+
+    // Emit to parent component
+    emit('filtersChanged', filtersToEmit);
+
+    // Show loading state briefly for UX
+    loading.value = true;
+    setTimeout(() => {
+        loading.value = false;
+        toast.add({
+            severity: 'success',
+            summary: 'Filters Applied',
+            detail: 'Your search results have been updated',
+            life: 2000
+        });
+    }, 500);
+};
+
+// Toggle filter sections to show/hide them
+const toggleFilterSection = (sectionName) => {
+    // If clicking on the same section, close it, otherwise open clicked section
+    openSection.value = openSection.value === sectionName ? '' : sectionName;
+
+    // Save the user's preference for opened section
+    localStorage.setItem('dlms-filter-open-section', openSection.value);
+};
+
+// Get total count of active filters for the badge display
+const getActiveFilterCount = () => {
+    let count = 0;
+    count += activeFilters.value.itemType.length;
+    count += activeFilters.value.categoryId.length;
+    count += activeFilters.value.language ? 1 : 0;
+    count += activeFilters.value.gradeLevel.length;
+    count += activeFilters.value.subject.length;
+    return count;
+};
+
+// Helper function to get the name of a resource type by ID
+const getResourceTypeName = (id) => {
+    const type = itemTypeOptions.value.find((t) => t.id === id);
+    return type ? type.name : '';
+};
+
+// Helper function to get a category name by ID
+const getCategoryName = (id) => {
+    const category = categoryOptions.value.find((c) => c.id === id);
+    return category ? category.name : '';
+};
+
+// Helper function to get language name by code
+const getLanguageName = (code) => {
+    const language = languageOptions.value.find((l) => l.code === code);
+    return language ? language.name : '';
+};
+
+// Helper function to get grade name by ID
+const getGradeName = (id) => {
+    const grade = gradeOptions.value.find((g) => g.id === id);
+    return grade ? grade.name : '';
+};
+
+// Helper function to get subject name by ID
+const getSubjectName = (id) => {
+    const subject = subjectOptions.value.find((s) => s.id === id);
+    return subject ? subject.name : '';
+};
+
+// Function to reset filters and emit to parent
+const resetAndEmitFilters = () => {
+    resetFilters();
+    applyFilters();
+};
+
+// Fetch filter options on component mount
+onMounted(async () => {
+    // Restore user's preference for opened section
+    const savedSection = localStorage.getItem('dlms-filter-open-section');
+    if (savedSection) {
+        openSection.value = savedSection;
+    }
+
+    await fetchFilterOptions();
+});
 </script>
+
+<style scoped>
+/* Smooth transition for collapsible sections */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Add a slight highlight for the active section */
+.border-t {
+    transition: background-color 0.2s ease;
+}
+
+/* Hover effect for filter section headers */
+[class*='cursor-pointer']:hover h4 {
+    color: #4f46e5; /* Indigo 600 */
+}
+
+/* Make the scrollbars look better on overflow sections */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+</style>

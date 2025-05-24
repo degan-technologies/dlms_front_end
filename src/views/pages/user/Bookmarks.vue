@@ -1,520 +1,182 @@
 <template>
-    <div class="bookmarks-page">
-        <Toast />
-        <!-- Header -->
-        <div class="win8-header">
-            <div class="container p-0">
-                <div class="header-content">
-                    <div class="header-title">
-                        <i class="pi pi-th-large mr-2"></i>
-                        <h1>Bookmarks</h1>
-                    </div>
-                    <div class="search-container">
-                        <div class="p-inputgroup">
-                            <InputText v-model="filters.global.value" placeholder="Search bookmarks..." class="search-input" />
-                            <Button icon="pi pi-search" class="search-button" />
+    <section class="bg-white min-h-screen py-12 px-5">
+        <div class="max-w-6xl mx-auto">
+            <!-- Back button -->
+            <div class="mb-8 flex items-center gap-2">
+                <button @click="goBack" class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded shadow-sm font-medium transition-all">
+                    <i class="pi pi-arrow-left"></i>
+                    <span>Back</span>
+                </button>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+                <div>
+                    <div class="text-blue-600 font-semibold mb-1 tracking-widest uppercase">Bookmarks</div>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">Your Bookmarked Resources</h1>
+                </div>
+            </div>
+            <div v-if="loading" class="flex justify-center items-center py-24">
+                <i class="pi pi-spin pi-spinner text-blue-600 text-4xl"></i>
+            </div>
+            <div v-else-if="bookmarks.length === 0" class="bg-white p-12 rounded-lg text-center shadow-sm">
+                <i class="pi pi-bookmark text-5xl text-gray-300 mb-4"></i>
+                <h3 class="text-2xl font-semibold mb-2">No Bookmarks Yet</h3>
+                <p class="text-gray-500 max-w-md mx-auto">You haven't bookmarked any resources yet.</p>
+            </div>
+            <div v-else>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="bookmark in bookmarks" :key="bookmark.id" class="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-200 relative">
+                        <!-- Decorative color bar -->
+                        <div class="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 via-sky-400 to-cyan-400"></div>
+                        <div class="absolute top-3 left-4 z-10 flex items-center gap-2">
+                            <span class="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded shadow">BOOKMARKED</span>
+                            <span class="px-2 py-1 bg-white/80 text-blue-700 text-xs font-semibold rounded shadow border border-blue-100">{{ bookmark.ebook?.file_format }}</span>
+                        </div>
+                        <div class="absolute top-3 right-4 z-10 flex gap-2">
+                            <button @click.stop="deleteBookmark(bookmark)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded shadow text-xs font-semibold flex items-center gap-1 transition-all">
+                                <i class="pi pi-trash"></i> Remove
+                            </button>
+                        </div>
+                        <div class="relative h-48 bg-gradient-to-t from-gray-100 to-white flex items-center justify-center">
+                            <img
+                                :src="bookmark.ebook?.cover_image_url || 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
+                                :alt="bookmark.ebook?.title"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div class="absolute bottom-2 right-2 bg-white/80 px-2 py-1 rounded text-xs text-blue-700 shadow flex items-center gap-1">
+                                <i v-if="bookmark.ebook?.file_format === 'YOUTUBE'" class="pi pi-youtube text-red-500"></i>
+                                <i v-else class="pi pi-book text-blue-600"></i>
+                                <span>{{ bookmark.ebook?.file_format }}</span>
+                            </div>
+                        </div>
+                        <div class="p-5 flex flex-col gap-2">
+                            <h3 class="font-bold text-lg text-gray-900 line-clamp-2 mb-1">{{ bookmark.ebook?.title }}</h3>
+                            <p class="text-gray-500 text-sm mb-1 flex items-center gap-2"><i class="pi pi-user text-blue-400"></i> {{ bookmark.ebook?.author }}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">Bookmarked: {{ formatDate(bookmark.created_at) }}</span>
+                            </div>
+                            <button @click="goToEbookDetail(bookmark.ebook)" class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all font-semibold shadow">
+                                <i class="pi pi-eye"></i> View Resource
+                            </button>
                         </div>
                     </div>
+                </div>
+                <div class="mt-10 flex justify-center">
+                    <Paginator
+                        :rows="bookmarksPerPage"
+                        :totalRecords="totalRecords"
+                        v-model:first="bookmarksFirst"
+                        :rowsPerPageOptions="[6, 9, 12, 18]"
+                        @page="onBookmarksPageChange($event)"
+                        class="border-none"
+                        :template="{
+                            '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown',
+                            '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown',
+                            '1300px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport'
+                        }"
+                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                        alwaysShow="true"
+                    />
                 </div>
             </div>
         </div>
-        <!-- Main content area -->
-        <div class="explorer-content container py-4">
-            <!-- Loading State -->
-            <div v-if="loading" class="loading-state">
-                <div class="loading-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <p>Loading bookmarks...</p>
-            </div>
-            <!-- Empty State -->
-            <div v-else-if="filteredBookmarks.length === 0" class="empty-state">
-                <i class="pi pi-folder"></i>
-                <h3>No bookmarks found</h3>
-                <p>You haven't added any bookmarks yet</p>
-                <Button label="Explore Library" icon="pi pi-search" @click="navigateToLibrary" class="p-button-primary p-button-lg" />
-            </div>
-
-            <!-- Tile Grid View -->
-            <div v-else class="tile-grid">
-                <div
-                    v-for="(bookmark, index) in filteredBookmarks"
-                    :key="bookmark.id"
-                    class="tile"
-                    :class="getTileSize(index)"
-                    :style="{ animationDelay: `${index * 0.05}s` }"
-                    @click="openResource(bookmark)"
-                    @contextmenu.prevent="showContextMenu($event, bookmark)"
-                >
-                    <div class="tile-content" :style="{ backgroundColor: getColorForType(bookmark.type) }">
-                        <div class="tile-icon">
-                            <i :class="getIconForResourceType(bookmark.type)"></i>
-                        </div>
-                        <div class="tile-info">
-                            <div class="tile-title">{{ bookmark.title }}</div>
-                            <div class="tile-meta">{{ bookmark.author }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Context Menu -->
-        <ContextMenu ref="contextMenu" :model="contextMenuItems" />
-
-        <!-- Delete Confirmation Dialog -->
-        <ConfirmDialog></ConfirmDialog>
-    </div>
+    </section>
 </template>
 
 <script setup>
-import { useConfirm } from 'primevue/useconfirm';
+import axiosInstance from '@/util/axios-config';
+import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-// PrimeVue Components
-import Button from 'primevue/button';
-import ConfirmDialog from 'primevue/confirmdialog';
-import ContextMenu from 'primevue/contextmenu';
-import InputText from 'primevue/inputtext';
-import Toast from 'primevue/toast';
-
 const router = useRouter();
-const confirm = useConfirm();
 const toast = useToast();
-const contextMenu = ref(null);
-
-// State
-const bookmarks = ref([]);
 const loading = ref(true);
-const activeFilter = ref('all');
-const selectedBookmark = ref(null);
+const bookmarks = ref([]);
+const bookmarksFirst = ref(0);
+const bookmarksPerPage = ref(9);
+const totalRecords = ref(0);
 
-// Search filter
-const filters = reactive({
-    global: { value: null, matchMode: 'contains' }
-});
-
-// Context menu items
-const contextMenuItems = ref([
-    {
-        label: 'Open',
-        icon: 'pi pi-external-link',
-        command: () => {
-            if (selectedBookmark.value) {
-                openResource(selectedBookmark.value);
-            }
-        }
-    },
-    {
-        label: 'Remove',
-        icon: 'pi pi-trash',
-        command: () => {
-            if (selectedBookmark.value) {
-                confirmRemoveBookmark(selectedBookmark.value);
-            }
-        }
-    }
-]);
-
-// Display right-click context menu
-const showContextMenu = (event, bookmark) => {
-    selectedBookmark.value = bookmark;
-    contextMenu.value.show(event);
-};
-
-// Filter bookmarks based on search
-const filteredBookmarks = computed(() => {
-    if (!filters.global.value) {
-        return bookmarks.value;
-    }
-    return bookmarks.value.filter((bookmark) => bookmark.title.toLowerCase().includes(filters.global.value.toLowerCase()));
-});
-
-// Get icon based on resource type
-const getIconForResourceType = (type) => {
-    const icons = {
-        pdf: 'pi pi-file-pdf',
-        ebook: 'pi pi-book',
-        video: 'pi pi-video',
-        audio: 'pi pi-volume-up',
-        youtube: 'pi pi-youtube'
-    };
-    return icons[type] || 'pi pi-file';
-};
-
-// Get color based on resource type
-const getColorForType = (type) => {
-    const colors = {
-        pdf: '#FF7043',
-        ebook: '#29B6F6',
-        video: '#AB47BC',
-        audio: '#26A69A',
-        youtube: '#EF5350'
-    };
-    return colors[type] || '#78909C';
-};
-
-// Determine tile size based on index - Windows 8 style with different sized tiles
-const getTileSize = (index) => {
-    // Create an interesting pattern with different sized tiles
-    if (index === 0 || index === 3) {
-        return 'tile-large'; // 2x2
-    } else if (index === 4 || index === 7) {
-        return 'tile-wide'; // 2x1
-    } else {
-        return 'tile-normal'; // 1x1
-    }
-};
-
-// Open the resource
-const openResource = (bookmark) => {
-    // Navigate to resource viewer or open resource
-    router.push(`/resource/${bookmark.id}`);
-};
-
-// Confirm and remove a bookmark
-const confirmRemoveBookmark = (bookmark) => {
-    confirm.require({
-        message: `Are you sure you want to remove "${bookmark.title}"?`,
-        header: 'Confirm Removal',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        accept: () => {
-            removeBookmark(bookmark);
-        }
-    });
-};
-
-// Remove a bookmark
-const removeBookmark = (bookmark) => {
-    // Mock removal - replace with actual API call
-    bookmarks.value = bookmarks.value.filter((b) => b.id !== bookmark.id);
-    toast.add({ severity: 'success', summary: 'Removed', detail: 'Bookmark removed successfully', life: 3000 });
-};
-
-// Navigate to library
-const navigateToLibrary = () => {
-    router.push('/library');
-};
-
-// Load bookmarks
-const loadBookmarks = () => {
+const fetchBookmarks = async () => {
     loading.value = true;
-    // Mock data loading - replace with actual API call
-    setTimeout(() => {
-        bookmarks.value = [
-            { id: 1, title: 'JavaScript Basics', type: 'pdf', author: 'John Doe', bookmarkedAt: new Date() },
-            { id: 2, title: 'Vue.js Guide', type: 'ebook', author: 'Jane Smith', bookmarkedAt: new Date() },
-            { id: 3, title: 'HTML Tutorial', type: 'video', author: 'Web School', bookmarkedAt: new Date() },
-            { id: 4, title: 'CSS Masterclass', type: 'pdf', author: 'Style Master', bookmarkedAt: new Date() },
-            { id: 5, title: 'Python for Beginners', type: 'ebook', author: 'Code Academy', bookmarkedAt: new Date() },
-            { id: 6, title: 'Web Development', type: 'youtube', author: 'Dev Channel', bookmarkedAt: new Date() },
-            { id: 7, title: 'Database Design', type: 'pdf', author: 'SQL Expert', bookmarkedAt: new Date() },
-            { id: 8, title: 'React Hooks', type: 'video', author: 'React Team', bookmarkedAt: new Date() }
-        ];
+    try {
+        const currentPage = Math.floor(bookmarksFirst.value / bookmarksPerPage.value) + 1;
+        const response = await axiosInstance.get('/bookmarks', {
+            params: {
+                with: 'ebook,ebook.bookItem',
+                per_page: bookmarksPerPage.value,
+                page: currentPage
+            }
+        });
+        bookmarks.value = response.data.data;
+        totalRecords.value = response.data.pagination?.total || 0;
+    } catch (error) {
+        bookmarks.value = [];
+        totalRecords.value = 0;
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load bookmarks. Please try again.',
+            life: 3000
+        });
+    } finally {
         loading.value = false;
-    }, 500);
+    }
 };
 
-// Initialize
 onMounted(() => {
-    loadBookmarks();
+    fetchBookmarks();
 });
+
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const goToEbookDetail = (ebook) => {
+    if (ebook && ebook.id) {
+        router.push(`/reader/${ebook.id}`);
+    }
+};
+
+const goBack = () => {
+    router.back();
+};
+
+const onBookmarksPageChange = (event) => {
+    bookmarksFirst.value = event.first;
+    bookmarksPerPage.value = event.rows;
+    fetchBookmarks();
+};
+
+const deleteBookmark = async (bookmark) => {
+    if (!bookmark || !bookmark.id) return;
+    try {
+        await axiosInstance.delete(`/bookmarks/${bookmark.id}`);
+        toast.add({
+            severity: 'success',
+            summary: 'Removed',
+            detail: 'Bookmark removed successfully.',
+            life: 2000
+        });
+        fetchBookmarks();
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to remove bookmark.',
+            life: 3000
+        });
+    }
+};
 </script>
 
 <style scoped>
-.bookmarks-page {
-    min-height: 100vh;
-    background-color: #0c0c0c; /* Darker background for Windows 8 style */
-    color: white;
-}
-
-/* Windows 8 style header */
-.win8-header {
-    padding: 24px 0;
-    background-color: #1a1a1a;
-    border-bottom: 2px solid #333;
-    margin-bottom: 20px;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 0 16px;
-}
-
-.header-title {
-    display: flex;
-    align-items: center;
-}
-
-.header-title i {
-    font-size: 1.8rem;
-    color: #0078d7; /* Windows 8 blue */
-}
-
-.header-title h1 {
-    font-size: 1.8rem;
-    font-weight: 300;
-    margin: 0;
-    letter-spacing: 1px;
-    color: white;
-}
-
-.search-container {
-    flex: 1;
-    max-width: 400px;
-}
-
-.search-input {
-    background-color: #333 !important;
-    border: none !important;
-    color: white !important;
-    height: 44px;
-    font-size: 1rem !important;
-    padding-left: 16px !important;
-    border-radius: 0 !important;
-    transition: all 0.2s ease;
-}
-
-.search-input:focus {
-    background-color: #444 !important;
-    box-shadow: none !important;
-}
-
-.search-input::placeholder {
-    color: #888;
-}
-
-.search-button {
-    background-color: #0078d7 !important; /* Windows 8 blue */
-    border: none !important;
-    height: 44px !important;
-    width: 50px !important;
-    border-radius: 0 !important;
-}
-
-.search-button:hover {
-    background-color: #00a2ed !important;
-}
-
-/* Windows 8 style tile grid */
-.tile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    grid-auto-rows: 140px;
-    grid-gap: 10px;
-    padding: 20px 10px;
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-/* Tile sizes */
-.tile {
-    position: relative;
-    cursor: pointer;
-    border-radius: 2px;
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    animation: tileAppear 0.3s ease-out forwards;
-    opacity: 0;
-    transform: scale(0.9);
-}
-
-.tile-normal {
-    grid-column: span 1;
-    grid-row: span 1;
-}
-
-.tile-wide {
-    grid-column: span 2;
-    grid-row: span 1;
-}
-
-.tile-large {
-    grid-column: span 2;
-    grid-row: span 2;
-}
-
-/* Tile content styling */
-.tile-content {
-    height: 100%;
-    width: 100%;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 12px;
-    box-sizing: border-box;
-    transition: all 0.2s ease;
-}
-
-.tile:hover .tile-content {
-    transform: scale(1.05);
-}
-
-.tile-icon {
-    font-size: 2rem;
-    margin-bottom: auto;
-}
-
-.tile-info {
-    margin-top: auto;
-}
-
-.tile-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tile-meta {
-    font-size: 0.8rem;
-    opacity: 0.9;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Windows 8 style animations */
-@keyframes tileAppear {
-    0% {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 768px) {
-    .tile-grid {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        grid-auto-rows: 100px;
-        grid-gap: 8px;
-    }
-
-    .tile-icon {
-        font-size: 1.5rem;
-    }
-
-    .tile-title {
-        font-size: 0.8rem;
-    }
-
-    .tile-meta {
-        font-size: 0.7rem;
-    }
-}
-
-@media screen and (min-width: 1200px) {
-    .tile-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        grid-auto-rows: 160px;
-    }
-}
-
-/* Loading animation styling */
-.loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 200px;
-    margin: 40px auto;
-}
-
-.loading-state p {
-    color: #888;
-    margin-top: 20px;
-    font-size: 1rem;
-}
-
-.loading-dots {
-    display: flex;
-    gap: 8px;
-}
-
-.loading-dots span {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #0078d7;
-    animation: dotPulse 1.4s infinite ease-in-out;
-}
-
-.loading-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.loading-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-.loading-dots span:nth-child(4) {
-    animation-delay: 0.6s;
-}
-
-.loading-dots span:nth-child(5) {
-    animation-delay: 0.8s;
-}
-
-@keyframes dotPulse {
-    0%,
-    100% {
-        transform: scale(0.3);
-        opacity: 0.2;
-    }
-    50% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-/* Empty state styling */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 60px 20px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-    max-width: 500px;
-    margin: 40px auto;
-    text-align: center;
-}
-
-.empty-state i {
-    font-size: 4rem;
-    color: #0078d7;
-    margin-bottom: 10px;
-}
-
-.empty-state h3 {
-    font-size: 1.5rem;
-    font-weight: 300;
-    margin: 0;
-    color: white;
-}
-
-.empty-state p {
-    color: #888;
-    margin: 0;
 }
 </style>
