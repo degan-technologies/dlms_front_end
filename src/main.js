@@ -1,7 +1,7 @@
-// main.js
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import './bootstrap';
 
 import Aura from '@primeuix/themes/aura';
 import { createPinia } from 'pinia';
@@ -12,8 +12,8 @@ import ToastService from 'primevue/toastservice';
 // PrimeVue components you use
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Paginator from 'primevue/paginator'; // needed if you ever use <Paginator>
-import Dropdown from 'primevue/dropdown'; // **needed** for the rows‑per‑page dropdown
+import Paginator from 'primevue/paginator';
+import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
 import Toolbar from 'primevue/toolbar';
 import Dialog from 'primevue/dialog';
@@ -22,7 +22,6 @@ import Textarea from 'primevue/textarea';
 import Badge from 'primevue/badge';
 import Toast from 'primevue/toast';
 import Tooltip from 'primevue/tooltip';
-
 
 import '@/assets/styles.scss';
 

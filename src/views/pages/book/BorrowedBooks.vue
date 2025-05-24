@@ -1,330 +1,217 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref, watch } from 'vue';
 
 const toast = useToast();
-const router = useRouter();
-const borrowedItems = ref([]);
-const selectedItems = ref([]);
-const extendDialog = ref(false);
-const returnDialog = ref(false);
-const loading = ref(true);
-const currentItem = ref(null);
-const extendDays = ref(7);
-const totalRecords = ref(0); // Track total records for pagination
+const reservations = ref([]);
+const loading = ref(false);
+const totalRecords = ref(0);
+const rows = ref(10);
+const page = ref(1);
+const filter = ref('');
+const status = ref('');
+const dateRange = ref([]);
 
-onMounted(() => {
-    fetchBorrowedItems();
-});
-
-const fetchBorrowedItems = async (lazyParams = { first: 0, rows: 10 }) => {
+const fetchReservations = async () => {
     loading.value = true;
     try {
-        console.log('Fetching data with params:', {
-            page: Math.floor(parseInt(lazyParams.first, 10) / parseInt(lazyParams.rows, 10)) + 1,
-            per_page: parseInt(lazyParams.rows, 10)
-        });
-
-        const response = await axiosInstance.get('/loans', {
-            params: {
-                page: Math.floor(parseInt(lazyParams.first, 10) / parseInt(lazyParams.rows, 10)) + 1,
-                per_page: parseInt(lazyParams.rows, 10)
-            }
-        });
-
-        console.log('Response from backend:', response.data);
-
-        const rawItems = response.data.data || response.data;
-        borrowedItems.value = rawItems
-            .filter((item) => item.return_date === null)
-            .map((item) => ({
-                id: item.id,
-                title: item.book_item?.title ?? 'Unknown Title',
-                author: item.book_item?.author ?? 'Unknown Author',
-                item_type: item.book_item?.item_type ?? 'Unknown',
-                asset_type: item.book_item?.asset_type ?? 'Unknown',
-                borrow_date: item.borrow_date,
-                due_date: item.due_date,
-                renewals_count: item.renewals_count ?? 0,
-                return_date: 'Not Returned',
-                cover_image_url: item.book_item?.cover_image_url ?? 'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
-
-                // Optional: if needed for actions
-                fullItem: item
-            }));
-
-        totalRecords.value = response.data.pagination?.total_records || 0; // Update total records for pagination
-        console.log('Total records:', totalRecords.value);
+        const params = {
+            per_page: rows.value,
+            page: page.value
+        };
+        if (filter.value) params.filter = filter.value;
+        if (status.value) params.status = status.value;
+        if (dateRange.value.length === 2) params.dateRange = dateRange.value;
+        const res = await axiosInstance.get('/reservations', { params });
+        reservations.value = res.data.data;
+        totalRecords.value = res.data.meta?.total_records || res.data.meta?.total || res.data.data.length;
     } catch (error) {
-        console.error('Failed to fetch borrowed items:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch reservations',
+            life: 3000
+        });
     } finally {
         loading.value = false;
     }
 };
 
 const onPage = (event) => {
-    console.log('Pagination event:', event); // Log the pagination event for debugging
-    fetchBorrowedItems({ first: event.first, rows: event.rows }); // Pass the correct rows value
+    page.value = event.page + 1;
+    rows.value = event.rows;
+    fetchReservations();
 };
 
-const confirmReturn = (item) => {
-    currentItem.value = item;
-    returnDialog.value = true;
+const onFilter = () => {
+    page.value = 1;
+    fetchReservations();
 };
 
-const confirmExtend = (item) => {
-    currentItem.value = item;
-    extendDialog.value = true;
-};
+let fetchReservationsTimeout = null;
+watch(
+    () => [filter.value, status.value, dateRange.value],
+    () => {
+        page.value = 1;
+        if (fetchReservationsTimeout) clearTimeout(fetchReservationsTimeout);
+        fetchReservationsTimeout = setTimeout(() => {
+            fetchReservations();
+        }, 300);
+    },
+    { deep: true }
+);
 
-const returnItem = async () => {
+const handleApprove = async (reservation) => {
     try {
-        const item = borrowedItems.value.find((i) => i.id === currentItem.value.id);
-        if (!item) return;
-
-        const fullData = item.fullItem || {};
-        const returnDate = new Date(); // Now
-        const dueDate = new Date(item.due_date);
-
-        // Calculate days late
-        const timeDiff = returnDate - dueDate;
-        const daysLate = Math.max(Math.ceil(timeDiff / (1000 * 60 * 60 * 24)), 0);
-
-        const feePerDay = 5; // Adjust as needed
-        const totalFine = daysLate * feePerDay;
-
-        // Prepare payload for loan update
-        const payload = {
-            student_id: fullData.student_id,
-            book_item_id: fullData.book_item_id,
-            borrow_date: item.borrow_date,
-            due_date: item.due_date,
-            library_branch_id: fullData.library_branch_id,
-            return_date: returnDate.toISOString().slice(0, 10)
-        };
-
-        // 1. Update return date in the loan record
-        await axiosInstance.put(`/loans/${item.id}`, payload);
-
-        // 2. If late, record fine
-        if (daysLate > 0) {
-            const finePayload = {
-                library_branch_id: fullData.library_branch_id,
-                user_id: fullData.student_id,
-                loan_id: item.id,
-                fine_amount: totalFine,
-                fine_date: returnDate.toISOString().slice(0, 10),
-                reason: `Returned ${daysLate} day(s) late`,
-                payment_status: 'Unpaid' // Default
-            };
-
-            await axiosInstance.post('/fines', finePayload);
-        }
-
+        // 1. Update reservation status to 'approved'
+        await axiosInstance.put(`/reservations/${reservation.id}`, { status: 'approved' });
+        // 2. Create a loan for this reservation
+        // Set borrow_date as today, due_date as 14 days from today (example)
+        const today = new Date();
+        const borrowDate = today.toISOString().slice(0, 10);
+        const dueDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        await axiosInstance.post('/loans', {
+            user_id: reservation.user_id,
+            book_id: reservation.book_id,
+            borrow_date: borrowDate,
+            due_date: dueDate,
+            library_id: reservation.library_id
+        });
         toast.add({
             severity: 'success',
-            summary: 'Returned',
-            detail: daysLate > 0 ? `Returned late. Fine of ${totalFine} recorded.` : 'Returned on time.',
+            summary: 'Reservation Approved',
+            detail: 'Loan created for this reservation.',
             life: 3000
         });
-
-        returnDialog.value = false;
-        borrowedItems.value = borrowedItems.value.filter((i) => i.id !== item.id);
+        fetchReservations();
     } catch (error) {
-        console.error('Return error:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to return item',
+            detail: error.response?.data?.message || 'Failed to approve reservation',
             life: 3000
         });
     }
 };
 
-const extendBorrowingPeriod = async () => {
+const handleReject = async (reservation) => {
     try {
-        // In a real app, this would be an API call
-        const item = borrowedItems.value.find((i) => i.id === currentItem.value.id);
-        if (item) {
-            const currentDueDate = new Date(item.due_date);
-            currentDueDate.setDate(currentDueDate.getDate() + extendDays.value);
-            item.due_date = currentDueDate.toISOString().slice(0, 10);
-            item.renewals_count += 1;
-        }
+        await axiosInstance.put(`/reservations/${reservation.id}`, { status: 'rejected' });
         toast.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: `Borrowing period extended by ${extendDays.value} days`,
+            severity: 'info',
+            summary: 'Reservation Rejected',
+            detail: 'Reservation has been rejected.',
             life: 3000
         });
-        extendDialog.value = false;
+        fetchReservations();
     } catch (error) {
-        console.error('Error extending borrowing period:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to extend borrowing period',
+            detail: error.response?.data?.message || 'Failed to reject reservation',
             life: 3000
         });
     }
 };
 
-const viewDetails = (item) => {
-    // Navigate based on asset type
-    if (item.asset_type === 'Physical Book') {
-        router.push(`/books/physical/${item.id}`);
-    } else if (item.asset_type === 'E-Book') {
-        router.push(`/books/ebooks/${item.id}`);
-    } else {
-        router.push(`/books/assets/${item.id}`);
-    }
-};
-
-const getDaysRemaining = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const timeDiff = due.getTime() - today.getTime();
-    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    return daysRemaining;
-};
-
-const getSeverity = (dueDate) => {
-    const daysRemaining = getDaysRemaining(dueDate);
-    if (daysRemaining < 0) return 'danger';
-    if (daysRemaining < 3) return 'warning';
-    return 'success';
-};
+onMounted(fetchReservations);
 </script>
 
 <template>
-    <div class="grid">
-        <div class="col-12">
-            <div class="card">
-                <Toast />
-                <h5>Currently Borrowed Items</h5>
-                <p class="text-gray-600 mb-4">View and manage your borrowed books and other library resources.</p>
-
-                <DataTable
-                    v-model:selection="selectedItems"
-                    :value="borrowedItems"
-                    dataKey="id"
-                    :rows="10"
-                    :loading="loading"
-                    :paginator="true"
-                    :rowsPerPageOptions="[5, 10, 25]"
-                    :totalRecords="totalRecords"
-                    responsiveLayout="scroll"
-                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} items"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    @page="onPage"
-                    class="p-datatable-sm"
-                >
-                    <template #empty>
-                        <div class="flex flex-column align-items-center p-5">
-                            <i class="pi pi-info-circle text-primary" style="font-size: 2rem"></i>
-                            <p>You don't have any borrowed items at the moment.</p>
-                            <Button label="Browse Library" icon="pi pi-search" @click="router.push('/books')" />
-                        </div>
-                    </template>
-
-                    <Column field="cover_image_url" header="Cover Image" style="width: 4rem">
-                        <template #body="slotProps">
-                            <Avatar :image="slotProps.data.cover_image_url" shape="circle" />
-                        </template>
-                    </Column>
-
-                    <Column field="title" header="Title" sortable>
-                        <template #body="slotProps">
-                            <div>
-                                <span class="font-bold block">{{ slotProps.data.title }}</span>
-                                <small>{{ slotProps.data.author }}</small>
-                            </div>
-                        </template>
-                    </Column>
-
-                    <Column field="asset_type" header="Type" sortable style="width: 10rem">
-                        <template #body="slotProps">
-                            <i class="pi pi-book"></i>
-                            <Tag :value="slotProps.data.item_type" severity="info" />
-                        </template>
-                    </Column>
-
-                    <Column field="borrow_date" header="Borrowed On" sortable style="width: 10rem"></Column>
-
-                    <Column field="due_date" header="Due Date" sortable style="width: 12rem">
-                        <template #body="slotProps">
-                            <div class="flex align-items-center">
-                                <span>{{ slotProps.data.due_date }}</span>
-                                <Tag :value="getDaysRemaining(slotProps.data.due_date) + ' days'" :severity="getSeverity(slotProps.data.due_date)" class="ml-2" />
-                            </div>
-                        </template>
-                    </Column>
-
-                    <Column field="renewals_count" header="Renewals" style="width: 8rem">
-                        <template #body="slotProps">
-                            <Badge :value="slotProps.data.renewals_count" severity="secondary" />
-                        </template>
-                    </Column>
-                    <Column field="return_date" header="Return Date" style="width: 9rem">
-                        <template #body="slotProps">
-                            <Badge :value="slotProps.data.return_date" severity="secondary" />
-                        </template>
-                    </Column>
-
-                    <Column header="Actions" style="width: 14rem">
-                        <template #body="slotProps">
-                            <div class="flex">
-                                <Button icon="pi pi-eye" v-tooltip="'View Details'" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-text p-button-sm" @click="viewDetails(slotProps.data)" />
-                                <Button icon="pi pi-calendar-plus" v-tooltip="'Extend'" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="confirmExtend(slotProps.data)" />
-                                <Button icon="pi pi-check" v-tooltip="'Return'" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-primary p-button-sm" @click="confirmReturn(slotProps.data)" />
-                            </div>
-                        </template>
-                    </Column>
-                </DataTable>
-
-                <!-- Return Dialog -->
-                <Dialog v-model:visible="returnDialog" :style="{ width: '450px' }" header="Confirm Return" :modal="true">
-                    <div class="confirmation-content">
-                        <i class="pi pi-check-circle mr-3" style="font-size: 2rem" />
-                        <span
-                            >Are you sure you want to return <b>{{ currentItem?.title }}</b
-                            >?</span
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white py-6 flex flex-col items-center">
+        <div class="w-full px-2 sm:px-4 md:px-6 mx-auto">
+            <div class="card shadow-5 p-4 sm:p-6 md:p-8 bg-white rounded-3xl border border-blue-100">
+                <div class="flex flex-col gap-10 mb-6">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-blue-800 flex items-center gap-2 mb-4">
+                            <i class="pi pi-calendar-plus text-xl text-blue-500"></i>
+                            Reservation Management
+                        </h2>
+                        <p class="text-gray-600 text-sm sm:text-base">Manage all book reservations and their status.</p>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 md:gap-2 md:justify-end mb-6">
+                        <InputText v-model="filter" placeholder="Search by book, user, code..." class="w-full sm:w-64" @keyup.enter="onFilter" />
+                        <Dropdown
+                            v-model="status"
+                            :options="[
+                                { label: 'All', value: '' },
+                                { label: 'Pending', value: 'pending' },
+                                { label: 'Approved', value: 'approved' },
+                                { label: 'Rejected', value: 'rejected' },
+                                { label: 'Expired', value: 'expired' },
+                                { label: 'Fulfilled', value: 'fulfilled' }
+                            ]"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Status"
+                            class="w-full sm:w-40"
+                            @change="onFilter"
+                        />
+                        <Calendar v-model="dateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" @date-select="onFilter" />
+                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFilter" />
+                    </div>
+                </div>
+                <div class="w-full">
+                    <div style="height: 100%; overflow: auto">
+                        <DataTable
+                            :value="reservations"
+                            :loading="loading"
+                            :paginator="true"
+                            :rows="rows"
+                            :total-records="totalRecords"
+                            @page="onPage"
+                            dataKey="id"
+                            responsive-layout="scroll"
+                            class="p-datatable-sm min-w-full"
+                            scrollable
+                            style="min-width: 900px"
                         >
+                            <Column field="id" header="#" style="width: 4rem" />
+                            <Column field="reservation_code" header="Code" />
+                            <Column field="user_id" header="User ID" />
+                            <Column field="book_id" header="Book ID" />
+                            <Column field="reservation_date" header="Reserved On">
+                                <template #body="{ data }">
+                                    {{ new Date(data.reservation_date).toLocaleDateString() }}
+                                </template>
+                            </Column>
+                            <Column field="expiration_time" header="Expires">
+                                <template #body="{ data }">
+                                    <span v-if="data.expiration_time">{{ new Date(data.expiration_time).toLocaleDateString() }}</span>
+                                    <span v-else>-</span>
+                                </template>
+                            </Column>
+                            <Column field="status" header="Status">
+                                <template #body="{ data }">
+                                    <span
+                                        :class="{
+                                            'text-yellow-600': data.status === 'pending',
+                                            'text-green-600': data.status === 'approved' || data.status === 'fulfilled',
+                                            'text-red-500': data.status === 'rejected' || data.status === 'expired'
+                                        }"
+                                    >
+                                        {{ data.status }}
+                                    </span>
+                                </template>
+                            </Column>
+                            <Column field="created_at" header="Created">
+                                <template #body="{ data }">
+                                    {{ new Date(data.created_at).toLocaleDateString() }}
+                                </template>
+                            </Column>
+                            <Column header="Action" style="min-width: 8rem">
+                                <template #body="{ data }">
+                                    <Button v-if="data.status === 'pending'" label="Approve" icon="pi pi-check" class="p-button-success p-button-sm mr-2" @click="handleApprove(data)" />
+                                    <Button v-if="data.status === 'pending'" label="Reject" icon="pi pi-times" class="p-button-danger p-button-sm" @click="handleReject(data)" />
+                                    <Button v-if="data.status === 'approved'" label="Fulfill" icon="pi pi-book" class="p-button-info p-button-sm ml-2" />
+                                </template>
+                            </Column>
+                        </DataTable>
+                        <div v-if="!reservations.length && !loading" class="text-gray-400 text-center py-4">No reservations found.</div>
                     </div>
-                    <template #footer>
-                        <Button label="No" icon="pi pi-times" class="p-button-text" @click="returnDialog = false" />
-                        <Button label="Yes" icon="pi pi-check" class="p-button-text" @click="returnItem" />
-                    </template>
-                </Dialog>
-
-                <!-- Extend Dialog -->
-                <Dialog v-model:visible="extendDialog" :style="{ width: '450px' }" header="Extend Borrowing Period" :modal="true">
-                    <div class="p-fluid">
-                        <div class="field">
-                            <label for="extendDays">How many days would you like to extend?</label>
-                            <div class="p-inputgroup">
-                                <InputNumber id="extendDays" v-model="extendDays" :min="1" :max="30" />
-                                <span class="p-inputgroup-addon">days</span>
-                            </div>
-                            <small>Current due date: {{ currentItem?.due_date }}</small>
-                        </div>
-                    </div>
-                    <template #footer>
-                        <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="extendDialog = false" />
-                        <Button label="Extend" icon="pi pi-check" class="p-button-text" @click="extendBorrowingPeriod" />
-                    </template>
-                </Dialog>
+                </div>
             </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-.confirmation-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-</style>
