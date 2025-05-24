@@ -340,6 +340,16 @@
                 </div>
             </div>
         </footer>
+        <!-- Chatbot Floating Button -->
+        <div class="fixed bottom-6 right-6 z-50">
+            <button @click="toggleChatbot" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Ask a Librarian">
+                <i class="pi pi-comments text-xl"></i>
+            </button>
+        </div>
+        <!-- Chatbot Modal -->
+        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center">
+            <AskLibrarian @some-event="toggleChatbot" />
+        </div>
     </div>
 </template>
 
@@ -350,6 +360,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 // Import all modularized components
+import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import HeroSection from '@/components/home/HeroSection.vue';
 import NewArrivals from '@/components/home/NewArrivals.vue';
 import QuickLinks from '@/components/home/QuickLinks.vue';
@@ -366,6 +377,19 @@ const router = useRouter();
 
 // Initialize Pinia store
 const homeStore = useHomeStore();
+
+// Chatbot state
+const chatbotVisible = ref(false);
+const showChatbot = ref(false);
+const toggleChatbot = () => {
+    showChatbot.value = !showChatbot.value;
+};
+
+
+
+// const toggleChatbot = () => {
+//     chatbotVisible.value = !chatbotVisible.value;
+// };
 
 // Mobile menu state
 const showMobileMenu = ref(false);

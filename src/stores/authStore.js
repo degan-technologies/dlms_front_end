@@ -35,6 +35,7 @@ export const useAuthStore = defineStore(
 
                 auth.value.isAuthenticated = true;
                 auth.value.user = user;
+                console.log('Logged-in user:', user);
                 toast.add({
                     severity: 'success',
                     summary: 'Success',
@@ -43,7 +44,11 @@ export const useAuthStore = defineStore(
                 });
 
                 // Use window.location.href for more reliable page navigation after login
-                router.push('/dashboard');
+                if (user.roles.some((role) => role.name === 'student')) {
+                    router.push('/'); // student route
+                } else {
+                    router.push('/dashboard'); // route for other roles
+                }
             } catch (error) {
                 console.error('Login error:', error);
                 toast.add({
@@ -56,7 +61,6 @@ export const useAuthStore = defineStore(
                 auth.value.isSigning = false;
             }
         }
-
         // Auth check function
         async function authCheck() {
             try {
