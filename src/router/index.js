@@ -22,10 +22,9 @@ const router = createRouter({
                     component: () => import('@/views/pages/UserProfile.vue'),
                     meta: { requiresAuth: true }
                 },
-               
-                
+
                 // User Management Routes
-                
+
                 {
                     path: '/students/manage',
                     name: 'students-manage',
@@ -42,7 +41,7 @@ const router = createRouter({
                     path: '/admin/manage',
                     name: 'admin-manage',
                     component: () => import('@/views/pages/usermanagment/admin/AdminManage.vue'),
-                    meta: { requiresAuth: true,   }
+                    meta: { requiresAuth: true }
                 },
                 {
                     path: '/auth/register',
@@ -112,7 +111,7 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/EBookEdit.vue'),
                     meta: { requiresAuth: true, isLibrarian: true }
                 },
-                
+
                 {
                     path: '/books/ebooks/:id',
                     name: 'ebook-details',
@@ -239,13 +238,6 @@ const router = createRouter({
             path: '/',
             name: 'home',
             component: () => import('@/views/pages/home/Home.vue'),
-            meta: { public: true }
-        },
-
-        {
-            path: '/header',
-            name: 'header',
-            component: () => import('@/views/pages/home/Header.vue'),
             meta: { public: true }
         },
         {
@@ -400,6 +392,7 @@ router.beforeEach(async (to, from, next) => {
                 {
                     metaKey: 'isAdminOrLibrarian',
                     condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                    // eslint-disable-next-line no-dupe-keys
                     condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
                     redirect: '/auth/access-denied'
                 }

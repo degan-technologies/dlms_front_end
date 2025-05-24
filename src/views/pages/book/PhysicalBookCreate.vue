@@ -1,380 +1,407 @@
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import axiosInstance from "@/util/axios-config";
+import { useToast } from "primevue/usetoast";
+import { onMounted, ref } from "vue";
 
-const router = useRouter();
-const submitted = ref(false);
+const toast = useToast();
+const languages = ref([]);
+const subjects = ref([]);
 const loading = ref(false);
-const currentDate = new Date();
-const currentYear = currentDate.getFullYear();
+const dialogVisible = ref(false);
+const isEdit = ref(false);
+const submitted = ref(false);
+const languageForm = ref({ id: null, name: "", code: "" });
 
-const book = ref({
-    // BookItem fields
-    title: '',
-    isbn: '',
-    availability_status: 'available', // default to available
-    author: '',
-    publication_year: null,
-    description: '',
-    cover_image_url: '',
-    metadata: {},
-    language: '',
-    library_branch_id: null,
-    shelf_id: null,
-    category_id: null,
-    publisher_id: null,
+// Subject management
+const subjectDialogVisible = ref(false);
+const isSubjectEdit = ref(false);
+const subjectSubmitted = ref(false);
+const subjectForm = ref({ id: null, name: "", code: "" });
 
-    // Book-specific fields
-    edition: '',
-    pages: null,
-    cover_type: '',
-    dimensions: '',
-    weight_grams: null,
-    barcode: '',
-    shelf_location_detail: '',
-    reference_only: false
-});
-
-// Form options
-const branches = ref([]);
-const shelves = ref([]);
-const categories = ref([]);
-const publishers = ref([]);
-const languages = ref([
-    { name: 'English', code: 'en' },
-    { name: 'Spanish', code: 'es' },
-    { name: 'French', code: 'fr' },
-    { name: 'German', code: 'de' },
-    { name: 'Chinese', code: 'zh' },
-    { name: 'Japanese', code: 'ja' },
-    { name: 'Arabic', code: 'ar' }
-]);
-const coverTypes = ref([
-    { name: 'Hardcover', code: 'hardcover' },
-    { name: 'Paperback', code: 'paperback' },
-    { name: 'Spiral-bound', code: 'spiral' },
-    { name: 'Leather-bound', code: 'leather' },
-    { name: 'Board book', code: 'board' }
-]);
-const statusOptions = ref([
-    { name: 'Available', code: 'available' },
-    { name: 'Checked Out', code: 'checked_out' },
-    { name: 'Reserved', code: 'reserved' },
-    { name: 'Lost', code: 'lost' },
-    { name: 'Damaged', code: 'damaged' }
-]);
-
-onMounted(() => {
-    fetchFormData();
-});
-
-const fetchFormData = async () => {
-    try {
-        // Simulate API calls to get form data
-        setTimeout(() => {
-            branches.value = [
-                { name: 'Main Branch', id: 1 },
-                { name: 'North Campus', id: 2 },
-                { name: 'South Campus', id: 3 },
-                { name: 'West Wing', id: 4 }
-            ];
-
-            shelves.value = [
-                { name: 'Fiction Section A', id: 1 },
-                { name: 'Non-Fiction Section B', id: 2 },
-                { name: 'Reference Section', id: 3 },
-                { name: 'Children Section', id: 4 }
-            ];
-
-            categories.value = [
-                { name: 'Fiction', id: 1 },
-                { name: 'Science Fiction', id: 2 },
-                { name: 'Mystery', id: 3 },
-                { name: 'Biography', id: 4 },
-                { name: 'History', id: 5 },
-                { name: 'Science', id: 6 },
-                { name: 'Technology', id: 7 },
-                { name: 'Arts', id: 8 }
-            ];
-
-            publishers.value = [
-                { name: 'Penguin Random House', id: 1 },
-                { name: 'HarperCollins', id: 2 },
-                { name: 'Simon & Schuster', id: 3 },
-                { name: 'Macmillan Publishers', id: 4 },
-                { name: 'Oxford University Press', id: 5 }
-            ];
-        }, 500);
-    } catch (error) {
-        console.error('Error fetching form data:', error);
-    }
-};
-
-const submitForm = async () => {
-    submitted.value = true;
-
-    // Form validation
-    if (!book.value.title || !book.value.availability_status || !book.value.library_branch_id || !book.value.category_id) {
-        return;
-    }
-
-    // Validate publication year
-    if (book.value.publication_year && (book.value.publication_year < 1000 || book.value.publication_year > currentYear)) {
-        return;
-    }
-
+const fetchLanguages = async () => {
     loading.value = true;
-
     try {
-        // In a real app, this would be an API call to save the book
-        // const response = await fetch('/api/books/physical', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json'
-        //     },
-        //     body: JSON.stringify(book.value)
-        // });
-        // const data = await response.json();
-
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Navigate to the books list page after successful creation
-        router.push('/books');
+        const res = await axiosInstance.get("/constants/languages");
+        languages.value = res.data.data || res.data;
     } catch (error) {
-        console.error('Error creating book:', error);
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to fetch languages",
+            life: 3000,
+        });
     } finally {
         loading.value = false;
     }
 };
 
-const cancelForm = () => {
-    router.push('/books');
+const fetchSubjects = async () => {
+    loading.value = true;
+    try {
+        const res = await axiosInstance.get("/constants/subjects");
+        subjects.value = res.data.data || res.data;
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to fetch subjects",
+            life: 3000,
+        });
+    } finally {
+        loading.value = false;
+    }
 };
+
+const openNew = () => {
+    languageForm.value = { id: null, name: "", code: "" };
+    isEdit.value = false;
+    dialogVisible.value = true;
+    submitted.value = false;
+};
+
+const openEdit = (lang) => {
+    languageForm.value = { ...lang };
+    isEdit.value = true;
+    dialogVisible.value = true;
+    submitted.value = false;
+};
+
+const saveLanguage = async () => {
+    submitted.value = true;
+    if (!languageForm.value.name || !languageForm.value.code) return;
+    loading.value = true;
+    try {
+        if (isEdit.value) {
+            await axiosInstance.put(`/constants/languages/${languageForm.value.id}`, {
+                name: languageForm.value.name,
+                code: languageForm.value.code,
+            });
+            toast.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Language updated",
+                life: 3000,
+            });
+        } else {
+            await axiosInstance.post("/constants/languages", {
+                name: languageForm.value.name,
+                code: languageForm.value.code,
+            });
+            toast.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Language created",
+                life: 3000,
+            });
+        }
+        dialogVisible.value = false;
+        fetchLanguages();
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: error.response?.data?.message || "Failed to save language",
+            life: 3000,
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+
+const deleteLanguage = async (lang) => {
+    loading.value = true;
+    try {
+        await axiosInstance.delete(`/constants/languages/${lang.id}`);
+        toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: "Language deleted",
+            life: 3000,
+        });
+        fetchLanguages();
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to delete language",
+            life: 3000,
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+
+// Subject CRUD
+const openNewSubject = () => {
+    subjectForm.value = { id: null, name: "", code: "" };
+    isSubjectEdit.value = false;
+    subjectDialogVisible.value = true;
+    subjectSubmitted.value = false;
+};
+
+const openEditSubject = (subject) => {
+    subjectForm.value = { ...subject };
+    isSubjectEdit.value = true;
+    subjectDialogVisible.value = true;
+    subjectSubmitted.value = false;
+};
+
+const saveSubject = async () => {
+    subjectSubmitted.value = true;
+    if (!subjectForm.value.name) return;
+    loading.value = true;
+    try {
+        if (isSubjectEdit.value) {
+            await axiosInstance.put(`/constants/subjects/${subjectForm.value.id}`, {
+                name: subjectForm.value.name,
+            });
+            toast.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Subject updated",
+                life: 3000,
+            });
+        } else {
+            await axiosInstance.post("/constants/subjects", {
+                name: subjectForm.value.name,
+            });
+            toast.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Subject created",
+                life: 3000,
+            });
+        }
+        subjectDialogVisible.value = false;
+        fetchSubjects();
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: error.response?.data?.message || "Failed to save subject",
+            life: 3000,
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+
+const deleteSubject = async (subject) => {
+    loading.value = true;
+    try {
+        await axiosInstance.delete(`/constants/subjects/${subject.id}`);
+        toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: "Subject deleted",
+            life: 3000,
+        });
+        fetchSubjects();
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to delete subject",
+            life: 3000,
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+
+onMounted(() => {
+    fetchLanguages();
+    fetchSubjects();
+});
 </script>
 
 <template>
-    <div class="grid">
-        <div class="col-12">
-            <div class="card">
-                <h5>Add New Physical Book</h5>
-                <p class="text-gray-600 mb-4">Enter details for a new physical book in the library.</p>
-
-                <form @submit.prevent="submitForm" class="p-fluid">
-                    <div class="grid formgrid">
-                        <!-- Basic Information -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Basic Information</h6>
-                            <div class="grid">
-                                <!-- Title -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="title" class="font-bold">Title*</label>
-                                        <InputText id="title" v-model="book.title" :class="{ 'p-invalid': submitted && !book.title }" placeholder="Enter book title" />
-                                        <small v-if="submitted && !book.title" class="p-error">Title is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- ISBN -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="isbn" class="font-bold">ISBN</label>
-                                        <InputText id="isbn" v-model="book.isbn" placeholder="Enter ISBN (optional)" />
-                                    </div>
-                                </div>
-
-                                <!-- Author -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="author" class="font-bold">Author</label>
-                                        <InputText id="author" v-model="book.author" placeholder="Author name" />
-                                    </div>
-                                </div>
-
-                                <!-- Publication Year -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="publication_year" class="font-bold">Publication Year</label>
-                                        <InputNumber id="publication_year" v-model="book.publication_year" :min="1000" :max="currentYear" placeholder="Publication year" />
-                                        <small v-if="book.publication_year && (book.publication_year < 1000 || book.publication_year > currentYear)" class="p-error"> Publication year must be between 1000 and {{ currentYear }} </small>
-                                    </div>
-                                </div>
-
-                                <!-- Edition -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="edition" class="font-bold">Edition</label>
-                                        <InputText id="edition" v-model="book.edition" placeholder="e.g., 2nd Edition" />
-                                    </div>
-                                </div>
-
-                                <!-- Language -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="language" class="font-bold">Language</label>
-                                        <Dropdown id="language" v-model="book.language" :options="languages" optionLabel="name" optionValue="code" placeholder="Select language" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Physical Details -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Physical Details</h6>
-                            <div class="grid">
-                                <!-- Cover Type -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="cover_type" class="font-bold">Cover Type</label>
-                                        <Dropdown id="cover_type" v-model="book.cover_type" :options="coverTypes" optionLabel="name" optionValue="code" placeholder="Select cover type" />
-                                    </div>
-                                </div>
-
-                                <!-- Pages -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="pages" class="font-bold">Number of Pages</label>
-                                        <InputNumber id="pages" v-model="book.pages" :min="1" placeholder="Number of pages" />
-                                    </div>
-                                </div>
-
-                                <!-- Dimensions -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="dimensions" class="font-bold">Dimensions</label>
-                                        <InputText id="dimensions" v-model="book.dimensions" placeholder="e.g., 8.5 x 11 inches" />
-                                    </div>
-                                </div>
-
-                                <!-- Weight -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="weight_grams" class="font-bold">Weight (grams)</label>
-                                        <InputNumber id="weight_grams" v-model="book.weight_grams" :min="1" placeholder="Weight in grams" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Library Information -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Library Information</h6>
-                            <div class="grid">
-                                <!-- Barcode -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="barcode" class="font-bold">Barcode</label>
-                                        <InputText id="barcode" v-model="book.barcode" placeholder="Book barcode" />
-                                    </div>
-                                </div>
-
-                                <!-- Shelf Location -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="shelf_location_detail" class="font-bold">Shelf Location</label>
-                                        <InputText id="shelf_location_detail" v-model="book.shelf_location_detail" placeholder="e.g., A3-45" />
-                                    </div>
-                                </div>
-
-                                <!-- Library Branch -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="library_branch_id" class="font-bold">Library Branch*</label>
-                                        <Dropdown
-                                            id="library_branch_id"
-                                            v-model="book.library_branch_id"
-                                            :options="branches"
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select library branch"
-                                            :class="{ 'p-invalid': submitted && !book.library_branch_id }"
-                                        />
-                                        <small v-if="submitted && !book.library_branch_id" class="p-error">Library branch is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- Shelf -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="shelf_id" class="font-bold">Shelf Section</label>
-                                        <Dropdown id="shelf_id" v-model="book.shelf_id" :options="shelves" optionLabel="name" optionValue="id" placeholder="Select shelf" />
-                                    </div>
-                                </div>
-
-                                <!-- Category -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="category_id" class="font-bold">Category*</label>
-                                        <Dropdown id="category_id" v-model="book.category_id" :options="categories" optionLabel="name" optionValue="id" placeholder="Select category" :class="{ 'p-invalid': submitted && !book.category_id }" />
-                                        <small v-if="submitted && !book.category_id" class="p-error">Category is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- Publisher -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="publisher_id" class="font-bold">Publisher</label>
-                                        <Dropdown id="publisher_id" v-model="book.publisher_id" :options="publishers" optionLabel="name" optionValue="id" placeholder="Select publisher" />
-                                    </div>
-                                </div>
-
-                                <!-- Status -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="availability_status" class="font-bold">Availability Status*</label>
-                                        <Dropdown
-                                            id="availability_status"
-                                            v-model="book.availability_status"
-                                            :options="statusOptions"
-                                            optionLabel="name"
-                                            optionValue="code"
-                                            placeholder="Select status"
-                                            :class="{ 'p-invalid': submitted && !book.availability_status }"
-                                        />
-                                        <small v-if="submitted && !book.availability_status" class="p-error">Status is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- Reference Only -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field-checkbox">
-                                        <Checkbox id="reference_only" v-model="book.reference_only" :binary="true" />
-                                        <label for="reference_only" class="ml-2 font-medium">Reference Only (Cannot be checked out)</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Additional Information -->
-                        <div class="col-12">
-                            <h6 class="text-lg font-bold mb-3">Additional Information</h6>
-                            <div class="grid">
-                                <!-- Cover Image URL -->
-                                <div class="col-12 mb-3">
-                                    <div class="field">
-                                        <label for="cover_image_url" class="font-bold">Cover Image URL</label>
-                                        <InputText id="cover_image_url" v-model="book.cover_image_url" placeholder="URL to the book cover image" />
-                                    </div>
-                                </div>
-
-                                <!-- Description -->
-                                <div class="col-12 mb-3">
-                                    <div class="field">
-                                        <label for="description" class="font-bold">Description</label>
-                                        <Textarea id="description" v-model="book.description" rows="5" placeholder="Book description" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Form Buttons -->
-                        <div class="col-12 mt-4 flex justify-content-end">
-                            <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary mr-2" @click="cancelForm" type="button" />
-                            <Button label="Save Book" icon="pi pi-check" class="p-button-primary" type="submit" :loading="loading" />
-                        </div>
-                    </div>
-                </form>
+    <div
+        class="min-h-screen bg-gradient-to-br from-blue-50 to-white py-10 flex flex-col items-center"
+    >
+        <div class="w-full max-w-3xl mx-auto">
+            <div
+                class="card shadow-5 p-8 bg-white rounded-3xl border border-blue-100 mb-8"
+            >
+                <div class="flex items-center justify-between mb-6">
+                    <h2
+                        class="text-2xl font-extrabold text-blue-800 flex items-center gap-2"
+                    >
+                        <i class="pi pi-globe text-xl text-blue-500" /> Manage
+                        Languages
+                    </h2>
+                    <Button
+                        label="Add Language"
+                        icon="pi pi-plus"
+                        class="p-button-success"
+                        @click="openNew"
+                    />
+                </div>
+                <DataTable
+                    :value="languages"
+                    :loading="loading"
+                    class="p-datatable-sm"
+                    responsive-layout="scroll"
+                >
+                    <Column field="name" header="Name" sortable></Column>
+                    <Column field="code" header="Code" sortable></Column>
+                    <Column
+                        header="Actions"
+                        style="width: 8rem; text-align: center"
+                    >
+                        <template #body="{ data }">
+                            <Button
+                                icon="pi pi-pencil"
+                                class="p-button-rounded p-button-info p-button-sm mr-2"
+                                @click="openEdit(data)"
+                            />
+                            <Button
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger p-button-sm"
+                                @click="deleteLanguage(data)"
+                            />
+                        </template>
+                    </Column>
+                </DataTable>
+            </div>
+            <div
+                class="card shadow-5 p-8 bg-white rounded-3xl border border-blue-100"
+            >
+                <div class="flex items-center justify-between mb-6">
+                    <h2
+                        class="text-2xl font-extrabold text-blue-800 flex items-center gap-2"
+                    >
+                        <i class="pi pi-book text-xl text-blue-500" /> Manage
+                        Subjects
+                    </h2>
+                    <Button
+                        label="Add Subject"
+                        icon="pi pi-plus"
+                        class="p-button-success"
+                        @click="openNewSubject"
+                    />
+                </div>
+                <DataTable
+                    :value="subjects"
+                    :loading="loading"
+                    class="p-datatable-sm"
+                    responsive-layout="scroll"
+                >
+                    <Column field="name" header="Name" sortable></Column>
+                    <Column
+                        header="Actions"
+                        style="width: 8rem; text-align: center"
+                    >
+                        <template #body="{ data }">
+                            <Button
+                                icon="pi pi-pencil"
+                                class="p-button-rounded p-button-info p-button-sm mr-2"
+                                @click="openEditSubject(data)"
+                            />
+                            <Button
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger p-button-sm"
+                                @click="deleteSubject(data)"
+                            />
+                        </template>
+                    </Column>
+                </DataTable>
             </div>
         </div>
+        <!-- Language Dialog -->
+        <Dialog
+            v-model:visible="dialogVisible"
+            :style="{ width: '400px' }"
+            :header="isEdit ? 'Edit Language' : 'Add Language'"
+            :modal="true"
+            class="p-fluid"
+        >
+            <div class="field mb-4">
+                <label for="name" class="font-bold text-blue-900 mb-1 block"
+                    >Name<span class="text-red-500">*</span></label
+                >
+                <InputText
+                    id="name"
+                    v-model.trim="languageForm.name"
+                    :class="{ 'p-invalid': submitted && !languageForm.name }"
+                    autofocus
+                />
+                <small v-if="submitted && !languageForm.name" class="p-error"
+                    >Name is required</small
+                >
+            </div>
+            <div class="field mb-4">
+                <label for="code" class="font-bold text-blue-900 mb-1 block"
+                    >Code<span class="text-red-500">*</span></label
+                >
+                <InputText
+                    id="code"
+                    v-model.trim="languageForm.code"
+                    :class="{ 'p-invalid': submitted && !languageForm.code }"
+                />
+                <small v-if="submitted && !languageForm.code" class="p-error"
+                    >Code is required</small
+                >
+            </div>
+            <template #footer>
+                <Button
+                    label="Cancel"
+                    icon="pi pi-times"
+                    class="p-button-text p-button-secondary"
+                    @click="dialogVisible = false"
+                />
+                <Button
+                    :label="isEdit ? 'Update' : 'Create'"
+                    icon="pi pi-check"
+                    class="p-button-primary"
+                    @click="saveLanguage"
+                    :loading="loading"
+                />
+            </template>
+        </Dialog>
+        <!-- Subject Dialog -->
+        <Dialog
+            v-model:visible="subjectDialogVisible"
+            :style="{ width: '400px' }"
+            :header="isSubjectEdit ? 'Edit Subject' : 'Add Subject'"
+            :modal="true"
+            class="p-fluid"
+        >
+            <div class="field mb-4">
+                <label
+                    for="subject_name"
+                    class="font-bold text-blue-900 mb-1 block"
+                    >Name<span class="text-red-500">*</span></label
+                >
+                <InputText
+                    id="subject_name"
+                    v-model.trim="subjectForm.name"
+                    :class="{
+                        'p-invalid': subjectSubmitted && !subjectForm.name,
+                    }"
+                    autofocus
+                />
+                <small
+                    v-if="subjectSubmitted && !subjectForm.name"
+                    class="p-error"
+                    >Name is required</small
+                >
+            </div>
+            <template #footer>
+                <Button
+                    label="Cancel"
+                    icon="pi pi-times"
+                    class="p-button-text p-button-secondary"
+                    @click="subjectDialogVisible = false"
+                />
+                <Button
+                    :label="isSubjectEdit ? 'Update' : 'Create'"
+                    icon="pi pi-check"
+                    class="p-button-primary"
+                    @click="saveSubject"
+                    :loading="loading"
+                />
+            </template>
+        </Dialog>
     </div>
 </template>

@@ -115,7 +115,8 @@ const loadEbookDetails = async () => {
                 isbn: '9781234567890',
                 publication_year: 2023,
                 cover_image_url: '/demo/images/product/product-placeholder.svg',
-                description: 'A comprehensive guide to modern digital design principles and practices. This book covers everything from basic concepts to advanced techniques.',
+                description:
+                    'A comprehensive guide to modern digital design principles and practices. This book covers everything from basic concepts to advanced techniques.',
                 category: { name: 'Technology' },
                 publisher: { name: 'Digital Education Group' },
                 file_format: 'PDF',
@@ -316,9 +317,18 @@ const performSearch = () => {
     // For this mock, we'll just generate fake results
     searchResults.value = [
         { page: 10, snippet: `...contains "${fullTextSearchQuery.value}" in chapter 1...` },
-        { page: 42, snippet: `...mentions "${fullTextSearchQuery.value}" in discussion of key concepts...` },
-        { page: 78, snippet: `...explains "${fullTextSearchQuery.value}" in detail with examples...` },
-        { page: 103, snippet: `...references "${fullTextSearchQuery.value}" in the context of applications...` }
+        {
+            page: 42,
+            snippet: `...mentions "${fullTextSearchQuery.value}" in discussion of key concepts...`
+        },
+        {
+            page: 78,
+            snippet: `...explains "${fullTextSearchQuery.value}" in detail with examples...`
+        },
+        {
+            page: 103,
+            snippet: `...references "${fullTextSearchQuery.value}" in the context of applications...`
+        }
     ];
     currentSearchIndex.value = 0;
 };
@@ -335,7 +345,8 @@ const nextSearchResult = () => {
 
 const previousSearchResult = () => {
     if (searchResults.value.length === 0) return;
-    currentSearchIndex.value = (currentSearchIndex.value - 1 + searchResults.value.length) % searchResults.value.length;
+    currentSearchIndex.value =
+        (currentSearchIndex.value - 1 + searchResults.value.length) % searchResults.value.length;
     goToPage(searchResults.value[currentSearchIndex.value].page);
 };
 
@@ -417,7 +428,8 @@ const saveUserProgress = () => {
 
 const loadUserBookmarks = () => {
     try {
-        bookmarks.value = JSON.parse(localStorage.getItem(`ebook-bookmarks-${ebookId.value}`)) || [];
+        bookmarks.value =
+            JSON.parse(localStorage.getItem(`ebook-bookmarks-${ebookId.value}`)) || [];
     } catch (error) {
         console.error('Error loading bookmarks:', error);
     }
@@ -481,7 +493,12 @@ const goToChapter = (page) => {
             <div class="e-reader-top-controls" :class="{ visible: showControls }">
                 <div class="flex justify-content-between align-items-center p-3">
                     <div class="left-controls flex align-items-center">
-                        <Button icon="pi pi-arrow-left" class="p-button-text p-button-rounded" @click="returnToDetails" tooltip="Back to Details" tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-arrow-left"
+                            class="p-button-text p-button-rounded"
+                            @click="returnToDetails"
+                            tooltip="Back to Details"
+                            tooltipOptions="{ position: 'bottom' }" />
                         <span class="ml-2 font-bold">{{ ebook.title }}</span>
                     </div>
 
@@ -500,8 +517,7 @@ const goToChapter = (page) => {
                                 fullTextSearchQuery = '';
                             "
                             tooltip="Search"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
+                            tooltipOptions="{ position: 'bottom' }" />
                         <Button
                             icon="pi pi-list"
                             class="p-button-text p-button-rounded mr-2"
@@ -512,8 +528,7 @@ const goToChapter = (page) => {
                                 showNotes = false;
                             "
                             tooltip="Contents"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
+                            tooltipOptions="{ position: 'bottom' }" />
                         <Button
                             icon="pi pi-bookmark"
                             class="p-button-text p-button-rounded mr-2"
@@ -524,8 +539,7 @@ const goToChapter = (page) => {
                                 showNotes = false;
                             "
                             tooltip="Bookmarks"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
+                            tooltipOptions="{ position: 'bottom' }" />
                         <Button
                             icon="pi pi-pencil"
                             class="p-button-text p-button-rounded mr-2"
@@ -536,8 +550,7 @@ const goToChapter = (page) => {
                                 showBookmarks = false;
                             "
                             tooltip="Notes"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
+                            tooltipOptions="{ position: 'bottom' }" />
                         <Button
                             icon="pi pi-moon"
                             v-if="!darkMode"
@@ -547,8 +560,7 @@ const goToChapter = (page) => {
                                 applyDarkMode();
                             "
                             tooltip="Dark Mode"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
+                            tooltipOptions="{ position: 'bottom' }" />
                         <Button
                             icon="pi pi-sun"
                             v-else
@@ -558,30 +570,61 @@ const goToChapter = (page) => {
                                 applyDarkMode();
                             "
                             tooltip="Light Mode"
-                            tooltipOptions="{ position: 'bottom' }"
-                        />
-                        <Button icon="pi pi-cog" class="p-button-text p-button-rounded mr-2" @click="isFontMenuOpen = !isFontMenuOpen" tooltip="Settings" tooltipOptions="{ position: 'bottom' }" />
-                        <Button v-if="ebook.is_downloadable" icon="pi pi-download" class="p-button-text p-button-rounded mr-2" @click="downloadEbook" tooltip="Download" tooltipOptions="{ position: 'bottom' }" />
-                        <Button icon="pi pi-arrows-alt" class="p-button-text p-button-rounded" @click="toggleFullScreen" tooltip="Fullscreen" tooltipOptions="{ position: 'bottom' }" />
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-cog"
+                            class="p-button-text p-button-rounded mr-2"
+                            @click="isFontMenuOpen = !isFontMenuOpen"
+                            tooltip="Settings"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            v-if="ebook.is_downloadable"
+                            icon="pi pi-download"
+                            class="p-button-text p-button-rounded mr-2"
+                            @click="downloadEbook"
+                            tooltip="Download"
+                            tooltipOptions="{ position: 'bottom' }" />
+                        <Button
+                            icon="pi pi-arrows-alt"
+                            class="p-button-text p-button-rounded"
+                            @click="toggleFullScreen"
+                            tooltip="Fullscreen"
+                            tooltipOptions="{ position: 'bottom' }" />
                     </div>
                 </div>
 
                 <!-- Search panel -->
-                <div v-if="fullTextSearchQuery" class="search-panel p-3 border-top-1 surface-border">
+                <div
+                    v-if="fullTextSearchQuery"
+                    class="search-panel p-3 border-top-1 surface-border">
                     <div class="p-inputgroup">
-                        <InputText v-model="fullTextSearchQuery" placeholder="Search in book..." @keyup.enter="performSearch" />
+                        <InputText
+                            v-model="fullTextSearchQuery"
+                            placeholder="Search in book..."
+                            @keyup.enter="performSearch" />
                         <Button icon="pi pi-search" @click="performSearch" />
                     </div>
                     <div v-if="searchResults.length > 0" class="mt-2">
                         <div class="flex justify-content-between align-items-center mb-2">
                             <small>{{ searchResults.length }} results found</small>
                             <div>
-                                <Button icon="pi pi-chevron-left" class="p-button-sm p-button-text" @click="previousSearchResult" />
-                                <Button icon="pi pi-chevron-right" class="p-button-sm p-button-text" @click="nextSearchResult" />
+                                <Button
+                                    icon="pi pi-chevron-left"
+                                    class="p-button-sm p-button-text"
+                                    @click="previousSearchResult" />
+                                <Button
+                                    icon="pi pi-chevron-right"
+                                    class="p-button-sm p-button-text"
+                                    @click="nextSearchResult" />
                             </div>
                         </div>
                         <ul class="search-results-list p-0 m-0">
-                            <li v-for="(result, index) in searchResults" :key="index" class="p-2 cursor-pointer hover:surface-200" :class="{ 'surface-hover': index === currentSearchIndex }" @click="goToSearchResult(result.page)">
+                            <li
+                                v-for="(result, index) in searchResults"
+                                :key="index"
+                                class="p-2 cursor-pointer hover:surface-200"
+                                :class="{ 'surface-hover': index === currentSearchIndex }"
+                                @click="goToSearchResult(result.page)">
                                 <div class="flex align-items-center">
                                     <Badge :value="result.page" severity="info" class="mr-2" />
                                     <span v-html="result.snippet"></span>
@@ -592,20 +635,37 @@ const goToChapter = (page) => {
                 </div>
 
                 <!-- Font settings menu -->
-                <div v-if="isFontMenuOpen" class="font-settings-panel p-3 border-top-1 surface-border">
+                <div
+                    v-if="isFontMenuOpen"
+                    class="font-settings-panel p-3 border-top-1 surface-border">
                     <div class="grid">
                         <div class="col-12 md:col-6">
                             <h6 class="mt-0">Font Size</h6>
                             <div class="flex align-items-center">
-                                <Button icon="pi pi-minus" class="p-button-sm p-button-text" @click="changeFontSize(Math.max(fontSize - 2, 12))" />
+                                <Button
+                                    icon="pi pi-minus"
+                                    class="p-button-sm p-button-text"
+                                    @click="changeFontSize(Math.max(fontSize - 2, 12))" />
                                 <span class="mx-2">{{ fontSize }}px</span>
-                                <Button icon="pi pi-plus" class="p-button-sm p-button-text" @click="changeFontSize(Math.min(fontSize + 2, 24))" />
+                                <Button
+                                    icon="pi pi-plus"
+                                    class="p-button-sm p-button-text"
+                                    @click="changeFontSize(Math.min(fontSize + 2, 24))" />
                             </div>
                         </div>
                         <div class="col-12 md:col-6">
                             <h6 class="mt-0">Font Family</h6>
                             <div class="p-field">
-                                <Dropdown v-model="fontFamily" :options="['Arial', 'Georgia', 'Times New Roman', 'Verdana', 'Courier New']" @change="applyFontSettings" />
+                                <Dropdown
+                                    v-model="fontFamily"
+                                    :options="[
+                                        'Arial',
+                                        'Georgia',
+                                        'Times New Roman',
+                                        'Verdana',
+                                        'Courier New'
+                                    ]"
+                                    @change="applyFontSettings" />
                             </div>
                         </div>
                     </div>
@@ -613,11 +673,18 @@ const goToChapter = (page) => {
             </div>
 
             <!-- Side panel for outline, bookmarks, notes -->
-            <div class="e-reader-side-panel" :class="{ visible: showOutline || showBookmarks || showNotes }">
+            <div
+                class="e-reader-side-panel"
+                :class="{ visible: showOutline || showBookmarks || showNotes }">
                 <div v-if="showOutline" class="p-3">
                     <h5>Table of Contents</h5>
                     <ul class="outline-list p-0">
-                        <li v-for="chapter in chaptersOutline" :key="chapter.id" class="p-2 cursor-pointer hover:surface-hover" :class="{ 'surface-200': chapter.page === currentPage }" @click="goToChapter(chapter.page)">
+                        <li
+                            v-for="chapter in chaptersOutline"
+                            :key="chapter.id"
+                            class="p-2 cursor-pointer hover:surface-hover"
+                            :class="{ 'surface-200': chapter.page === currentPage }"
+                            @click="goToChapter(chapter.page)">
                             {{ chapter.title }}
                         </li>
                     </ul>
@@ -625,10 +692,19 @@ const goToChapter = (page) => {
 
                 <div v-if="showBookmarks" class="p-3">
                     <h5>Bookmarks</h5>
-                    <div v-if="bookmarks.length === 0" class="p-3 text-center text-500">No bookmarks yet. Press B or click the bookmark icon while reading to add one.</div>
+                    <div v-if="bookmarks.length === 0" class="p-3 text-center text-500">
+                        No bookmarks yet. Press B or click the bookmark icon while reading to add
+                        one.
+                    </div>
                     <ul v-else class="bookmarks-list p-0">
-                        <li v-for="bookmark in bookmarks" :key="bookmark.page" class="p-2 cursor-pointer hover:surface-hover" :class="{ 'surface-200': bookmark.page === currentPage }">
-                            <div class="flex justify-content-between align-items-center" @click="goToBookmark(bookmark.page)">
+                        <li
+                            v-for="bookmark in bookmarks"
+                            :key="bookmark.page"
+                            class="p-2 cursor-pointer hover:surface-hover"
+                            :class="{ 'surface-200': bookmark.page === currentPage }">
+                            <div
+                                class="flex justify-content-between align-items-center"
+                                @click="goToBookmark(bookmark.page)">
                                 <div>
                                     <div>{{ bookmark.pageTitle }}</div>
                                     <small class="text-500">{{ bookmark.preview }}</small>
@@ -637,10 +713,11 @@ const goToChapter = (page) => {
                                     icon="pi pi-trash"
                                     class="p-button-text p-button-rounded p-button-sm"
                                     @click.stop="
-                                        bookmarks = bookmarks.filter((b) => b.page !== bookmark.page);
+                                        bookmarks = bookmarks.filter(
+                                            (b) => b.page !== bookmark.page
+                                        );
                                         saveUserBookmarks();
-                                    "
-                                />
+                                    " />
                             </div>
                         </li>
                     </ul>
@@ -649,33 +726,61 @@ const goToChapter = (page) => {
                 <div v-if="showNotes" class="p-3">
                     <h5>Notes for Page {{ currentPage }}</h5>
                     <div class="mb-3">
-                        <Textarea v-model="currentNote" rows="3" placeholder="Add a note for this page..." class="w-full" />
+                        <Textarea
+                            v-model="currentNote"
+                            rows="3"
+                            placeholder="Add a note for this page..."
+                            class="w-full" />
                         <Button label="Add Note" icon="pi pi-plus" @click="addNote" class="mt-2" />
                     </div>
 
-                    <div v-if="currentPageNotes.length === 0" class="p-3 text-center text-500">No notes for this page yet.</div>
+                    <div v-if="currentPageNotes.length === 0" class="p-3 text-center text-500">
+                        No notes for this page yet.
+                    </div>
                     <ul v-else class="notes-list p-0">
-                        <li v-for="note in currentPageNotes" :key="note.id" class="p-2 mb-2 surface-card border-round">
+                        <li
+                            v-for="note in currentPageNotes"
+                            :key="note.id"
+                            class="p-2 mb-2 surface-card border-round">
                             <div class="flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <p class="m-0">{{ note.content }}</p>
-                                    <small class="text-500">{{ new Date(note.timestamp).toLocaleString() }}</small>
+                                    <small class="text-500">{{
+                                        new Date(note.timestamp).toLocaleString()
+                                    }}</small>
                                 </div>
-                                <Button icon="pi pi-trash" class="p-button-text p-button-rounded p-button-sm" @click="deleteNote(note.id)" />
+                                <Button
+                                    icon="pi pi-trash"
+                                    class="p-button-text p-button-rounded p-button-sm"
+                                    @click="deleteNote(note.id)" />
                             </div>
                         </li>
                     </ul>
 
                     <h6 class="mt-4">All Notes</h6>
                     <ul class="all-notes-list p-0">
-                        <li v-for="note in userNotes" :key="note.id" class="p-2 cursor-pointer hover:surface-hover mb-1" :class="{ 'surface-200': note.page === currentPage }" @click="goToPage(note.page)">
+                        <li
+                            v-for="note in userNotes"
+                            :key="note.id"
+                            class="p-2 cursor-pointer hover:surface-hover mb-1"
+                            :class="{ 'surface-200': note.page === currentPage }"
+                            @click="goToPage(note.page)">
                             <div class="flex justify-content-between align-items-start">
                                 <div>
                                     <div class="flex align-items-center">
-                                        <Badge :value="`P${note.page}`" severity="info" class="mr-2" />
-                                        <span>{{ note.content.length > 30 ? note.content.substring(0, 30) + '...' : note.content }}</span>
+                                        <Badge
+                                            :value="`P${note.page}`"
+                                            severity="info"
+                                            class="mr-2" />
+                                        <span>{{
+                                            note.content.length > 30
+                                                ? note.content.substring(0, 30) + '...'
+                                                : note.content
+                                        }}</span>
                                     </div>
-                                    <small class="text-500">{{ new Date(note.timestamp).toLocaleString() }}</small>
+                                    <small class="text-500">{{
+                                        new Date(note.timestamp).toLocaleString()
+                                    }}</small>
                                 </div>
                             </div>
                         </li>
@@ -684,18 +789,33 @@ const goToChapter = (page) => {
             </div>
 
             <!-- Main content -->
-            <div class="e-reader-content" :class="{ 'with-side-panel': showOutline || showBookmarks || showNotes }">
+            <div
+                class="e-reader-content"
+                :class="{ 'with-side-panel': showOutline || showBookmarks || showNotes }">
                 <!-- PDF Viewer (mock) -->
                 <div v-if="activeView === 'pdf'" class="pdf-viewer">
-                    <div class="pdf-mock-page flex align-items-center justify-content-center" :style="{ fontSize: `${fontSize}px`, fontFamily }">
+                    <div
+                        class="pdf-mock-page flex align-items-center justify-content-center"
+                        :style="{ fontSize: `${fontSize}px`, fontFamily }">
                         <div class="text-center">
                             <i class="pi pi-file-pdf text-4xl"></i>
                             <h3>PDF Viewer</h3>
                             <p>Page {{ currentPage }} of {{ totalPages }}</p>
-                            <p class="mt-3 text-500">In a real application, an actual PDF viewer would be integrated here.</p>
+                            <p class="mt-3 text-500">
+                                In a real application, an actual PDF viewer would be integrated
+                                here.
+                            </p>
                             <p class="mt-2 text-500">(using pdf.js or a similar library)</p>
                             <div class="mt-4">
-                                <Button icon="pi pi-bookmark" :class="isCurrentPageBookmarked ? 'p-button-success' : 'p-button-outlined'" label="Bookmark" @click="toggleBookmark()" />
+                                <Button
+                                    icon="pi pi-bookmark"
+                                    :class="
+                                        isCurrentPageBookmarked
+                                            ? 'p-button-success'
+                                            : 'p-button-outlined'
+                                    "
+                                    label="Bookmark"
+                                    @click="toggleBookmark()" />
                             </div>
                         </div>
                     </div>
@@ -703,15 +823,27 @@ const goToChapter = (page) => {
 
                 <!-- EPUB Viewer (mock) -->
                 <div v-else-if="activeView === 'epub'" class="epub-viewer">
-                    <div class="epub-mock-page flex align-items-center justify-content-center" :style="{ fontSize: `${fontSize}px`, fontFamily }">
+                    <div
+                        class="epub-mock-page flex align-items-center justify-content-center"
+                        :style="{ fontSize: `${fontSize}px`, fontFamily }">
                         <div class="text-center">
                             <i class="pi pi-book text-4xl"></i>
                             <h3>EPUB Viewer</h3>
                             <p>Page {{ currentPage }} of {{ totalPages }}</p>
-                            <p class="mt-3 text-500">In a real application, an EPUB reader would be integrated here.</p>
+                            <p class="mt-3 text-500">
+                                In a real application, an EPUB reader would be integrated here.
+                            </p>
                             <p class="mt-2 text-500">(using libraries like epub.js)</p>
                             <div class="mt-4">
-                                <Button icon="pi pi-bookmark" :class="isCurrentPageBookmarked ? 'p-button-success' : 'p-button-outlined'" label="Bookmark" @click="toggleBookmark()" />
+                                <Button
+                                    icon="pi pi-bookmark"
+                                    :class="
+                                        isCurrentPageBookmarked
+                                            ? 'p-button-success'
+                                            : 'p-button-outlined'
+                                    "
+                                    label="Bookmark"
+                                    @click="toggleBookmark()" />
                             </div>
                         </div>
                     </div>
@@ -724,7 +856,12 @@ const goToChapter = (page) => {
                             <i class="pi pi-file text-4xl"></i>
                             <h3>File Format Not Directly Viewable</h3>
                             <p>This {{ ebook.file_format }} file requires download to view.</p>
-                            <Button v-if="ebook.is_downloadable" icon="pi pi-download" label="Download File" class="mt-3" @click="downloadEbook" />
+                            <Button
+                                v-if="ebook.is_downloadable"
+                                icon="pi pi-download"
+                                label="Download File"
+                                class="mt-3"
+                                @click="downloadEbook" />
                         </div>
                     </div>
                 </div>
@@ -734,16 +871,35 @@ const goToChapter = (page) => {
             <div class="e-reader-bottom-controls" :class="{ visible: showControls }">
                 <div class="flex justify-content-between align-items-center p-3">
                     <div class="zoom-controls hidden sm:flex">
-                        <Button icon="pi pi-minus" class="p-button-text p-button-rounded" @click="zoomOut" />
+                        <Button
+                            icon="pi pi-minus"
+                            class="p-button-text p-button-rounded"
+                            @click="zoomOut" />
                         <span class="mx-2">{{ viewerScale }}%</span>
-                        <Button icon="pi pi-plus" class="p-button-text p-button-rounded" @click="zoomIn" />
+                        <Button
+                            icon="pi pi-plus"
+                            class="p-button-text p-button-rounded"
+                            @click="zoomIn" />
                     </div>
 
                     <div class="page-controls flex align-items-center">
-                        <Button icon="pi pi-angle-left" class="p-button-text p-button-rounded" :disabled="currentPage <= 1" @click="prevPage" />
-                        <InputNumber v-model="currentPage" :min="1" :max="totalPages" class="mx-2 w-5rem" @update:modelValue="goToPage" />
+                        <Button
+                            icon="pi pi-angle-left"
+                            class="p-button-text p-button-rounded"
+                            :disabled="currentPage <= 1"
+                            @click="prevPage" />
+                        <InputNumber
+                            v-model="currentPage"
+                            :min="1"
+                            :max="totalPages"
+                            class="mx-2 w-5rem"
+                            @update:modelValue="goToPage" />
                         <span>of {{ totalPages }}</span>
-                        <Button icon="pi pi-angle-right" class="p-button-text p-button-rounded ml-2" :disabled="currentPage >= totalPages" @click="nextPage" />
+                        <Button
+                            icon="pi pi-angle-right"
+                            class="p-button-text p-button-rounded ml-2"
+                            :disabled="currentPage >= totalPages"
+                            @click="nextPage" />
                     </div>
 
                     <div class="progress-indicator hidden sm:block">
@@ -752,8 +908,12 @@ const goToChapter = (page) => {
                 </div>
 
                 <!-- Mobile controls - only visible on small screens -->
-                <div class="mobile-controls flex justify-content-between align-items-center p-2 sm:hidden border-top-1 surface-border">
-                    <Button icon="pi pi-search" class="p-button-text p-button-sm" @click="fullTextSearchQuery = ''" />
+                <div
+                    class="mobile-controls flex justify-content-between align-items-center p-2 sm:hidden border-top-1 surface-border">
+                    <Button
+                        icon="pi pi-search"
+                        class="p-button-text p-button-sm"
+                        @click="fullTextSearchQuery = ''" />
                     <Button
                         icon="pi pi-list"
                         class="p-button-text p-button-sm"
@@ -762,8 +922,7 @@ const goToChapter = (page) => {
                             showOutline = !showOutline;
                             showBookmarks = false;
                             showNotes = false;
-                        "
-                    />
+                        " />
                     <Button
                         icon="pi pi-bookmark"
                         class="p-button-text p-button-sm"
@@ -772,8 +931,7 @@ const goToChapter = (page) => {
                             showBookmarks = !showBookmarks;
                             showOutline = false;
                             showNotes = false;
-                        "
-                    />
+                        " />
                     <Button
                         icon="pi pi-pencil"
                         class="p-button-text p-button-sm"
@@ -782,17 +940,19 @@ const goToChapter = (page) => {
                             showNotes = !showNotes;
                             showOutline = false;
                             showBookmarks = false;
-                        "
-                    />
+                        " />
                     <Button
                         :icon="darkMode ? 'pi pi-sun' : 'pi pi-moon'"
                         class="p-button-text p-button-sm"
                         @click="
                             darkMode = !darkMode;
                             applyDarkMode();
-                        "
-                    />
-                    <Button icon="pi pi-download" v-if="ebook.is_downloadable" class="p-button-text p-button-sm" @click="downloadEbook" />
+                        " />
+                    <Button
+                        icon="pi pi-download"
+                        v-if="ebook.is_downloadable"
+                        class="p-button-text p-button-sm"
+                        @click="downloadEbook" />
                 </div>
             </div>
         </div>

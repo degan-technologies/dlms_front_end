@@ -1,396 +1,294 @@
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import axiosInstance from '@/util/axios-config';
+import Dialog from 'primevue/dialog';
+import Textarea from 'primevue/textarea';
+import { useToast } from 'primevue/usetoast';
+import { onMounted, ref, watch } from 'vue';
 
-const router = useRouter();
-const submitted = ref(false);
+const toast = useToast();
+const loans = ref([]);
 const loading = ref(false);
-const currentDate = new Date();
-const currentYear = currentDate.getFullYear();
+const totalRecords = ref(0);
+const rows = ref(10);
+const page = ref(1);
+const filter = ref('');
+const status = ref('');
+const dateRange = ref([]);
 
-const ebook = ref({
-    // BookItem fields
-    title: '',
-    isbn: '',
-    availability_status: 'available', // default to available
-    author: '',
-    publication_year: null,
-    description: '',
-    cover_image_url: '',
-    metadata: {},
-    language: '',
-    library_branch_id: null,
-    category_id: null,
-    publisher_id: null,
-
-    // EBook-specific fields
-    file_url: '',
-    file_format: '',
-    file_size_mb: null,
-    pages: null,
-    is_downloadable: true,
-    requires_authentication: true,
-    drm_type: '',
-    access_expires_at: null,
-    max_downloads: null,
-    reader_app: ''
-});
-
-// Form options
-const branches = ref([]);
-const categories = ref([]);
-const publishers = ref([]);
-const languages = ref([
-    { name: 'English', code: 'en' },
-    { name: 'Spanish', code: 'es' },
-    { name: 'French', code: 'fr' },
-    { name: 'German', code: 'de' },
-    { name: 'Chinese', code: 'zh' },
-    { name: 'Japanese', code: 'ja' },
-    { name: 'Arabic', code: 'ar' }
-]);
-const fileFormats = ref([
-    { name: 'PDF', code: 'PDF' },
-    { name: 'EPUB', code: 'EPUB' },
-    { name: 'MOBI', code: 'MOBI' },
-    { name: 'AZW', code: 'AZW' },
-    { name: 'HTML', code: 'HTML' },
-    { name: 'TXT', code: 'TXT' }
-]);
-const drmTypes = ref([
-    { name: 'None', code: 'none' },
-    { name: 'Adobe DRM', code: 'adobe' },
-    { name: 'Apple FairPlay', code: 'fairplay' },
-    { name: 'Proprietary', code: 'proprietary' }
-]);
-const statusOptions = ref([
-    { name: 'Available', code: 'available' },
-    { name: 'Checked Out', code: 'checked_out' },
-    { name: 'Reserved', code: 'reserved' },
-    { name: 'Lost', code: 'lost' },
-    { name: 'Damaged', code: 'damaged' }
-]);
-
-onMounted(() => {
-    fetchFormData();
-});
-
-const fetchFormData = async () => {
-    try {
-        // Simulate API calls to get form data
-        setTimeout(() => {
-            branches.value = [
-                { name: 'Main Branch', id: 1 },
-                { name: 'North Campus', id: 2 },
-                { name: 'South Campus', id: 3 },
-                { name: 'West Wing', id: 4 }
-            ];
-
-            categories.value = [
-                { name: 'Fiction', id: 1 },
-                { name: 'Science Fiction', id: 2 },
-                { name: 'Mystery', id: 3 },
-                { name: 'Biography', id: 4 },
-                { name: 'History', id: 5 },
-                { name: 'Science', id: 6 },
-                { name: 'Technology', id: 7 },
-                { name: 'Arts', id: 8 }
-            ];
-
-            publishers.value = [
-                { name: 'Penguin Random House', id: 1 },
-                { name: 'HarperCollins', id: 2 },
-                { name: 'Simon & Schuster', id: 3 },
-                { name: 'Macmillan Publishers', id: 4 },
-                { name: 'Oxford University Press', id: 5 }
-            ];
-        }, 500);
-    } catch (error) {
-        console.error('Error fetching form data:', error);
-    }
-};
-
-const submitForm = async () => {
-    submitted.value = true;
-
-    // Form validation
-    if (!ebook.value.title || !ebook.value.availability_status || !ebook.value.library_branch_id || !ebook.value.category_id || !ebook.value.file_url || !ebook.value.file_format) {
-        return;
-    }
-
-    // Validate publication year
-    if (ebook.value.publication_year && (ebook.value.publication_year < 1000 || ebook.value.publication_year > currentYear)) {
-        return;
-    }
-
+const fetchLoans = async () => {
     loading.value = true;
-
     try {
-        // In a real app, this would be an API call to save the ebook
-        // const response = await fetch('/api/books/ebooks', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json'
-        //     },
-        //     body: JSON.stringify(ebook.value)
-        // });
-        // const data = await response.json();
-
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Navigate to the e-books list page after successful creation
-        router.push('/books/ebooks');
+        const params = {
+            per_page: rows.value,
+            page: page.value
+        };
+        if (filter.value) params.filter = filter.value;
+        if (status.value) params.status = status.value;
+        if (dateRange.value.length === 2) params.dateRange = dateRange.value;
+        const res = await axiosInstance.get('/loans', { params });
+        loans.value = res.data.data;
+        totalRecords.value = res.data.pagination.total_records;
     } catch (error) {
-        console.error('Error creating e-book:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch borrowing history',
+            life: 3000
+        });
     } finally {
         loading.value = false;
     }
 };
 
-const cancelForm = () => {
-    router.push('/books/ebooks');
+const onPage = (event) => {
+    page.value = event.page + 1;
+    rows.value = event.rows;
+    fetchLoans();
 };
+
+const onFilter = () => {
+    page.value = 1;
+    fetchLoans();
+};
+
+const showFineDialog = ref(false);
+const fineDialogData = ref({
+    loan: null,
+    fineAmount: 0,
+    reason: '',
+    returnDate: '',
+    damageReason: '',
+    damageFineAmount: '' // new field for custom damage fine
+});
+
+const handleMarkReturned = (loan) => {
+    const now = new Date();
+    const returnDate = now.toISOString().slice(0, 10);
+    const due = new Date(loan.due_date);
+    const daysLate = Math.ceil((now - due) / (1000 * 60 * 60 * 24));
+    let fineAmount = 0;
+    let reason = '';
+    if (daysLate > 0) {
+        fineAmount = daysLate * 1; // $1 per day late
+        reason = `Overdue book: ${daysLate} day${daysLate === 1 ? '' : 's'} late`;
+    }
+    fineDialogData.value = {
+        loan,
+        fineAmount,
+        reason,
+        returnDate,
+        damageReason: '',
+        damageFineAmount: ''
+    };
+    showFineDialog.value = true;
+};
+
+const confirmReturnWithFine = async () => {
+    const { loan, fineAmount, reason, returnDate, damageReason, damageFineAmount } = fineDialogData.value;
+    let totalFine = fineAmount;
+    let finalReason = reason;
+    if (damageReason && damageReason.trim() !== '') {
+        const damageFine = parseFloat(damageFineAmount) || 0;
+        totalFine += damageFine;
+        finalReason = finalReason ? finalReason + '; ' : '';
+        finalReason += damageReason;
+        if (damageFine > 0) {
+            finalReason += ` (Damage fine: $${damageFine})`;
+        }
+    }
+    try {
+        await axiosInstance.put(`/loans/${loan.id}`, { returned_date: returnDate });
+        // Update the local data
+        const idx = loans.value.findIndex((l) => l.id === loan.id);
+        if (idx !== -1) {
+            loans.value[idx].return_date = returnDate;
+        }
+        if (totalFine > 0) {
+            await axiosInstance.post('/fines', {
+                fine_amount: totalFine,
+                fine_date: returnDate,
+                reason: finalReason,
+                payment_status: 'Unpaid',
+                user_id: loan.user_id,
+                loan_id: loan.id,
+                library_id: loan.library_id || 1
+            });
+            toast.add({
+                severity: 'info',
+                summary: 'Fine Issued',
+                detail: finalReason,
+                life: 4000
+            });
+        } else {
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Book marked as returned',
+                life: 3000
+            });
+        }
+        fetchLoans();
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Failed to mark as returned',
+            life: 3000
+        });
+    } finally {
+        showFineDialog.value = false;
+    }
+};
+
+let fetchLoansTimeout = null;
+watch(
+    () => [filter.value, status.value, dateRange.value],
+    () => {
+        page.value = 1;
+        if (fetchLoansTimeout) clearTimeout(fetchLoansTimeout);
+        fetchLoansTimeout = setTimeout(() => {
+            fetchLoans();
+        }, 300); // 300ms debounce
+    },
+    { deep: true }
+);
+
+onMounted(fetchLoans);
+
+function getDueStatus(loan) {
+    if (!loan.due_date) return '-';
+    if (loan.returned_date) return 'Returned';
+    const today = new Date();
+    const due = new Date(loan.due_date);
+    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+    if (diff > 0) {
+        return diff + ' day' + (diff === 1 ? '' : 's') + ' left';
+    } else if (diff === 0) {
+        return 'Due today';
+    } else {
+        return Math.abs(diff) + ' day' + (Math.abs(diff) === 1 ? '' : 's') + ' overdue';
+    }
+}
 </script>
 
 <template>
-    <div class="grid">
-        <div class="col-12">
-            <div class="card">
-                <h5>Add New E-Book</h5>
-                <p class="text-gray-600 mb-4">Enter details for a new e-book in the digital library.</p>
-
-                <form @submit.prevent="submitForm" class="p-fluid">
-                    <div class="grid formgrid">
-                        <!-- Basic Information -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Basic Information</h6>
-                            <div class="grid">
-                                <!-- Title -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="title" class="font-bold">Title*</label>
-                                        <InputText id="title" v-model="ebook.title" :class="{ 'p-invalid': submitted && !ebook.title }" placeholder="Enter e-book title" />
-                                        <small v-if="submitted && !ebook.title" class="p-error">Title is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- ISBN -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="isbn" class="font-bold">ISBN</label>
-                                        <InputText id="isbn" v-model="ebook.isbn" placeholder="Enter ISBN (optional)" />
-                                    </div>
-                                </div>
-
-                                <!-- Author -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="author" class="font-bold">Author</label>
-                                        <InputText id="author" v-model="ebook.author" placeholder="Author name" />
-                                    </div>
-                                </div>
-
-                                <!-- Publication Year -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="publication_year" class="font-bold">Publication Year</label>
-                                        <InputNumber id="publication_year" v-model="ebook.publication_year" :min="1000" :max="currentYear" placeholder="Publication year" />
-                                        <small v-if="ebook.publication_year && (ebook.publication_year < 1000 || ebook.publication_year > currentYear)" class="p-error"> Publication year must be between 1000 and {{ currentYear }} </small>
-                                    </div>
-                                </div>
-
-                                <!-- Language -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="language" class="font-bold">Language</label>
-                                        <Dropdown id="language" v-model="ebook.language" :options="languages" optionLabel="name" optionValue="code" placeholder="Select language" />
-                                    </div>
-                                </div>
-
-                                <!-- Pages -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="pages" class="font-bold">Number of Pages</label>
-                                        <InputNumber id="pages" v-model="ebook.pages" :min="1" placeholder="Number of pages" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- File Information -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">File Information</h6>
-                            <div class="grid">
-                                <!-- File URL -->
-                                <div class="col-12 mb-3">
-                                    <div class="field">
-                                        <label for="file_url" class="font-bold">File URL*</label>
-                                        <InputText id="file_url" v-model="ebook.file_url" :class="{ 'p-invalid': submitted && !ebook.file_url }" placeholder="URL to the e-book file" />
-                                        <small v-if="submitted && !ebook.file_url" class="p-error">File URL is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- File Format -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="file_format" class="font-bold">File Format*</label>
-                                        <Dropdown id="file_format" v-model="ebook.file_format" :options="fileFormats" optionLabel="name" optionValue="code" placeholder="Select file format" :class="{ 'p-invalid': submitted && !ebook.file_format }" />
-                                        <small v-if="submitted && !ebook.file_format" class="p-error">File format is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- File Size (MB) -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="file_size_mb" class="font-bold">File Size (MB)</label>
-                                        <InputNumber id="file_size_mb" v-model="ebook.file_size_mb" :min="0.01" :minFractionDigits="2" :maxFractionDigits="2" placeholder="File size in megabytes" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Access & Rights -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Access & Digital Rights</h6>
-                            <div class="grid">
-                                <!-- Downloadable -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field-checkbox">
-                                        <Checkbox id="is_downloadable" v-model="ebook.is_downloadable" :binary="true" />
-                                        <label for="is_downloadable" class="ml-2 font-medium">Allow Download</label>
-                                    </div>
-                                </div>
-
-                                <!-- Requires Authentication -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field-checkbox">
-                                        <Checkbox id="requires_authentication" v-model="ebook.requires_authentication" :binary="true" />
-                                        <label for="requires_authentication" class="ml-2 font-medium">Requires Authentication</label>
-                                    </div>
-                                </div>
-
-                                <!-- DRM Type -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="drm_type" class="font-bold">DRM Type</label>
-                                        <Dropdown id="drm_type" v-model="ebook.drm_type" :options="drmTypes" optionLabel="name" optionValue="code" placeholder="Select DRM type" />
-                                    </div>
-                                </div>
-
-                                <!-- Max Downloads -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="max_downloads" class="font-bold">Max Downloads (per user)</label>
-                                        <InputNumber id="max_downloads" v-model="ebook.max_downloads" :min="1" placeholder="Maximum number of downloads" :disabled="!ebook.is_downloadable" />
-                                    </div>
-                                </div>
-
-                                <!-- Access Expires Date -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="access_expires_at" class="font-bold">Access Expiration Date</label>
-                                        <Calendar id="access_expires_at" v-model="ebook.access_expires_at" dateFormat="mm/dd/yy" placeholder="When access expires (if applicable)" :minDate="new Date()" showIcon />
-                                    </div>
-                                </div>
-
-                                <!-- Reader App -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="reader_app" class="font-bold">Recommended Reader App</label>
-                                        <InputText id="reader_app" v-model="ebook.reader_app" placeholder="e.g., Adobe Reader, Kindle" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Library Information -->
-                        <div class="col-12 mb-4 pb-3 border-bottom-1 surface-border">
-                            <h6 class="text-lg font-bold mb-3">Library Information</h6>
-                            <div class="grid">
-                                <!-- Library Branch -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="library_branch_id" class="font-bold">Library Branch*</label>
-                                        <Dropdown
-                                            id="library_branch_id"
-                                            v-model="ebook.library_branch_id"
-                                            :options="branches"
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select library branch"
-                                            :class="{ 'p-invalid': submitted && !ebook.library_branch_id }"
-                                        />
-                                        <small v-if="submitted && !ebook.library_branch_id" class="p-error">Library branch is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- Category -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="category_id" class="font-bold">Category*</label>
-                                        <Dropdown id="category_id" v-model="ebook.category_id" :options="categories" optionLabel="name" optionValue="id" placeholder="Select category" :class="{ 'p-invalid': submitted && !ebook.category_id }" />
-                                        <small v-if="submitted && !ebook.category_id" class="p-error">Category is required</small>
-                                    </div>
-                                </div>
-
-                                <!-- Publisher -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="publisher_id" class="font-bold">Publisher</label>
-                                        <Dropdown id="publisher_id" v-model="ebook.publisher_id" :options="publishers" optionLabel="name" optionValue="id" placeholder="Select publisher" />
-                                    </div>
-                                </div>
-
-                                <!-- Status -->
-                                <div class="col-12 md:col-6 mb-3">
-                                    <div class="field">
-                                        <label for="availability_status" class="font-bold">Availability Status*</label>
-                                        <Dropdown
-                                            id="availability_status"
-                                            v-model="ebook.availability_status"
-                                            :options="statusOptions"
-                                            optionLabel="name"
-                                            optionValue="code"
-                                            placeholder="Select status"
-                                            :class="{ 'p-invalid': submitted && !ebook.availability_status }"
-                                        />
-                                        <small v-if="submitted && !ebook.availability_status" class="p-error">Status is required</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Additional Information -->
-                        <div class="col-12">
-                            <h6 class="text-lg font-bold mb-3">Additional Information</h6>
-                            <div class="grid">
-                                <!-- Cover Image URL -->
-                                <div class="col-12 mb-3">
-                                    <div class="field">
-                                        <label for="cover_image_url" class="font-bold">Cover Image URL</label>
-                                        <InputText id="cover_image_url" v-model="ebook.cover_image_url" placeholder="URL to the book cover image" />
-                                    </div>
-                                </div>
-
-                                <!-- Description -->
-                                <div class="col-12 mb-3">
-                                    <div class="field">
-                                        <label for="description" class="font-bold">Description</label>
-                                        <Textarea id="description" v-model="ebook.description" rows="5" placeholder="E-book description" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Form Buttons -->
-                        <div class="col-12 mt-4 flex justify-content-end">
-                            <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary mr-2" @click="cancelForm" type="button" />
-                            <Button label="Save E-Book" icon="pi pi-check" class="p-button-primary" type="submit" :loading="loading" />
-                        </div>
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white py-6 flex flex-col items-center">
+        <div class="w-full px-2 sm:px-4 md:px-6 mx-auto">
+            <div class="card shadow-5 p-4 sm:p-6 md:p-8 bg-white rounded-3xl border border-blue-100">
+                <div class="flex flex-col gap-10 mb-6">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-blue-800 flex items-center gap-2 mb-4">
+                            <i class="pi pi-history text-xl text-blue-500" />
+                            Borrowing History
+                        </h2>
+                        <p class="text-gray-600 text-sm sm:text-base">View all book loans and their status.</p>
                     </div>
-                </form>
+                    <div class="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 md:gap-2 md:justify-end mb-6">
+                        <InputText v-model="filter" placeholder="Search by title, author, date..." class="w-full sm:w-64" @keyup.enter="onFilter" />
+                        <Dropdown
+                            v-model="status"
+                            :options="[
+                                { label: 'All', value: '' },
+                                { label: 'Returned', value: 'Returned' },
+                                { label: 'Not Returned', value: 'NotReturned' }
+                            ]"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Status"
+                            class="w-full sm:w-40"
+                            @change="onFilter"
+                        />
+                        <Calendar v-model="dateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" @date-select="onFilter" />
+                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFilter" />
+                    </div>
+                </div>
+                <div class="w-full">
+                    <div style="height: 100%; overflow: auto">
+                        <DataTable
+                            :value="loans"
+                            :loading="loading"
+                            :paginator="true"
+                            :rows="rows"
+                            :total-records="totalRecords"
+                            @page="onPage"
+                            dataKey="id"
+                            responsive-layout="scroll"
+                            class="p-datatable-sm min-w-full"
+                            scrollable
+                            style="min-width: 700px"
+                        >
+                            <Column field="id" header="#" style="width: 4rem" />
+                            <Column header="Book">
+                                <template #body="{ data }">
+                                    <div class="flex items-center gap-3">
+                                        <div>
+                                            <div class="text-base sm:text-lg">
+                                                {{ data.book_title }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </Column>
+                            <Column field="borrow_date" header="Borrowed" sortable>
+                                <template #body="{ data }">
+                                    {{ new Date(data.borrow_date).toLocaleDateString() }}
+                                </template>
+                            </Column>
+                            <Column field="due_date" header="Due" sortable>
+                                <template #body="{ data }">
+                                    {{ new Date(data.due_date).toLocaleDateString() }}
+                                </template>
+                            </Column>
+                            <Column field="returned_date" header="Returned" sortable>
+                                <template #body="{ data }">
+                                    <span v-if="data.returned_date">
+                                        {{ new Date(data.returned_date).toLocaleDateString() }}
+                                    </span>
+                                    <span v-else class="text-orange-500 font-semibold">Not Returned</span>
+                                </template>
+                            </Column>
+                            <Column header="Fine">
+                                <template #body="{ data }">
+                                    <span v-if="data.fine">
+                                        ${{ data.fine.amount }}
+                                        <span :class="data.fine.status === 'paid' ? 'text-green-600' : 'text-red-500'"> ({{ data.fine.status }}) </span>
+                                    </span>
+                                    <span v-else>-</span>
+                                </template>
+                            </Column>
+                            <Column header="Due Status">
+                                <template #body="{ data }">
+                                    {{ getDueStatus(data) }}
+                                </template>
+                            </Column>
+                            <Column header="Action" style="min-width: 8rem">
+                                <template #body="{ data }">
+                                    <Button v-if="!data.returned_date" icon="pi pi-check" class="p-button-success p-button-sm" label="Mark Returned" @click="() => handleMarkReturned(data)" />
+                                    <span v-else class="text-green-600 font-semibold">Returned</span>
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    <Dialog v-model:visible="showFineDialog" modal header="Return Book & Fine" :style="{ width: '400px' }">
+        <div v-if="fineDialogData.fineAmount > 0" class="mb-3">
+            <div class="text-red-600 font-semibold mb-2">Fine Penalty: ${{ fineDialogData.fineAmount }}</div>
+            <div class="text-gray-700 text-sm mb-2">Reason: {{ fineDialogData.reason }}</div>
+        </div>
+        <div class="mb-3">
+            <label class="block text-gray-700 text-sm font-bold mb-1">Damage Reason (optional):</label>
+            <Textarea v-model="fineDialogData.damageReason" autoResize rows="2" placeholder="Describe any damage (leave blank if none)" class="w-full" />
+        </div>
+        <div class="mb-3">
+            <label class="block text-gray-700 text-sm font-bold mb-1">Damage Fine Amount (optional):</label>
+            <InputText v-model="fineDialogData.damageFineAmount" type="number" min="0" step="0.01" placeholder="Enter damage fine (if any)" class="w-full" />
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+            <Button label="Cancel" class="p-button-text" @click="showFineDialog = false" />
+            <Button label="Confirm Return" class="p-button-success" @click="confirmReturnWithFine" />
+        </div>
+    </Dialog>
 </template>

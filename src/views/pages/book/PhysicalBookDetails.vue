@@ -124,7 +124,10 @@ const goBack = () => {
         <div class="col-12">
             <div class="card">
                 <div class="flex align-items-center mb-4">
-                    <Button icon="pi pi-arrow-left" class="p-button-text p-button-rounded mr-2" @click="goBack" />
+                    <Button
+                        icon="pi pi-arrow-left"
+                        class="p-button-text p-button-rounded mr-2"
+                        @click="goBack" />
                     <h5 class="m-0" v-if="book">{{ book.title }}</h5>
                     <h5 class="m-0" v-else>Book Details</h5>
                 </div>
@@ -136,27 +139,54 @@ const goBack = () => {
                 <div v-else-if="book" class="grid">
                     <div class="col-12 md:col-4 flex flex-column align-items-center">
                         <div class="book-cover-container mb-4">
-                            <img :src="book.cover_image_url" :alt="book.title" class="book-cover shadow-4" />
+                            <img
+                                :src="book.cover_image_url"
+                                :alt="book.title"
+                                class="book-cover shadow-4" />
                         </div>
 
                         <div class="w-full">
                             <div class="status-badge flex justify-content-center mb-4">
-                                <span :class="['py-2 px-3 border-round text-uppercase font-bold', getStatusClass(book.availability_status)]">
+                                <span
+                                    :class="[
+                                        'py-2 px-3 border-round text-uppercase font-bold',
+                                        getStatusClass(book.availability_status)
+                                    ]">
                                     {{ book.availability_status.replace('_', ' ') }}
                                 </span>
                             </div>
 
                             <div class="flex justify-content-center gap-2 mb-4">
-                                <Button label="Borrow" icon="pi pi-shopping-bag" :disabled="book.availability_status !== 'available' || book.reference_only" :loading="borrowing" @click="borrowBook" />
+                                <Button
+                                    label="Borrow"
+                                    icon="pi pi-shopping-bag"
+                                    :disabled="
+                                        book.availability_status !== 'available' ||
+                                        book.reference_only
+                                    "
+                                    :loading="borrowing"
+                                    @click="borrowBook" />
 
-                                <Button label="Reserve" icon="pi pi-calendar" severity="secondary" :disabled="book.availability_status !== 'checked_out'" :loading="reserving" @click="reserveBook" />
+                                <Button
+                                    label="Reserve"
+                                    icon="pi pi-calendar"
+                                    severity="secondary"
+                                    :disabled="book.availability_status !== 'checked_out'"
+                                    :loading="reserving"
+                                    @click="reserveBook" />
                             </div>
 
                             <div class="flex justify-content-center mb-4">
-                                <Button icon="pi pi-pencil" label="Edit" class="p-button-outlined" @click="editBook" />
+                                <Button
+                                    icon="pi pi-pencil"
+                                    label="Edit"
+                                    class="p-button-outlined"
+                                    @click="editBook" />
                             </div>
 
-                            <div v-if="book.reference_only" class="flex justify-content-center mb-4">
+                            <div
+                                v-if="book.reference_only"
+                                class="flex justify-content-center mb-4">
                                 <Tag severity="info" value="Reference Only - Not for borrowing" />
                             </div>
                         </div>
@@ -176,7 +206,9 @@ const goBack = () => {
                                 <h6 class="font-bold mb-2">Book Details</h6>
                                 <ul class="book-details-list">
                                     <li><span>ISBN:</span> {{ book.isbn }}</li>
-                                    <li><span>Publication Year:</span> {{ book.publication_year }}</li>
+                                    <li>
+                                        <span>Publication Year:</span> {{ book.publication_year }}
+                                    </li>
                                     <li><span>Category:</span> {{ book.category.name }}</li>
                                     <li><span>Publisher:</span> {{ book.publisher.name }}</li>
                                     <li><span>Language:</span> {{ book.language }}</li>
@@ -198,7 +230,10 @@ const goBack = () => {
                                 <ul class="book-details-list">
                                     <li><span>Branch:</span> {{ book.library_branch.name }}</li>
                                     <li><span>Shelf:</span> {{ book.shelf.name }}</li>
-                                    <li><span>Detailed Location:</span> {{ book.shelf_location_detail }}</li>
+                                    <li>
+                                        <span>Detailed Location:</span>
+                                        {{ book.shelf_location_detail }}
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -207,7 +242,9 @@ const goBack = () => {
 
                 <div v-else class="flex justify-content-center">
                     <div class="text-center">
-                        <i class="pi pi-exclamation-triangle text-yellow-500" style="font-size: 3rem"></i>
+                        <i
+                            class="pi pi-exclamation-triangle text-yellow-500"
+                            style="font-size: 3rem"></i>
                         <h5>Book not found</h5>
                         <p>The book you're looking for doesn't exist or has been removed.</p>
                         <Button label="Go Back" @click="goBack" />

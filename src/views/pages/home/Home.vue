@@ -1,3 +1,98 @@
+<script setup>
+import { storeToRefs } from 'pinia';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { RouterLink } from 'vue-router';
+
+import HeroSection from '@/components/home/HeroSection.vue';
+import NewArrivals from '@/components/home/NewArrivals.vue';
+import QuickLinks from '@/components/home/QuickLinks.vue';
+import ReadingLists from '@/components/home/ReadingLists.vue';
+import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
+import ResourceFilters from '@/components/home/ResourceFilters.vue';
+import ResourceGrid from '@/components/home/ResourceGrid.vue';
+import ResourceModal from '@/components/home/ResourceModal.vue';
+import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+import StatsBar from '@/components/home/StatsBar.vue';
+import { useAuthStore } from '@/stores/authStore';
+import { useHomeStore } from '@/stores/homeStore';
+const authStore = useAuthStore();
+
+const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
+
+// eslint-disable-next-line no-unused-vars
+const searchQuery = ref('');
+const currentAnnouncementIndex = ref(0);
+const showAnnouncements = ref(true);
+
+const logout = authStore.logout;
+
+import Toast from 'primevue/toast';
+
+const homeStore = useHomeStore();
+
+// Mobile menu state
+const showMobileMenu = ref(false);
+let announcementInterval;
+onMounted(() => {
+    authStore.authCheck();
+    homeStore.fetchBookItem();
+
+    // Start announcement rotation
+    announcementInterval = setInterval(() => {
+        nextAnnouncement();
+    }, 5000);
+});
+
+// Clean up on component unmount
+onUnmounted(() => {
+    if (announcementInterval) {
+        clearInterval(announcementInterval);
+    }
+});
+
+const announcements = ref([
+    { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
+    { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
+    { id: 3, message: 'Join our Book Club meeting every Friday at 4 PM in Room 204' },
+    { id: 4, message: 'New educational videos on Mathematics added to our digital collection' }
+]);
+
+// Functions to manage announcements
+const dismissAnnouncement = () => {
+    showAnnouncements.value = false;
+};
+
+const learnMoreAboutAnnouncement = (announcement) => {
+    console.log('Learn more about announcement:', announcement);
+    // Here you would navigate to detailed announcement page or show a modal
+    // For example: router.push({ name: 'announcement-details', params: { id: announcement.id } });
+};
+
+// Function to navigate to a specific announcement
+const setCurrentAnnouncement = (index) => {
+    currentAnnouncementIndex.value = index;
+};
+
+// Compute the current visible announcement with improved transition handling
+const visibleAnnouncement = computed(() => {
+    const announcement = announcements.value[currentAnnouncementIndex.value];
+    return announcement ? [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }] : [];
+});
+// Functions for announcement navigation with smoother transitions
+const nextAnnouncement = () => {
+    // Small timeout to ensure Vue has completed any ongoing transitions
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length;
+    }, 50);
+};
+
+const prevAnnouncement = () => {
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
+    }, 50);
+};
+</script>
+
 <template>
     <div class="bg-slate-50 font-sans pb-12 text-gray-800">
         <!-- Toast for notifications -->
@@ -17,16 +112,11 @@
 
                 <!-- Desktop Navigation Links -->
                 <div class="hidden md:flex items-center gap-4 lg:gap-8 ml-4 lg:ml-8">
-                    <a href="#" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Browse all resources">
-                        <i class="pi pi-book"></i>
-                        <span>Library</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="/bookmarks" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your saved items">
+                    <RouterLink to="/bookmarks" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your saved items">
                         <i class="pi pi-bookmark"></i>
                         <span>Bookmarks</span>
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
+                    </RouterLink>
                     <a href="/my-notes" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your reading notes">
                         <i class="pi pi-pencil"></i>
                         <span>My Notes</span>
@@ -174,7 +264,7 @@
                 <div class="relative">
                     <div class="announcement-container relative h-[68px] overflow-hidden rounded-lg bg-amber-500/30 backdrop-blur-sm border border-white/20 px-4">
                         <transition-group name="slide-fade" tag="div" class="relative py-2">
-                            <div v-for="announcement in visibleAnnouncement" :key="announcement.key || announcement.id" class="w-full h-[52px] flex items-center">
+                            <div v-for="announcement in visibleAnnouncement" :key="announcement.key" class="w-full h-[52px] flex items-center">
                                 <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full">
                                     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center shadow-inner">
                                         <i class="pi pi-megaphone text-white text-sm"></i>
@@ -200,7 +290,7 @@
                     <div class="flex justify-end items-center gap-4 mt-2 px-2">
                         <div class="flex gap-2">
                             <button
-                                v-for="(dot, index) in announcements.length"
+                                v-for="(_, index) in announcements.length"
                                 :key="index"
                                 @click="setCurrentAnnouncement(index)"
                                 class="w-2 h-2 rounded-full transition-all duration-300 dot-indicator"
@@ -327,10 +417,6 @@
                                 <i class="pi pi-envelope text-sky-400"></i>
                                 <span>library@school.edu</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <i class="pi pi-clock text-sky-400"></i>
-                                <span>Mon-Fri: 8am - 8pm</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -353,10 +439,10 @@
     </div>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { useHomeStore } from '@/stores/homeStore';
 import Toast from 'primevue/toast';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 // Import all modularized components
@@ -532,7 +618,7 @@ const visibleAnnouncement = computed(() => {
 
 // Rotate announcements every 5 seconds
 let announcementInterval;
-</script>
+</script> -->
 
 <style scoped>
 /* Carousel transitions */

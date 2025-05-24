@@ -88,13 +88,27 @@ const resendCode = async () => {
 
 <template>
     <FloatingConfigurator />
-    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden">
+    <div
+        class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden">
         <div class="flex flex-col items-center justify-center">
-            <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-                <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
+            <div
+                style="
+                    border-radius: 56px;
+                    padding: 0.3rem;
+                    background: linear-gradient(
+                        180deg,
+                        var(--primary-color) 10%,
+                        rgba(33, 150, 243, 0) 30%
+                    );
+                ">
+                <div
+                    class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20"
+                    style="border-radius: 53px">
                     <div class="text-center mb-8">
                         <i class="pi pi-envelope text-primary text-6xl mb-3"></i>
-                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Verify Your Email</div>
+                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">
+                            Verify Your Email
+                        </div>
                         <p class="text-muted-color font-medium">
                             We've sent a verification code to your email.<br />
                             Please enter the code below to verify your account.
@@ -102,7 +116,9 @@ const resendCode = async () => {
                     </div>
 
                     <div>
-                        <Message severity="error" v-if="errorMessage" class="mb-4">{{ errorMessage }}</Message>
+                        <Message severity="error" v-if="errorMessage" class="mb-4">{{
+                            errorMessage
+                        }}</Message>
 
                         <div class="text-center mb-6">
                             <div class="flex justify-center gap-2">
@@ -116,17 +132,29 @@ const resendCode = async () => {
                                     @input="handleInput($event, i)"
                                     @keydown="handleKeyDown($event, i)"
                                     @paste="handlePaste"
-                                    ref="inputs"
-                                />
+                                    ref="inputs" />
                             </div>
-                            <small v-if="submitted && code.some((digit) => !digit)" class="p-error block mt-2"> Please enter the complete verification code. </small>
+                            <small
+                                v-if="submitted && code.some((digit) => !digit)"
+                                class="p-error block mt-2">
+                                Please enter the complete verification code.
+                            </small>
                         </div>
 
-                        <Button label="Verify Email" class="w-full mb-6" @click="verifyCode" :loading="loading"></Button>
+                        <Button
+                            label="Verify Email"
+                            class="w-full mb-6"
+                            @click="verifyCode"
+                            :loading="loading"></Button>
 
                         <div class="text-center">
                             <p class="mb-3 text-muted-color">Didn't receive the code?</p>
-                            <Button label="Resend Code" severity="secondary" outlined @click="resendCode" :loading="loading"></Button>
+                            <Button
+                                label="Resend Code"
+                                severity="secondary"
+                                outlined
+                                @click="resendCode"
+                                :loading="loading"></Button>
                         </div>
                     </div>
                 </div>

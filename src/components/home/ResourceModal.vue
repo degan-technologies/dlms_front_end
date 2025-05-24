@@ -1,3 +1,52 @@
+<script setup>
+import { useHomeStore } from '@/stores/homeStore';
+import axiosInstance from '@/util/axios-config';
+import { storeToRefs } from 'pinia';
+import Dialog from 'primevue/dialog';
+import { useToast } from 'primevue/usetoast';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const homeStore = useHomeStore();
+const { selectedResource, resourceModalVisible, isYoutubeVideo, youtubeEmbedUrl } = storeToRefs(homeStore);
+
+const { openExternalLink, capitalizeFirstLetter } = homeStore;
+const toast = useToast();
+const borrowDate = ref(null);
+const dueDate = ref(null);
+// Function to navigate to universal reader
+const navigateToReader = () => {
+    if (selectedResource.value && selectedResource.value.id) {
+        resourceModalVisible.value = false;
+        router.push({
+            name: 'universal-reader',
+            params: { id: selectedResource.value.id },
+            query: { type: selectedResource.value.type.toLowerCase() }
+        });
+    }
+};
+const reserveResource = async () => {
+    try {
+        await axiosInstance.post('/loans', {
+            book_item_id: selectedResource.value.id,
+            borrow_date: borrowDate.value, // e.g. "2025-05-15"
+            due_date: dueDate.value, // e.g. "2025-05-29"
+            library_branch_id: selectedResource.value.library_branch_id
+        });
+
+        toast.add({ severity: 'success', summary: 'Reserved', detail: 'Your copy has been reserved.' });
+    } catch (e) {
+        toast.add({
+            severity: 'error',
+            summary: 'Reservation Failed',
+            detail: e.response?.data?.message || 'Try again later.'
+        });
+    } finally {
+        resourceModalVisible.value = false;
+    }
+};
+</script>
 <template>
     <div>
         <Dialog v-model:visible="resourceModalVisible" :modal="true" :breakpoints="{ '960px': '75vw', '640px': '90vw' }" class="p-fluid resource-modal" :style="{ width: '50rem' }" :showHeader="false" :dismissableMask="true">
@@ -120,14 +169,28 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium">Borrow Date</label>
+                                    <input type="date" v-model="borrowDate" class="w-full border rounded px-2 py-1" />
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium">Due Date</label>
+                                    <input type="date" v-model="dueDate" class="w-full border rounded px-2 py-1" />
+                                </div>
+                            </div>
                             <!-- Actions -->
                             <div class="mt-6 space-y-2">
                                 <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all">
                                     <i class="pi pi-bookmark"></i>
                                     <span>Add to Reading List</span>
                                 </button>
-                                <button class="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all">
+                                <button
+                                    :disabled="selectedResource.availability_status !== 'available'"
+                                    @click="reserveResource"
+                                    class="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all"
+                                    :class="{ 'opacity-50 cursor-not-allowed': selectedResource.availability_status !== 'available' }"
+                                >
                                     <i class="pi pi-book"></i>
                                     <span>Reserve Copy</span>
                                 </button>
@@ -143,28 +206,3 @@
         </Dialog>
     </div>
 </template>
-
-<script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-import Dialog from 'primevue/dialog';
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-const homeStore = useHomeStore();
-const { selectedResource, resourceModalVisible, pdfViewerVisible, isYoutubeVideo, youtubeEmbedUrl } = storeToRefs(homeStore);
-
-const { openExternalLink, capitalizeFirstLetter } = homeStore;
-
-// Function to navigate to universal reader
-const navigateToReader = () => {
-    if (selectedResource.value && selectedResource.value.id) {
-        resourceModalVisible.value = false;
-        router.push({
-            name: 'universal-reader',
-            params: { id: selectedResource.value.id },
-            query: { type: selectedResource.value.type.toLowerCase() }
-        });
-    }
-};
-</script>

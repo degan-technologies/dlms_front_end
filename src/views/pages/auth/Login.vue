@@ -1,9 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/authStore';
-import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-const toast = useToast();
 
 const login = ref(''); // Changed from email to login to match backend
 const password = ref('');
@@ -11,7 +8,6 @@ const rememberMe = ref(false);
 const submitted = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
-const router = useRouter();
 const authStore = useAuthStore();
 
 const handleLogin = async () => {

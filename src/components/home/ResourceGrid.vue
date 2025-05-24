@@ -1,3 +1,14 @@
+<script setup>
+import { useHomeStore } from '@/stores/homeStore';
+import { storeToRefs } from 'pinia';
+import Paginator from 'primevue/paginator';
+
+const homeStore = useHomeStore();
+const { loading, featuredResources, totalRecords, resourcesPerPage, first } = storeToRefs(homeStore);
+
+const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = homeStore;
+</script>
+
 <template>
     <div class="lg:w-3/4">
         <!-- Loading overlay -->
@@ -22,12 +33,11 @@
             <div
                 v-for="resource in featuredResources"
                 :key="resource.id"
-                @click="viewResource(resource)"
                 class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border border-gray-100"
                 data-tooltip="Click to view resource details"
             >
                 <div class="relative h-48">
-                    <img :src="resource.image" :alt="resource.title" class="w-full h-full object-cover" />
+                    <img :src="resource.cover_image_url" :alt="resource.title" class="w-full h-full object-cover" />
                     <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-indigo-700 px-3 py-1 rounded-md text-xs font-semibold shadow-sm">
                         {{ resource.type }}
                     </div>
@@ -51,22 +61,12 @@
                             <span v-if="resource.isbn" class="text-xs text-gray-500"> ISBN: {{ resource.isbn }} </span>
                         </div>
                     </div>
+                    <button v-if="resource.type.toLowerCase() === 'book'" @click="viewResource(resource)" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Details</button>
                 </div>
             </div>
         </div>
         <div class="mt-8 flex justify-center">
-            <Paginator :rows="resourcesPerPage" :totalRecords="totalRecords" v-model:first="first" :rowsPerPageOptions="[2, 4, 7]" @page="onPageChange($event)" class="border-none" :loading="loading" />
+            <Paginator :rows="resourcesPerPage" :totalRecords="totalRecords" v-model:first="first" :rowsPerPageOptions="[5, 10, 15, 20]" @page="onPageChange($event)" class="border-none" :loading="loading" />
         </div>
     </div>
 </template>
-
-<script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-import Paginator from 'primevue/paginator';
-
-const homeStore = useHomeStore();
-const { loading, featuredResources, totalRecords, resourcesPerPage, first } = storeToRefs(homeStore);
-
-const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = homeStore;
-</script>

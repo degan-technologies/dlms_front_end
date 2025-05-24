@@ -14,7 +14,7 @@ export const useHomeStore = defineStore('home', () => {
     const sortField = ref('created_at');
     const sortDirection = ref('desc');
     const currentPage = ref(1);
-    const resourcesPerPage = ref(2);
+    const resourcesPerPage = ref(5);
     const first = ref(0);
     const lastPage = ref(1);
     const searchQuery = ref('');
@@ -38,64 +38,55 @@ export const useHomeStore = defineStore('home', () => {
 
     const totalPages = computed(() => Math.ceil(totalRecords.value / resourcesPerPage.value));
 
-    // Actions
-    const fetchBookItem = async () => {
+    // inside defineStore(…)
+    const fetchBookItem = async (filterParams = {}) => {
+        loading.value = true;
         try {
-            loading.value = true;
+            // Ensure pagination parameters are included
             const params = {
                 page: currentPage.value,
                 per_page: resourcesPerPage.value,
-                sort_by: sortField.value,
-                sort_direction: sortDirection.value
+                ...filterParams
             };
 
-            console.log('API request params:', params);
-
-            if (activeFilters.value.itemType.length) {
-                params.item_type = activeFilters.value.itemType.join(',');
-            }
-
-            if (activeFilters.value.categoryId.length) {
-                params.category_id = activeFilters.value.categoryId.join(',');
-            }
-
-            if (filterKeyword.value) {
-                params.title = filterKeyword.value;
-            }
-
-            if (activeFilters.value.language) {
-                params.language = activeFilters.value.language;
-            }
+            console.log('📡 fetchBookItem() → Axios params:', params);
 
             const response = await axiosInstance.get('/book/item', { params });
             console.log('Fetched book items:', response.data);
 
+            // Map into your featured array...
             allFeaturedResources.value = response.data.data.map((item) => ({
                 id: item.id,
                 title: item.title,
+                cover_image_url: item.cover_image_url?.item.cover_image_url ?? 'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
                 description: item.description,
                 type: capitalizeFirstLetter(item.item_type),
                 author: item.author,
-                image: item.cover_image_url || 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+                image: item.cover_image_url,
                 rating: 4.5,
-                category: item.category ? item.category.category_name : 'Uncategorized',
-                publisher: item.publisher ? item.publisher.publisher_name : 'Unknown',
+                category: item.category?.category_name ?? 'Uncategorized',
+                publisher: item.publisher?.publisher_name ?? 'Unknown',
                 publication_year: item.publication_year,
                 language: item.language,
                 availability_status: item.availability_status,
-                isbn: item.isbn
+                isbn: item.isbn,
+                library_branch_id: item.library_branch_id,
+                shelfCode: item.shelf?.ShelfCode ?? null
             }));
 
+            // Meta
             totalRecords.value = parseInt(response.data.meta.total) || 0;
             currentPage.value = parseInt(response.data.meta.current_page) || 1;
             lastPage.value = parseInt(response.data.meta.total_pages) || 1;
-
-            if (response.data.meta.current_page > 0) {
-                first.value = (response.data.meta.current_page - 1) * resourcesPerPage.value;
-            }
+            first.value = (currentPage.value - 1) * resourcesPerPage.value;
         } catch (error) {
             console.error('Error fetching book items:', error);
-            toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load library resources', life: 3000 });
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to load library resources',
+                life: 3000
+            });
         } finally {
             loading.value = false;
         }
@@ -117,7 +108,11 @@ export const useHomeStore = defineStore('home', () => {
             event: event
         });
 
-        fetchBookItem();
+        // Pass the correct pagination parameters to fetchBookItem
+        fetchBookItem({
+            page: currentPage.value,
+            per_page: resourcesPerPage.value
+        });
     };
 
     const resetFilters = () => {
@@ -166,6 +161,7 @@ export const useHomeStore = defineStore('home', () => {
         fetchBookItem();
     };
 
+    // eslint-disable-next-line no-unused-vars
     const removeFilter = (filterType, value = null, index = -1) => {
         if (filterType === 'itemType' || filterType === 'categoryId') {
             activeFilters.value[filterType].splice(index, 1);

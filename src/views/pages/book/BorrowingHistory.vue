@@ -1,11 +1,13 @@
 <script setup>
+import axiosInstance from '@/util/axios-config';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const borrowingHistory = ref([]);
+const borrowedItems = ref([]);
 const selectedItems = ref([]);
 const loading = ref(true);
+const totalRecords = ref(0); // Track total records for pagination
 const filters = ref({
     global: { value: null, matchMode: 'contains' },
     status: { value: null, matchMode: 'equals' }
@@ -23,92 +25,51 @@ onMounted(() => {
     fetchBorrowingHistory();
 });
 
-const fetchBorrowingHistory = async () => {
+const fetchBorrowingHistory = async (lazyParams = { first: 0, rows: 10 }) => {
     loading.value = true;
     try {
-        // In a real app, this would be an API call with date filtering
-        setTimeout(() => {
-            borrowingHistory.value = [
-                {
-                    id: 1,
-                    title: 'Designing Data-Intensive Applications',
-                    author: 'Martin Kleppmann',
-                    category: 'Computer Science',
-                    asset_type: 'Physical Book',
-                    isbn: '9781449373320',
-                    borrow_date: '2024-12-10',
-                    due_date: '2025-01-10',
-                    return_date: '2025-01-08',
-                    status: 'returned',
-                    renewals_count: 0,
-                    fine_amount: 0,
-                    cover_image_url: '/demo/images/product/product-placeholder.svg'
-                },
-                {
-                    id: 2,
-                    title: 'The Pragmatic Programmer',
-                    author: 'Andrew Hunt, David Thomas',
-                    category: 'Programming',
-                    asset_type: 'E-Book',
-                    isbn: '9780201616224',
-                    borrow_date: '2025-01-15',
-                    due_date: '2025-02-15',
-                    return_date: '2025-02-10',
-                    status: 'returned',
-                    renewals_count: 0,
-                    fine_amount: 0,
-                    cover_image_url: '/demo/images/product/product-placeholder.svg'
-                },
-                {
-                    id: 3,
-                    title: 'Fundamentals of Database Systems',
-                    author: 'Ramez Elmasri, Shamkant Navathe',
-                    category: 'Database',
-                    asset_type: 'Physical Book',
-                    isbn: '9780133970777',
-                    borrow_date: '2025-02-05',
-                    due_date: '2025-03-05',
-                    return_date: '2025-03-10',
-                    status: 'returned_late',
-                    renewals_count: 0,
-                    fine_amount: 2.5,
-                    cover_image_url: '/demo/images/product/product-placeholder.svg'
-                },
-                {
-                    id: 4,
-                    title: 'The Art of Computer Programming, Vol. 1',
-                    author: 'Donald E. Knuth',
-                    category: 'Computer Science',
-                    asset_type: 'Physical Book',
-                    isbn: '9780201896831',
-                    borrow_date: '2025-03-01',
-                    due_date: '2025-04-01',
-                    return_date: '2025-03-29',
-                    status: 'returned',
-                    renewals_count: 1,
-                    fine_amount: 0,
-                    cover_image_url: '/demo/images/product/product-placeholder.svg'
-                },
-                {
-                    id: 5,
-                    title: 'Clean Architecture',
-                    author: 'Robert C. Martin',
-                    category: 'Software Design',
-                    asset_type: 'E-Book',
-                    isbn: '9780134494166',
-                    borrow_date: '2025-03-15',
-                    due_date: '2025-04-15',
-                    return_date: '2025-04-07',
-                    status: 'returned',
-                    renewals_count: 0,
-                    fine_amount: 0,
-                    cover_image_url: '/demo/images/product/product-placeholder.svg'
-                }
-            ];
-            loading.value = false;
-        }, 1000);
+        console.log('Fetching data with params:', {
+            page: Math.floor(parseInt(lazyParams.first, 10) / parseInt(lazyParams.rows, 10)) + 1,
+            per_page: parseInt(lazyParams.rows, 10),
+            filter: filters.value.global.value,
+            status: filters.value.status.value,
+            dateRange: selectedDateFilter.value
+        });
+
+        const response = await axiosInstance.get('/loans', {
+            params: {
+                page: Math.floor(parseInt(lazyParams.first, 10) / parseInt(lazyParams.rows, 10)) + 1,
+                per_page: parseInt(lazyParams.rows, 10),
+                filter: filters.value.global.value,
+                status: filters.value.status.value,
+                dateRange: selectedDateFilter.value
+            }
+        });
+
+        console.log('Response from backend:', response.data);
+
+        const rawItems = response.data.data || response.data;
+        borrowedItems.value = rawItems.map((item) => ({
+            id: item.id,
+            title: item.book_item?.title ?? 'Unknown Title',
+            author: item.book_item?.author ?? 'Unknown Author',
+            item_type: item.book_item?.item_type ?? 'Unknown',
+            asset_type: item.book_item?.asset_type ?? 'Unknown',
+            borrow_date: item.borrow_date,
+            due_date: item.due_date,
+            renewals_count: item.renewals_count ?? 0,
+            return_date: item.return_date,
+            status: item.fine?.status,
+            fine_amount: item.fine?.amount ?? 0,
+            cover_image_url: item.book_item?.cover_image_url ?? 'https://m.media-amazon.com/images/I/71Q1tPupKjL._AC_UF1000,1000_QL80_.jpg',
+            fullItem: item
+        }));
+
+        totalRecords.value = response.data.pagination.total_records || 0; // Update total records for pagination
+        console.log('Total records:', totalRecords.value);
     } catch (error) {
-        console.error('Failed to fetch borrowing history:', error);
+        console.error('Failed to fetch borrowed items:', error);
+    } finally {
         loading.value = false;
     }
 };
@@ -157,6 +118,7 @@ const onDateFilterChange = () => {
 
 const exportPDF = () => {
     // Implement PDF export functionality
+
     alert('PDF export would be implemented here');
 };
 
@@ -169,6 +131,11 @@ const formatDate = (dateString) => {
     if (!dateString) return '';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+const onPage = (event) => {
+    console.log('Pagination event:', event); // Log the pagination event for debugging
+    fetchBorrowingHistory({ first: event.first, rows: event.rows }); // Pass the correct rows value
 };
 </script>
 
@@ -192,17 +159,20 @@ const formatDate = (dateString) => {
 
                 <DataTable
                     v-model:selection="selectedItems"
-                    :value="borrowingHistory"
+                    :value="borrowedItems"
                     dataKey="id"
                     :rows="10"
+                    :lazy="true"
                     :loading="loading"
+                    :total-records="totalRecords"
                     :paginator="true"
                     :filters="filters"
                     :rowsPerPageOptions="[5, 10, 25]"
                     responsiveLayout="scroll"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} items"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    class="p-datatable-sm"
+                    :totalRecords="totalRecords"
+                    @page="onPage"
                 >
                     <template #empty>
                         <div class="flex flex-column align-items-center p-5">
@@ -232,9 +202,9 @@ const formatDate = (dateString) => {
                         </template>
                     </Column>
 
-                    <Column field="asset_type" header="Type" sortable style="width: 10rem">
+                    <Column field="asset_type" header="Type" sortable style="min-width: 10rem">
                         <template #body="slotProps">
-                            <Tag :value="slotProps.data.asset_type" severity="info" />
+                            <Tag :value="slotProps.data.item_type" severity="info" />
                         </template>
                     </Column>
 
@@ -246,7 +216,7 @@ const formatDate = (dateString) => {
 
                     <Column field="return_date" header="Returned On" sortable style="width: 10rem">
                         <template #body="slotProps">
-                            {{ formatDate(slotProps.data.return_date) }}
+                            {{ slotProps.data.return_date }}
                         </template>
                     </Column>
 
@@ -273,15 +243,18 @@ const formatDate = (dateString) => {
                     </Column>
 
                     <Column field="fine_amount" header="Fine" sortable style="width: 8rem">
-                        <template #body="slotProps">
-                            <span v-if="slotProps.data.fine_amount > 0" class="text-red-500 font-medium">${{ slotProps.data.fine_amount.toFixed(2) }}</span>
-                            <span v-else class="text-green-500 font-medium">$0.00</span>
-                        </template>
+                      <template #body="slotProps">
+    <span v-if="Number(slotProps.data.fine_amount) > 0" class="text-red-500 font-medium">
+        ${{ Number(slotProps.data.fine_amount).toFixed(2) }}
+    </span>
+    <span v-else class="text-green-500 font-medium">$0.00</span>
+</template>
+
                     </Column>
 
-                    <Column style="width: 5rem">
+                    <Column header="Actions" style="width: 5rem">
                         <template #body="slotProps">
-                            <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-text p-button-sm" @click="viewDetails(slotProps.data)" />
+                            <Button icon="pi pi-eye" v-tooltip="'View Details'" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-text p-button-sm" @click="viewDetails(slotProps.data)" />
                         </template>
                     </Column>
                 </DataTable>

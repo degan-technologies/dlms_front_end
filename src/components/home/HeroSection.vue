@@ -1,3 +1,12 @@
+<script setup>
+import { useHomeStore } from '@/stores/homeStore';
+import { storeToRefs } from 'pinia';
+
+const homeStore = useHomeStore();
+const { searchQuery } = storeToRefs(homeStore);
+const { searchResources, quickSearch } = homeStore;
+</script>
+
 <template>
     <section class="relative py-20 overflow-hidden bg-gradient-to-br from-indigo-900 to-blue-600 text-white">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80')] bg-no-repeat bg-center bg-cover"></div>
@@ -45,12 +54,3 @@
         </div>
     </section>
 </template>
-
-<script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import { storeToRefs } from 'pinia';
-
-const homeStore = useHomeStore();
-const { searchQuery } = storeToRefs(homeStore);
-const { searchResources, quickSearch } = homeStore;
-</script>
