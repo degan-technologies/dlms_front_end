@@ -132,28 +132,64 @@ const prevAnnouncement = () => {
                         <span>My Collection</span>
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
                     </a>
-                </div>
-                <div class="flex items-center gap-4">
-                    <template v-if="auth.isAuthenticated">
-                        <button
-                            @click="logout"
-                            class="px-5 py-2 text-red-600 hover:text-red-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-red-50 transition-colors border border-red-100 hover:border-red-200"
-                            data-tooltip="Sign out of your account"
+                    <!-- Show My Profile dropdown only if logged in -->
+                    <div v-if="isLoggedIn" class="relative">
+                        <button 
+                            id="profile-dropdown-button"
+                            @click="toggleProfileMenu"
+                            class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group"
+                            data-tooltip="Account options"
                         >
-                            <i class="pi pi-sign-out"></i>
-                            <span>Log Out</span>
+                            <i class="pi pi-user"></i>
+                            <span>My Profile</span>
+                            <i class="pi pi-chevron-down text-xs ml-1" 
+                               :class="{'rotate-180': showProfileMenu}"
+                               style="transition: transform 0.2s ease"></i>
+                            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
                         </button>
-                    </template>
-                    <template v-else>
-                        <a
-                            href="/auth/login"
-                            class="px-5 py-2 text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-sky-50 transition-colors border border-sky-100 hover:border-sky-200"
-                            data-tooltip="Sign in to your account"
+                        <!-- Dropdown Menu -->
+                        <div 
+                            v-if="showProfileMenu" 
+                            id="profile-dropdown-menu"
+                            class="absolute mt-11 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
                         >
-                            <i class="pi pi-sign-in"></i>
-                            <span>Log In</span>
-                        </a>
-                    </template>
+                            <div class="py-1">
+                                <a 
+                                    href="/my-profile" 
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-user-edit text-sky-600"></i>
+                                    My Account
+                                </a>
+                                <!-- <a 
+                                    href="/settings" 
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-cog text-gray-600"></i>
+                                    Settings
+                                </a> -->
+                                <button 
+                                    @click="handleSignOut" 
+                                    class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-sign-out text-red-500"></i>
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Show Login button only if not logged in -->
+                <div class="flex items-center gap-2 sm:gap-4" v-if="!isLoggedIn">
+                    <a
+                        href="/auth/login"
+                        class="px-3 py-1.5 sm:px-4 sm:py-2 md:px-5 md:py-2 text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-sky-50 transition-colors border border-sky-100 hover:border-sky-200 text-sm sm:text-base"
+                        data-tooltip="Sign in to your account"
+                    >
+                        <i class="pi pi-sign-in"></i>
+                        <span>Login</span>
+                        <span class="hidden xs:inline">Log In</span>
+                    </a>
                 </div>
             </div>
         </header>
@@ -198,7 +234,19 @@ const prevAnnouncement = () => {
                             <span>My Collection</span>
                         </div>
                     </a>
-                    <div class="border-t mt-2 pt-2">
+                    <div v-if="isLoggedIn" class="border-t mt-2 pt-2">
+                        <a href="/my-profile" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 text-gray-700">
+                            <div class="flex items-center gap-3">
+                                <i class="pi pi-user-edit text-sky-600"></i>
+                                <span>My Account</span>
+                            </div>
+                        </a>
+                        <button @click="handleSignOut(); showMobileMenu = false" class="block w-full text-left px-4 py-3 hover:bg-red-50 text-red-600 flex items-center gap-3">
+                            <i class="pi pi-sign-out text-red-500"></i>
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
+                    <div v-else class="border-t mt-2 pt-2">
                         <a href="/auth/login" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 text-gray-700">
                             <div class="flex items-center gap-3">
                                 <i class="pi pi-sign-in text-sky-600"></i>
@@ -378,6 +426,16 @@ const prevAnnouncement = () => {
                 </div>
             </div>
         </footer>
+        <!-- Chatbot Floating Button -->
+        <div class="fixed bottom-6 right-6 z-50">
+            <button @click="toggleChatbot" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Ask a Librarian">
+                <i class="pi pi-comments text-xl"></i>
+            </button>
+        </div>
+        <!-- Chatbot Modal -->
+        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center">
+            <AskLibrarian @some-event="toggleChatbot" />
+        </div>
     </div>
 </template>
 
@@ -388,6 +446,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 // Import all modularized components
+import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import HeroSection from '@/components/home/HeroSection.vue';
 import NewArrivals from '@/components/home/NewArrivals.vue';
 import QuickLinks from '@/components/home/QuickLinks.vue';
@@ -405,8 +464,90 @@ const router = useRouter();
 // Initialize Pinia store
 const homeStore = useHomeStore();
 
+// Chatbot state
+const chatbotVisible = ref(false);
+const showChatbot = ref(false);
+const toggleChatbot = () => {
+    showChatbot.value = !showChatbot.value;
+};
+
+
+
+// const toggleChatbot = () => {
+//     chatbotVisible.value = !chatbotVisible.value;
+// };
+
 // Mobile menu state
 const showMobileMenu = ref(false);
+
+// Profile dropdown state
+const showProfileMenu = ref(false);
+
+// Dropdown toggle
+function toggleProfileMenu() {
+    showProfileMenu.value = !showProfileMenu.value;
+}
+
+// Click outside handler to close dropdown
+function handleClickOutside(event) {
+    const menu = document.getElementById('profile-dropdown-menu');
+    const button = document.getElementById('profile-dropdown-button');
+    if (
+        menu &&
+        !menu.contains(event.target) &&
+        button &&
+        !button.contains(event.target)
+    ) {
+        showProfileMenu.value = false;
+    }
+}
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
+
+// Sign out handler
+// function handleSignOut() {
+//     // Remove tokens from localStorage and cookies
+//     localStorage.removeItem('access_token');
+//     localStorage.removeItem('refresh_token');
+//     document.cookie = 'access_token=; Max-Age=0; path=/;';
+//     document.cookie = 'refresh_token=; Max-Age=0; path=/;';
+//     // Redirect to login page
+//     router.push('/auth/login');
+// }
+
+// Helper to check login status
+function checkIsLoggedIn() {
+    return !!localStorage.getItem('access_token') || document.cookie.includes('access_token');
+}
+
+const isLoggedIn = ref(checkIsLoggedIn());
+
+// Update isLoggedIn when storage changes (e.g., login/logout in another tab)
+function handleStorageChange() {
+    isLoggedIn.value = checkIsLoggedIn();
+}
+onMounted(() => {
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on mount in case of direct navigation
+    isLoggedIn.value = checkIsLoggedIn();
+});
+onUnmounted(() => {
+    window.removeEventListener('storage', handleStorageChange);
+});
+
+// When logging in or out, update isLoggedIn
+function handleSignOut() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    document.cookie = 'access_token=; Max-Age=0; path=/;';
+    document.cookie = 'refresh_token=; Max-Age=0; path=/;';
+    isLoggedIn.value = false;
+    router.push('/auth/login');
+}
 
 // Announcements data
 const announcements = ref([

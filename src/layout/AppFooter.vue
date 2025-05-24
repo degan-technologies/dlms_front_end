@@ -2,14 +2,11 @@
 
 <template>
     <div class="layout-footer">
-        SAKAI by
-        <!-- Link to PrimeVue website -->
-        <a
-            href="https://primevue.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary font-bold hover:underline"
-            >PrimeVue</a
-        >
+        &copy; {{ currentYear }} Digital Library by
+        <a href="https://degantechnologies.com" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline"> Degan Technologies </a>
     </div>
 </template>
+
+<script setup>
+const currentYear = new Date().getFullYear();
+</script>

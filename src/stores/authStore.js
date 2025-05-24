@@ -35,6 +35,7 @@ export const useAuthStore = defineStore(
 
                 auth.value.isAuthenticated = true;
                 auth.value.user = user;
+                console.log('Logged-in user:', user);
                 toast.add({
                     severity: 'success',
                     summary: 'Success',
@@ -60,7 +61,6 @@ export const useAuthStore = defineStore(
                 auth.value.isSigning = false;
             }
         }
-
         // Auth check function
         async function authCheck() {
             try {

@@ -22,8 +22,9 @@ const router = createRouter({
                     component: () => import('@/views/pages/UserProfile.vue'),
                     meta: { requiresAuth: true }
                 },
+
                 // User Management Routes
-                
+
                 {
                     path: '/students/manage',
                     name: 'students-manage',
@@ -40,7 +41,7 @@ const router = createRouter({
                     path: '/admin/manage',
                     name: 'admin-manage',
                     component: () => import('@/views/pages/usermanagment/admin/AdminManage.vue'),
-                    meta: { requiresAuth: true,   }
+                    meta: { requiresAuth: true }
                 },
                 {
                     path: '/auth/register',
@@ -71,6 +72,13 @@ const router = createRouter({
                     component: () => import('@/views/pages/library/ManageLibrary.vue'),
                     meta: { requiresAuth: true, isAdminOrSuperAdmin: true }
                 },
+                {
+                    path: '/library/branches',
+                    name: 'manage-branches',
+                    component: () => import('@/views/pages/library/LibraryBranch.vue'),
+                    meta: { requiresAuth: true, isSuperAdmin: true }
+                },
+
                 {
                     path: '/books/physical/edit/:id',
                     name: 'physical-book-edit',
@@ -103,7 +111,7 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/EBookEdit.vue'),
                     meta: { requiresAuth: true, isLibrarian: true }
                 },
-                
+
                 {
                     path: '/books/ebooks/:id',
                     name: 'ebook-details',
@@ -180,11 +188,10 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/BorrowingHistory.vue'),
                     meta: { requiresAuth: true }
                 },
-                //fine related routes
                 {
-                    path: '/books/fines',
-                    name: 'fines-list',
-                    component: () => import('@/views/pages/book/PenalityFeeHistory.vue'),
+                    path: '/librarianReply',
+                    name: 'LibrarianReply',
+                    component: () => import('@/views/pages/library/LibrarianReply.vue'),
                     meta: { requiresAuth: true }
                 }
             ]
@@ -215,6 +222,12 @@ const router = createRouter({
             component: () => import('@/views/pages/reader/Reader.vue'),
             meta: { requiresAuth: true }
         },
+        {
+            path: '/my-profile',
+            name: 'my-profile',
+            component: () => import('@/views/pages/usermanagment/StudentProfile.vue'),
+            meta: { requiresAuth: true }
+        },
         // Authentication Routes
         {
             path: '/auth/login',
@@ -227,8 +240,6 @@ const router = createRouter({
             component: () => import('@/views/pages/home/Home.vue'),
             meta: { public: true }
         },
-
-      
         {
             path: '/auth/forgot-password',
             name: 'forgot-password',
@@ -254,6 +265,11 @@ const router = createRouter({
             path: '/:pathMatch(.*)*',
             name: 'not-found',
             component: () => import('@/views/pages/NotFound.vue')
+        },
+        {
+            path: '/student/ask-librarian',
+            name: 'AskLibrarian',
+            component: () => import('@/components/home/AskLibrarian.vue')
         }
     ]
 });
@@ -300,60 +316,152 @@ router.beforeEach(async (to, from, next) => {
             isInitialLoad = false;
         }
     }
+    // Define role constants outside the router guard for better maintainability
+    const ROLE = {
+        SUPER_ADMIN: 1,
+        ADMIN: 2,
+        LIBRARIAN: 3,
+        STAFF: 4,
+        STUDENT: 5
+    };
 
-    const { isAuthenticated, user } = authStore.getAuth;
+    router.beforeEach(async (to, from, next) => {
+        const authStore = useAuthStore();
+        const accessToken = Cookies.get('access_token');
 
-    // Check for public routes that don't require authentication
-    const isAuthRoute = to.path.startsWith('/auth/');
-
-    // If route requires authentication but user is not authenticated
-    if (to.meta.requiresAuth && !isAuthenticated) {
-        Cookies.remove('access_token');
-        return next({
-            path: '/auth/login',
-            query: { redirect: to.fullPath } // Store the attempted URL for later redirection
-        });
-    }
-
-    // Role-based access control
-    if (isAuthenticated && user) {
-        const userRoles = user?.user?.roles || [];
-        console.log('User Roles:', userRoles);
-        const userRoleIds = userRoles.map((role) => role.id);
-
-        // Ensure super-admin has unrestricted access
-        if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
+        // Skip authentication checks for home page and auth routes
+        if (to.path === '/' || to.path.startsWith('/auth/')) {
             return next();
         }
 
-        // Define conditions for access
-        const conditions = [
-            { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
-            { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
-            { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
-            { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
-            { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
-            {
-                metaKey: 'isAdminOrLibrarian',
-                condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
-                conditionSuperAdmin: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
-                redirect: '/auth/access-denied'
-            }
-        ];
-
-        // Check each condition
-        for (const { condition, redirect } of conditions) {
-            if (condition) {
-                return next(redirect);
+        // First time the app loads, check authentication status
+        if (isInitialLoad && !to.query.token) {
+            try {
+                // If we have a token but no user info, try to validate it
+                if (accessToken && (!authStore.getAuth.isAuthenticated || !authStore.getAuth.user)) {
+                    const isAuthenticated = await authStore.authCheck();
+                    if (!isAuthenticated) {
+                        Cookies.remove('access_token');
+                        isInitialLoad = false;
+                        return next('/auth/login');
+                    }
+                } else if (!accessToken) {
+                    isInitialLoad = false;
+                    return next('/auth/login');
+                }
+            } catch (error) {
+                console.error('Auth validation failed on initial load:', error);
+                Cookies.remove('access_token');
+            } finally {
+                isInitialLoad = false;
             }
         }
-    }
 
-    // Redirect authenticated users away from auth pages
-    if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
-        return next('/dashboard');
-    }
+        const { isAuthenticated, user } = authStore.getAuth;
 
+        // Check for public routes that don't require authentication
+        const isAuthRoute = to.path.startsWith('/auth/');
+
+        // If route requires authentication but user is not authenticated
+        if (to.meta.requiresAuth && !isAuthenticated) {
+            Cookies.remove('access_token');
+            return next({
+                path: '/auth/login',
+                query: { redirect: to.fullPath } // Store the attempted URL for later redirection
+            });
+        }
+
+        // Role-based access control
+        if (isAuthenticated && user) {
+            const userRoles = user?.user?.roles || [];
+            console.log('User Roles:', userRoles);
+            const userRoleIds = userRoles.map((role) => role.id);
+
+            // Ensure super-admin has unrestricted access
+            if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
+                return next();
+            }
+
+            // Define conditions for access
+            const conditions = [
+                { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
+                { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
+                { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
+                { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
+                { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
+                {
+                    metaKey: 'isAdminOrLibrarian',
+                    condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                    // eslint-disable-next-line no-dupe-keys
+                    condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
+                    redirect: '/auth/access-denied'
+                }
+            ];
+            // Check for public routes that don't require authentication
+            const isAuthRoute = to.path.startsWith('/auth/');
+
+            // If route requires authentication but user is not authenticated
+            if (to.meta.requiresAuth && !isAuthenticated) {
+                Cookies.remove('access_token');
+                return next({
+                    path: '/auth/login',
+                    query: { redirect: to.fullPath } // Store the attempted URL for later redirection
+                });
+            }
+
+            // Role-based access control
+            if (isAuthenticated && user) {
+                const userRoles = user?.user?.roles || [];
+                console.log('User Roles:', userRoles);
+                const userRoleIds = userRoles.map((role) => role.id);
+
+                // Ensure super-admin has unrestricted access
+                if (userRoleIds.includes(ROLE.SUPER_ADMIN)) {
+                    return next();
+                }
+
+                // Define conditions for access
+                const conditions = [
+                    { metaKey: 'isAdmin', condition: to.meta.isAdmin && !userRoleIds.includes(ROLE.ADMIN), redirect: '/auth/access-denied' },
+                    { metaKey: 'isSuperAdmin', condition: to.meta.isSuperAdmin && !userRoleIds.includes(ROLE.SUPER_ADMIN), redirect: '/auth/access-denied' },
+                    { metaKey: 'isLibrarian', condition: to.meta.isLibrarian && !userRoleIds.includes(ROLE.LIBRARIAN), redirect: '/auth/access-denied' },
+                    { metaKey: 'isStaff', condition: to.meta.isStaff && !userRoleIds.includes(ROLE.STAFF), redirect: '/auth/access-denied' },
+                    { metaKey: 'isStudent', condition: to.meta.isStudent && !userRoleIds.includes(ROLE.STUDENT), redirect: '/auth/access-denied' },
+                    {
+                        metaKey: 'isAdminOrLibrarian',
+                        condition: to.meta.isAdminOrLibrarian && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.LIBRARIAN].includes(roleId)),
+                        condition: to.meta.isAdminOrSuperAdmin && !userRoleIds.some((roleId) => [ROLE.ADMIN, ROLE.SUPER_ADMIN].includes(roleId)),
+                        redirect: '/auth/access-denied'
+                    }
+                ];
+
+                // Check each condition
+                for (const { condition, redirect } of conditions) {
+                    if (condition) {
+                        return next(redirect);
+                    }
+                }
+            }
+
+            // Redirect authenticated users away from auth pages
+            if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
+                return next('/dashboard');
+            }
+            // Check each condition
+            for (const { condition, redirect } of conditions) {
+                if (condition) {
+                    return next(redirect);
+                }
+            }
+        }
+
+        // Redirect authenticated users away from auth pages
+        if (isAuthRoute && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
+            return next('/dashboard');
+        }
+
+        next();
+    });
     next();
 });
 
