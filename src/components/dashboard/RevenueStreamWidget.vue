@@ -1,45 +1,58 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
+import axiosInstance from '@/util/axios-config';
 import { onMounted, ref, watch } from 'vue';
 
 const { getPrimary, getSurface, isDarkTheme } = useLayout();
 
 const chartData = ref(null);
 const chartOptions = ref(null);
+const gradeLabels = ref([]);
+const sectionMap = ref({}); // { 'A': [10, 12, 5], 'B': [4, 8, 9] }
+
+async function fetchChartData() {
+    try {
+        const response = await axiosInstance.get('/reading-performance');
+        const result = response.data.data; // ✅ Use .data.data
+        console.log('Reading Performance Data:', result);
+
+        const tempMap = {};
+        const grades = [];
+
+        result.forEach((grade) => {
+            grades.push(`Grade ${grade.name}`);
+
+            grade.sections.forEach((section) => {
+                if (!tempMap[section.name]) {
+                    tempMap[section.name] = [];
+                }
+                tempMap[section.name].push(section.read_count ?? 0);
+            });
+        });
+
+        gradeLabels.value = grades;
+        sectionMap.value = tempMap;
+        chartData.value = setChartData();
+    } catch (error) {
+        console.error('Failed to fetch reading performance:', error);
+    }
+}
 
 function setChartData() {
     const documentStyle = getComputedStyle(document.documentElement);
+    const sectionColors = ['--p-primary-400', '--p-primary-300', '--p-primary-200', '--p-primary-100'];
+
+    const datasets = Object.entries(sectionMap.value).map(([section, counts], idx) => ({
+        type: 'bar',
+        label: `Section ${section}`,
+        data: counts,
+        backgroundColor: documentStyle.getPropertyValue(sectionColors[idx % sectionColors.length]),
+        barThickness: 32
+    }));
 
     return {
-        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-        datasets: [
-            {
-                type: 'bar',
-                label: 'Subscriptions',
-                backgroundColor: documentStyle.getPropertyValue('--p-primary-400'),
-                data: [4000, 10000, 15000, 4000],
-                barThickness: 32
-            },
-            {
-                type: 'bar',
-                label: 'Advertising',
-                backgroundColor: documentStyle.getPropertyValue('--p-primary-300'),
-                data: [2100, 8400, 2400, 7500],
-                barThickness: 32
-            },
-            {
-                type: 'bar',
-                label: 'Affiliate',
-                backgroundColor: documentStyle.getPropertyValue('--p-primary-200'),
-                data: [4100, 5200, 3400, 7400],
-                borderRadius: {
-                    topLeft: 8,
-                    topRight: 8
-                },
-                borderSkipped: true,
-                barThickness: 32
-            }
-        ]
+        labels: gradeLabels.value,
+        datasets
     };
 }
 
@@ -51,6 +64,20 @@ function setChartOptions() {
     return {
         maintainAspectRatio: false,
         aspectRatio: 0.8,
+        plugins: {
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    label: function (context) {
+                        return `${context.dataset.label}: ${context.parsed.y}`;
+                    }
+                }
+            },
+            legend: {
+                display: true
+            }
+        },
         scales: {
             x: {
                 stacked: true,
@@ -64,6 +91,10 @@ function setChartOptions() {
             },
             y: {
                 stacked: true,
+                title: {
+                    display: true,
+                    text: 'Number of Students'
+                },
                 ticks: {
                     color: textMutedColor
                 },
@@ -82,15 +113,15 @@ watch([getPrimary, getSurface, isDarkTheme], () => {
     chartOptions.value = setChartOptions();
 });
 
-onMounted(() => {
-    chartData.value = setChartData();
+onMounted(async () => {
+    await fetchChartData();
     chartOptions.value = setChartOptions();
 });
 </script>
 
 <template>
     <div class="card">
-        <div class="font-semibold text-xl mb-4">Revenue Stream</div>
+        <div class="font-semibold text-xl mb-4">Reading Performance Metrics</div>
         <Chart type="bar" :data="chartData" :options="chartOptions" class="h-80" />
     </div>
 </template>
