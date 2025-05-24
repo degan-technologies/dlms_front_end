@@ -1,159 +1,159 @@
 <template>
-    <div class="bg-slate-50 font-sans pb-12 text-gray-800">
+    <div class="bg-gray-50 min-h-screen font-inter text-gray-800">
         <!-- Toast for notifications -->
         <Toast position="top-right" />
-        <!-- Top Navigation Bar -->
-        <header class="bg-gradient-to-r from-sky-50 to-white shadow-md border-b border-sky-100 py-3 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 relative group">
-                        <img src="https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" class="h-12 sm:h-16 md:h-20 relative z-10 object-cover" />
+        <!-- Modern Header with Udemy-style Navigation -->
+        <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+                    <!-- Logo and Brand -->
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <img src="https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" class="h-16 w-auto" />
+                        </div>
                     </div>
-                    <!-- Mobile menu button -->
-                    <button @click="showMobileMenu = !showMobileMenu" class="ml-4 md:hidden bg-sky-50 hover:bg-sky-100 p-2 rounded-md transition-colors flex items-center justify-center">
-                        <i class="pi pi-bars text-sky-600"></i>
-                    </button>
-                </div>
 
-                <!-- Desktop Navigation Links -->
-                <div class="hidden md:flex items-center gap-4 lg:gap-8 ml-4 lg:ml-8">
-                    <a href="#" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Browse all resources">
-                        <i class="pi pi-book"></i>
-                        <span>Library</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="/bookmarks" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your saved items">
-                        <i class="pi pi-bookmark"></i>
-                        <span>Bookmarks</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="/my-notes" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your reading notes">
-                        <i class="pi pi-pencil"></i>
-                        <span>My Notes</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="/history" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Resources you're currently using">
-                        <i class="pi pi-clock"></i>
-                        <span>History</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="/my-collection" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group" data-tooltip="Your curated collections">
-                        <i class="pi pi-th-large"></i>
-                        <span>My Collection</span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                </div>
+                    <!-- Center Search Bar (Udemy-style) -->
+                    <div class="hidden md:flex flex-1 max-w-lg mx-8">
+                        <div class="relative w-full">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="pi pi-search text-gray-400"></i>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="What do you want to learn?"
+                                class="w-full pl-10 pr-12 py-3 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-50 hover:bg-white transition-all"
+                            />
+                            <button class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                <div class="p-1.5 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors">
+                                    <i class="pi pi-search text-xs"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Desktop Navigation -->
+                    <nav class="hidden lg:flex items-center space-x-8">
+                        <RouterLink to="/my-notes" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1">
+                            <i class="pi pi-pencil text-xs"></i>
+                            Notes
+                        </RouterLink>
+                        <RouterLink to="/bookmarks" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1">
+                            <i class="pi pi-bookmark text-xs"></i>
+                            Bookmarks
+                        </RouterLink>
+                        <RouterLink to="/my-collection" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1">
+                            <i class="pi pi-heart text-xs"></i>
+                            My Collection
+                        </RouterLink>
 
-                <div class="flex items-center gap-2 sm:gap-4">
-                    <a
-                        href="/auth/login"
-                        class="px-3 py-1.5 sm:px-4 sm:py-2 md:px-5 md:py-2 text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1.5 rounded-md hover:bg-sky-50 transition-colors border border-sky-100 hover:border-sky-200 text-sm sm:text-base"
-                        data-tooltip="Sign in to your account"
-                    >
-                        <i class="pi pi-sign-in"></i>
-                        <span class="hidden xs:inline">Log In</span>
-                    </a>
+                        <!-- Notifications -->
+                        <button class="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
+                            <i class="pi pi-bell text-lg"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+
+                        <!-- User Menu -->
+                        <div class="flex items-center gap-3">
+                            <RouterLink to="/auth/login" class="px-4 py-2 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium text-sm"> Log in </RouterLink>
+                            <RouterLink to="/auth/register" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm"> Sign up </RouterLink>
+                        </div>
+                    </nav>
+
+                    <!-- Mobile Search & Menu -->
+                    <div class="flex items-center gap-2 md:hidden">
+                        <button class="p-2 text-gray-600 hover:text-purple-600 transition-colors">
+                            <i class="pi pi-search text-lg"></i>
+                        </button>
+                        <button @click="showMobileMenu = !showMobileMenu" class="p-2 text-gray-600 hover:text-purple-600 transition-colors" aria-label="Toggle menu">
+                            <i class="pi" :class="showMobileMenu ? 'pi-times' : 'pi-bars'"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
-
-        <!-- Mobile Menu Overlay -->
-        <div v-if="showMobileMenu" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 md:hidden">
-            <div class="h-full bg-white w-4/5 max-w-sm shadow-xl overflow-y-auto slide-in-left">
-                <div class="flex justify-between items-center p-4 border-b">
-                    <h3 class="text-xl font-semibold text-gray-800">Menu</h3>
-                    <button @click="showMobileMenu = false" class="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors">
+        <!-- Mobile Menu -->
+        <div v-show="showMobileMenu" class="fixed inset-0 z-50 md:hidden" @click.self="showMobileMenu = false">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"></div>
+            <div class="absolute top-0 right-0 h-full w-4/5 max-w-sm bg-white shadow-2xl transform transition-all duration-300 ease-out flex flex-col">
+                <!-- Mobile Header -->
+                <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Menu</h2>
+                    <button @click="showMobileMenu = false" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
                         <i class="pi pi-times text-gray-600"></i>
                     </button>
                 </div>
-                <div class="py-4">
-                    <a href="#" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 active:bg-sky-100 transition-colors text-gray-700">
-                        <div class="flex items-center gap-3">
-                            <i class="pi pi-book text-sky-600"></i>
-                            <span>Library</span>
+
+                <!-- Mobile Search -->
+                <div class="p-4 border-b border-gray-200">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="pi pi-search text-gray-400"></i>
                         </div>
-                    </a>
-                    <a href="/bookmarks" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 active:bg-sky-100 transition-colors text-gray-700">
-                        <div class="flex items-center gap-3">
-                            <i class="pi pi-bookmark text-sky-600"></i>
-                            <span>Bookmarks</span>
-                        </div>
-                    </a>
-                    <a href="/my-notes" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 active:bg-sky-100 transition-colors text-gray-700">
-                        <div class="flex items-center gap-3">
-                            <i class="pi pi-pencil text-sky-600"></i>
-                            <span>My Notes</span>
-                        </div>
-                    </a>
-                    <a href="/history" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 active:bg-sky-100 transition-colors text-gray-700">
-                        <div class="flex items-center gap-3">
-                            <i class="pi pi-clock text-sky-600"></i>
-                            <span>History</span>
-                        </div>
-                    </a>
-                    <a href="/my-collection" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 active:bg-sky-100 transition-colors text-gray-700">
-                        <div class="flex items-center gap-3">
-                            <i class="pi pi-th-large text-sky-600"></i>
-                            <span>My Collection</span>
-                        </div>
-                    </a>
-                    <div class="border-t mt-2 pt-2">
-                        <a href="/auth/login" @click="showMobileMenu = false" class="block px-4 py-3 hover:bg-sky-50 text-gray-700">
-                            <div class="flex items-center gap-3">
-                                <i class="pi pi-sign-in text-sky-600"></i>
-                                <span>Login / Register</span>
-                            </div>
-                        </a>
+                        <input type="text" placeholder="What do you want to learn?" class="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
                     </div>
+                </div>
+                <!-- Mobile Navigation Links -->
+                <nav class="flex-1 p-4 space-y-2">
+                    <RouterLink to="/my-notes" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
+                        <i class="pi pi-pencil text-lg"></i>
+                        <span class="font-medium">Notes</span>
+                    </RouterLink>
+                    <RouterLink to="/bookmarks" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
+                        <i class="pi pi-bookmark text-lg"></i>
+                        <span class="font-medium">Bookmarks</span>
+                    </RouterLink>
+                    <RouterLink to="/my-collection" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
+                        <i class="pi pi-heart text-lg"></i>
+                        <span class="font-medium">My Collection</span>
+                    </RouterLink>
+
+                    <div class="border-t border-gray-200 my-4"></div>
+
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
+                        <i class="pi pi-bell text-lg"></i>
+                        <span class="font-medium">Notifications</span>
+                        <span class="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
+                        <i class="pi pi-cog text-lg"></i>
+                        <span class="font-medium">Settings</span>
+                    </a>
+                </nav>
+
+                <!-- Mobile Auth Buttons -->
+                <div class="p-4 border-t border-gray-200 space-y-3">
+                    <RouterLink to="/auth/login" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center text-purple-600 border border-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"> Log in </RouterLink>
+                    <RouterLink to="/auth/register" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"> Sign up </RouterLink>
                 </div>
             </div>
         </div>
-
-        <!-- Announcement Section -->
-        <section v-if="announcements.length > 0 && showAnnouncements" class="bg-gradient-to-r from-amber-500/90 to-orange-400/90 py-3 relative z-20 shadow-md">
-            <div class="max-w-6xl mx-auto px-4">
-                <div class="relative">
-                    <div class="announcement-container relative h-[68px] overflow-hidden rounded-lg bg-amber-500/30 backdrop-blur-sm border border-white/20 px-4">
-                        <transition-group name="slide-fade" tag="div" class="relative py-2">
-                            <div v-for="announcement in visibleAnnouncement" :key="announcement.key || announcement.id" class="w-full h-[52px] flex items-center">
-                                <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full">
-                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center shadow-inner">
-                                        <i class="pi pi-megaphone text-white text-sm"></i>
-                                    </div>
-                                    <p class="font-medium flex-1 text-white text-shadow-sm leading-relaxed line-clamp-2">{{ announcement.message }}</p>
-                                    <div class="flex items-center gap-3 ml-auto">
-                                        <button
-                                            @click="learnMoreAboutAnnouncement(announcement)"
-                                            class="bg-white/20 hover:bg-white/30 text-white text-sm px-4 py-1.5 rounded-full transition-all duration-300 whitespace-nowrap backdrop-blur-sm border border-white/30 hover:shadow-lg"
-                                        >
-                                            Details
-                                        </button>
-                                        <button @click="dismissAnnouncement()" class="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white hover:text-white transition-all duration-300 border border-white/20">
-                                            <i class="pi pi-times text-sm"></i>
-                                        </button>
-                                    </div>
+        <!-- Udemy-style Announcement Banner -->
+        <section v-if="showAnnouncement && specialNotice" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="pi pi-megaphone text-white text-lg"></i>
                                 </div>
                             </div>
-                        </transition-group>
-                    </div>
-
-                    <!-- Announcement navigation -->
-                    <div class="flex justify-end items-center gap-4 mt-2 px-2">
-                        <div class="flex gap-2">
-                            <button
-                                v-for="(dot, index) in announcements.length"
-                                :key="index"
-                                @click="setCurrentAnnouncement(index)"
-                                class="w-2 h-2 rounded-full transition-all duration-300 dot-indicator"
-                                :class="index === currentAnnouncementIndex ? 'bg-white scale-125 shadow-sm' : 'bg-white/40 hover:bg-white/70'"
-                            ></button>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"> New </span>
+                                    <h3 class="text-white font-bold text-base sm:text-lg">
+                                        {{ specialNotice.title }}
+                                    </h3>
+                                </div>
+                                <p class="text-white text-opacity-90 text-sm leading-relaxed">
+                                    {{ specialNotice.message }}
+                                </p>
+                            </div>
                         </div>
-                        <div class="flex gap-1">
-                            <button @click="prevAnnouncement" class="w-6 h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-300 border border-white/20">
-                                <i class="pi pi-chevron-left text-xs"></i>
-                            </button>
-                            <button @click="nextAnnouncement" class="w-6 h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-300 border border-white/20">
-                                <i class="pi pi-chevron-right text-xs"></i>
+                        <div class="flex items-center gap-3">
+                            <button class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-sm font-medium rounded-lg transition-all duration-200 border border-white border-opacity-30">Learn more</button>
+                            <button @click="dismissAnnouncement" class="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors">
+                                <i class="pi pi-times text-white text-sm"></i>
                             </button>
                         </div>
                     </div>
@@ -166,66 +166,52 @@
 
         <!-- Stats Bar -->
         <StatsBar />
-
-        <!-- Featured Resources Section with Sidebar Filters -->
-        <section class="max-w-7xl mx-auto px-5 mt-12 featured-resources-section">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-                <div>
-                    <div class="text-indigo-600 font-semibold mb-1">CURATED FOR YOU</div>
-                    <h2 class="text-3xl font-bold">Featured Resources</h2>
+        <!-- Featured Resources Section with Enhanced Udemy-style Header -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                    <i class="pi pi-star-fill"></i>
+                    <span>FEATURED COURSES</span>
                 </div>
-                <div class="mt-4 md:mt-0">
-                    <button class="text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">View all resources <i class="pi pi-arrow-right"></i></button>
-                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Start learning with our top picks</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">Handpicked resources from our collection to accelerate your learning journey</p>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">
-                <!-- Filters Sidebar -->
-                <ResourceFilters />
-
-                <!-- Resources Grid -->
-                <ResourceGrid />
+                <!-- Enhanced Filters Sidebar -->
+                <ResourceFilters @filtersChanged="handleFiltersChanged" />
+                <!-- Enhanced Resources Grid -->
+                <ResourceGrid :filters="currentFilters" />
             </div>
         </section>
 
-        <!-- New Arrivals -->
+        <!-- Component Sections -->
         <NewArrivals />
-
-        <!-- Recently Viewed -->
         <RecentlyViewed />
-
-        <!-- Reading Lists -->
         <ReadingLists />
-
-        <!-- Quick Links -->
         <QuickLinks />
-
-        <!-- Resource Request Form -->
         <ResourceRequestForm />
 
-        <!-- Resource Modal -->
-        <ResourceModal />
-
-        <!-- Footer -->
-        <footer class="bg-slate-800 text-white pt-16 pb-8 mt-16">
+        <!-- Enhanced Footer -->
+        <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
             <div class="max-w-7xl mx-auto px-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     <div>
                         <h3 class="font-bold text-lg mb-6">About the Library</h3>
-                        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                        <p class="text-gray-300 text-sm mb-6 leading-relaxed">
                             Our digital library provides students and faculty with 24/7 access to thousands of academic resources, journals, books, and multimedia materials to support learning and research.
                         </p>
                         <div class="flex items-center gap-4">
-                            <a href="#" class="hover:text-sky-400 transition-colors">
+                            <a href="#" class="hover:text-indigo-400 transition-colors">
                                 <i class="pi pi-facebook text-lg"></i>
                             </a>
-                            <a href="#" class="hover:text-sky-400 transition-colors">
+                            <a href="#" class="hover:text-indigo-400 transition-colors">
                                 <i class="pi pi-twitter text-lg"></i>
                             </a>
-                            <a href="#" class="hover:text-sky-400 transition-colors">
+                            <a href="#" class="hover:text-indigo-400 transition-colors">
                                 <i class="pi pi-instagram text-lg"></i>
                             </a>
-                            <a href="#" class="hover:text-sky-400 transition-colors">
+                            <a href="#" class="hover:text-indigo-400 transition-colors">
                                 <i class="pi pi-youtube text-lg"></i>
                             </a>
                         </div>
@@ -233,64 +219,59 @@
 
                     <div>
                         <h3 class="font-bold text-lg mb-6">Quick Links</h3>
-                        <ul class="space-y-3 text-slate-300">
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">About Us</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Library Hours</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">FAQ</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Contact Us</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Policies</a></li>
+                        <ul class="space-y-3 text-gray-300">
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">About Us</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Library Hours</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">FAQ</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Contact Us</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Policies</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <h3 class="font-bold text-lg mb-6">Resources</h3>
-                        <ul class="space-y-3 text-slate-300">
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">E-Books</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Journals</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Academic Videos</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Research Guides</a></li>
-                            <li><a href="#" class="hover:text-sky-400 transition-colors">Citation Tools</a></li>
+                        <ul class="space-y-3 text-gray-300">
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">E-Books</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Journals</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Academic Videos</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Research Guides</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition-colors">Citation Tools</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <h3 class="font-bold text-lg mb-6">Contact Us</h3>
-                        <div class="space-y-4 text-slate-300 text-sm">
+                        <div class="space-y-4 text-gray-300 text-sm">
                             <div class="flex items-start gap-3">
-                                <i class="pi pi-map-marker mt-1 text-sky-400"></i>
+                                <i class="pi pi-map-marker mt-1 text-indigo-400"></i>
                                 <span>123 Library Lane<br />Education City, FL 12345</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <i class="pi pi-phone text-sky-400"></i>
+                                <i class="pi pi-phone text-indigo-400"></i>
                                 <span>(555) 123-4567</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <i class="pi pi-envelope text-sky-400"></i>
+                                <i class="pi pi-envelope text-indigo-400"></i>
                                 <span>library@school.edu</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <i class="pi pi-clock text-sky-400"></i>
+                                <i class="pi pi-clock text-indigo-400"></i>
                                 <span>Mon-Fri: 8am - 8pm</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="mt-16 pt-8 border-t border-slate-700 text-center text-slate-400 text-sm">
+                <div class="mt-16 pt-8 border-t border-gray-800 text-center text-gray-400 text-sm">
                     <p>&copy; {{ new Date().getFullYear() }} Digital Library Management System. All rights reserved.</p>
                 </div>
             </div>
         </footer>
+        <!-- Resource Modal -->
+        <!-- <ResourceModal /> -->
     </div>
 </template>
 
 <script setup>
-import { useHomeStore } from '@/stores/homeStore';
-import Toast from 'primevue/toast';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-
-// Import all modularized components
 import HeroSection from '@/components/home/HeroSection.vue';
 import NewArrivals from '@/components/home/NewArrivals.vue';
 import QuickLinks from '@/components/home/QuickLinks.vue';
@@ -298,91 +279,135 @@ import ReadingLists from '@/components/home/ReadingLists.vue';
 import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
-import ResourceModal from '@/components/home/ResourceModal.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+// import ResourceModal from '@/components/home/ResourceModal.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 
-// Router setup
-const router = useRouter();
+import Toast from 'primevue/toast';
+import { useToast } from 'primevue/usetoast';
+import { onMounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 
-// Initialize Pinia store
-const homeStore = useHomeStore();
-
-// Mobile menu state
+const toast = useToast();
 const showMobileMenu = ref(false);
+const loading = ref(false);
+const error = ref(null);
+const specialNotice = ref(null);
+const showAnnouncement = ref(true); // Controls the visibility of the announcement
+const currentFilters = ref({}); // For filter communication between components
 
-// Announcements data
-const announcements = ref([
-    { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
-    { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
-    { id: 3, message: 'Join our Book Club meeting every Friday at 4 PM in Room 204' },
-    { id: 4, message: 'New educational videos on Mathematics added to our digital collection' }
-]);
-const showAnnouncements = ref(true);
-const currentAnnouncementIndex = ref(0);
+// Add the missing libraryInfo definition
+const libraryInfo = ref({
+    name: 'Digital Learning Management System',
+    description: 'Your gateway to comprehensive educational resources',
+    totalResources: 10000,
+    activeUsers: 5000,
+    categories: 50,
+    special_notices: [
+        {
+            id: 1,
+            title: 'New Digital Collection Available',
+            message: 'Explore our latest collection of interactive science textbooks and multimedia resources.',
+            type: 'info',
+            active: true
+        }
+    ]
+});
 
-// Fetch data on component mount
+// Handle filter changes from ResourceFilters component
+const handleFiltersChanged = (filters) => {
+    console.log('Filters changed in Home:', filters);
+    currentFilters.value = filters;
+};
+
 onMounted(() => {
-    homeStore.fetchBookItem();
+    loading.value = true;
+    console.log('Home component mounted - initializing data');
 
-    // Start announcement rotation
-    announcementInterval = setInterval(() => {
-        nextAnnouncement();
-    }, 5000);
-});
-
-// Clean up on component unmount
-onUnmounted(() => {
-    if (announcementInterval) {
-        clearInterval(announcementInterval);
+    // Initialize with static data
+    if (libraryInfo.value?.special_notices?.length > 0) {
+        specialNotice.value = libraryInfo.value.special_notices[0];
     }
+
+    // Check if the user previously dismissed the announcement
+    if (localStorage.getItem('announcementDismissed') === 'true') {
+        showAnnouncement.value = false;
+    }
+
+    loading.value = false;
 });
 
-// Functions to manage announcements
+// Simplified function to simulate tracking resource views (no API calls)
+const trackResourceView = (resourceId) => {
+    console.log('Resource view tracked (simulation):', resourceId);
+};
+
+// Function to dismiss the announcement
 const dismissAnnouncement = () => {
-    showAnnouncements.value = false;
+    showAnnouncement.value = false;
+
+    // Optional: Store in localStorage to keep it dismissed between page reloads
+    localStorage.setItem('announcementDismissed', 'true');
+
+    toast.add({
+        severity: 'info',
+        summary: 'Notification Dismissed',
+        detail: 'You can reactivate notifications in settings',
+        life: 3000
+    });
 };
-
-const learnMoreAboutAnnouncement = (announcement) => {
-    console.log('Learn more about announcement:', announcement);
-    // In a real app, this would navigate to a detailed announcement page or show a modal
-};
-
-// Function to navigate to a specific announcement
-const setCurrentAnnouncement = (index) => {
-    currentAnnouncementIndex.value = index;
-};
-
-// Next announcement
-const nextAnnouncement = () => {
-    if (currentAnnouncementIndex.value < announcements.value.length - 1) {
-        currentAnnouncementIndex.value++;
-    } else {
-        currentAnnouncementIndex.value = 0;
-    }
-};
-
-// Previous announcement
-const prevAnnouncement = () => {
-    if (currentAnnouncementIndex.value > 0) {
-        currentAnnouncementIndex.value--;
-    } else {
-        currentAnnouncementIndex.value = announcements.value.length - 1;
-    }
-};
-
-// Compute the current visible announcement with improved transition handling
-const visibleAnnouncement = computed(() => {
-    // Using a keyed version to ensure Vue properly handles the transitions
-    const announcement = announcements.value[currentAnnouncementIndex.value];
-    return [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }];
-});
-
-// Rotate announcements every 5 seconds
-let announcementInterval;
 </script>
 
 <style scoped>
+/* Line clamp utilities for text truncation */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Backdrop blur fallback */
+@supports not (backdrop-filter: blur()) {
+    .backdrop-blur-sm {
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+    .backdrop-blur-md {
+        background-color: rgba(255, 255, 255, 0.85);
+    }
+}
+
+/* PrimeVue Dialog customization */
+:deep(.p-dialog) {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+:deep(.p-dialog-mask) {
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
 /* Carousel transitions */
 .slide-fade-enter-active,
 .slide-fade-leave-active {

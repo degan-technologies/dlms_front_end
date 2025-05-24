@@ -1,40 +1,41 @@
 <template>
-    <section class="bg-white py-12 px-5">
+    <section class="bg-gradient-to-br from-slate-50 to-indigo-50 py-16 px-5">
         <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="text-center mb-12">
+                <div class="text-indigo-600 font-semibold mb-2 tracking-widest uppercase">SUGGEST MATERIALS</div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Request a Resource</h2>
+                <p class="text-gray-600 text-lg max-w-3xl mx-auto">Can't find what you're looking for? Submit a request for resources you'd like to see in our library collection. We consider all suggestions to better serve your learning needs.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <!-- Content panel -->
-                <div>
-                    <div class="text-indigo-600 font-semibold mb-2">SUGGEST MATERIALS</div>
-                    <h2 class="text-3xl font-bold mb-6">Request a Resource</h2>
-                    <p class="text-gray-600 mb-6 leading-relaxed">Can't find what you're looking for? Submit a request for resources you'd like to see in our library collection. We consider all suggestions to better serve your learning needs.</p>
-
+                <div class="order-2 lg:order-1">
                     <!-- Benefits -->
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div class="flex items-start">
-                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="pi pi-check text-indigo-600"></i>
+                            <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="pi pi-check text-white text-lg"></i>
                             </div>
                             <div>
-                                <h3 class="font-medium">Expand Our Collection</h3>
-                                <p class="text-gray-600 text-sm">Help us build a more comprehensive library aligned with your interests</p>
+                                <h3 class="font-semibold text-lg text-gray-900 mb-2">Expand Our Collection</h3>
+                                <p class="text-gray-600">Help us build a more comprehensive library aligned with your interests and academic needs</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="pi pi-check text-indigo-600"></i>
+                            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="pi pi-clock text-white text-lg"></i>
                             </div>
                             <div>
-                                <h3 class="font-medium">Fast Response</h3>
-                                <p class="text-gray-600 text-sm">We review all requests within 48 hours and notify you of the decision</p>
+                                <h3 class="font-semibold text-lg text-gray-900 mb-2">Fast Response</h3>
+                                <p class="text-gray-600">We review all requests within 48 hours and notify you of our decision and acquisition timeline</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="pi pi-check text-indigo-600"></i>
+                            <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="pi pi-star text-white text-lg"></i>
                             </div>
                             <div>
-                                <h3 class="font-medium">Priority Access</h3>
-                                <p class="text-gray-600 text-sm">Be the first to access newly acquired resources you've requested</p>
+                                <h3 class="font-semibold text-lg text-gray-900 mb-2">Priority Access</h3>
+                                <p class="text-gray-600">Be the first to access newly acquired resources you've requested and get notified when available</p>
                             </div>
                         </div>
                     </div>

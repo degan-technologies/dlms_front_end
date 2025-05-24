@@ -1,24 +1,25 @@
 <template>
-    <section class="bg-slate-50 py-12 px-5">
+    <section class="bg-slate-50 py-16 px-5">
         <div class="max-w-7xl mx-auto">
-            <div class="mb-8">
-                <div class="text-indigo-600 font-semibold mb-1">QUICK ACCESS</div>
-                <h2 class="text-3xl font-bold">Library Services</h2>
+            <div class="mb-10">
+                <div class="text-indigo-600 font-semibold mb-2 tracking-widest uppercase">QUICK ACCESS</div>
+                <h2 class="text-3xl font-bold text-gray-900">Library Services</h2>
+                <p class="text-gray-600 text-lg mt-2">Access all library features in one place</p>
             </div>
 
             <!-- Quick links grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div v-for="(link, index) in quickLinks" :key="index" @click="navigateToLink(link)" class="bg-white rounded-xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
-                    <div class="h-3" :class="link.accentColor"></div>
-                    <div class="p-5">
-                        <div class="w-12 h-12 rounded-lg mb-4 flex items-center justify-center" :class="link.bgColor">
-                            <i :class="[link.icon, 'text-white text-lg']"></i>
+                <div v-for="(link, index) in quickLinks" :key="index" @click="navigateToLink(link)" class="bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+                    <div class="h-2" :class="link.accentColor"></div>
+                    <div class="p-6">
+                        <div class="w-14 h-14 rounded-xl mb-4 flex items-center justify-center" :class="link.bgColor">
+                            <i :class="[link.icon, 'text-white text-xl']"></i>
                         </div>
-                        <h3 class="font-semibold text-lg mb-2 group-hover:text-indigo-600 transition-colors">{{ link.title }}</h3>
+                        <h3 class="font-bold text-lg mb-2 group-hover:text-indigo-600 transition-colors">{{ link.title }}</h3>
                         <p class="text-gray-600 text-sm line-clamp-2 mb-4">{{ link.description }}</p>
-                        <div class="flex items-center text-indigo-600 font-medium text-sm group-hover:translate-x-1 transition-transform">
+                        <div class="flex items-center text-indigo-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
                             <span>Access now</span>
-                            <i class="pi pi-arrow-right ml-1 text-xs"></i>
+                            <i class="pi pi-arrow-right ml-2 text-xs"></i>
                         </div>
                     </div>
                 </div>
