@@ -1,3 +1,97 @@
+<script setup>
+import { storeToRefs } from 'pinia';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
+
+import HeroSection from '@/components/home/HeroSection.vue';
+import NewArrivals from '@/components/home/NewArrivals.vue';
+import QuickLinks from '@/components/home/QuickLinks.vue';
+import ReadingLists from '@/components/home/ReadingLists.vue';
+import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
+import ResourceFilters from '@/components/home/ResourceFilters.vue';
+import ResourceGrid from '@/components/home/ResourceGrid.vue';
+import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+import StatsBar from '@/components/home/StatsBar.vue';
+import { useAuthStore } from '@/stores/authStore';
+import { useHomeStore } from '@/stores/homeStore';
+const authStore = useAuthStore();
+
+const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
+
+// eslint-disable-next-line no-unused-vars
+const searchQuery = ref('');
+const currentAnnouncementIndex = ref(0);
+const showAnnouncements = ref(true);
+
+const logout = authStore.logout;
+
+import Toast from 'primevue/toast';
+
+const homeStore = useHomeStore();
+
+// Mobile menu state
+const showMobileMenu = ref(false);
+let announcementInterval;
+onMounted(() => {
+    authStore.authCheck();
+    homeStore.fetchBookItem();
+
+    // Start announcement rotation
+    announcementInterval = setInterval(() => {
+        nextAnnouncement();
+    }, 5000);
+});
+
+// Clean up on component unmount
+onUnmounted(() => {
+    if (announcementInterval) {
+        clearInterval(announcementInterval);
+    }
+});
+
+const announcements = ref([
+    { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
+    { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
+    { id: 3, message: 'Join our Book Club meeting every Friday at 4 PM in Room 204' },
+    { id: 4, message: 'New educational videos on Mathematics added to our digital collection' }
+]);
+
+// Functions to manage announcements
+const dismissAnnouncement = () => {
+    showAnnouncements.value = false;
+};
+
+const learnMoreAboutAnnouncement = (announcement) => {
+    console.log('Learn more about announcement:', announcement);
+    // Here you would navigate to detailed announcement page or show a modal
+    // For example: router.push({ name: 'announcement-details', params: { id: announcement.id } });
+};
+
+// Function to navigate to a specific announcement
+const setCurrentAnnouncement = (index) => {
+    currentAnnouncementIndex.value = index;
+};
+
+// Compute the current visible announcement with improved transition handling
+const visibleAnnouncement = computed(() => {
+    const announcement = announcements.value[currentAnnouncementIndex.value];
+    return announcement ? [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }] : [];
+});
+// Functions for announcement navigation with smoother transitions
+const nextAnnouncement = () => {
+    // Small timeout to ensure Vue has completed any ongoing transitions
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length;
+    }, 50);
+};
+
+const prevAnnouncement = () => {
+    setTimeout(() => {
+        currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
+    }, 50);
+};
+</script>
+
 <template>
     <div class="bg-gray-50 min-h-screen font-inter text-gray-800">
         <!-- Toast for notifications -->
@@ -266,6 +360,16 @@
                 </div>
             </div>
         </footer>
+        <!-- Chatbot Floating Button -->
+        <div class="fixed bottom-6 right-6 z-50">
+            <button @click="toggleChatbot" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Ask a Librarian">
+                <i class="pi pi-comments text-xl"></i>
+            </button>
+        </div>
+        <!-- Chatbot Modal -->
+        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center">
+            <AskLibrarian @some-event="toggleChatbot" />
+        </div>
         <!-- Resource Modal -->
         <!-- <ResourceModal /> -->
     </div>
@@ -290,6 +394,70 @@ import { RouterLink } from 'vue-router';
 
 const toast = useToast();
 const showMobileMenu = ref(false);
+
+// Profile dropdown state
+const showProfileMenu = ref(false);
+
+// Dropdown toggle
+function toggleProfileMenu() {
+    showProfileMenu.value = !showProfileMenu.value;
+}
+
+// Click outside handler to close dropdown
+function handleClickOutside(event) {
+    const menu = document.getElementById('profile-dropdown-menu');
+    const button = document.getElementById('profile-dropdown-button');
+    if (menu && !menu.contains(event.target) && button && !button.contains(event.target)) {
+        showProfileMenu.value = false;
+    }
+}
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
+
+// Sign out handler
+// function handleSignOut() {
+//     // Remove tokens from localStorage and cookies
+//     localStorage.removeItem('access_token');
+//     localStorage.removeItem('refresh_token');
+//     document.cookie = 'access_token=; Max-Age=0; path=/;';
+//     document.cookie = 'refresh_token=; Max-Age=0; path=/;';
+//     // Redirect to login page
+//     router.push('/auth/login');
+// }
+
+// Helper to check login status
+function checkIsLoggedIn() {
+    return !!localStorage.getItem('access_token') || document.cookie.includes('access_token');
+}
+
+const isLoggedIn = ref(checkIsLoggedIn());
+
+// Update isLoggedIn when storage changes (e.g., login/logout in another tab)
+function handleStorageChange() {
+    isLoggedIn.value = checkIsLoggedIn();
+}
+onMounted(() => {
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on mount in case of direct navigation
+    isLoggedIn.value = checkIsLoggedIn();
+});
+onUnmounted(() => {
+    window.removeEventListener('storage', handleStorageChange);
+});
+
+// When logging in or out, update isLoggedIn
+function handleSignOut() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    document.cookie = 'access_token=; Max-Age=0; path=/;';
+    document.cookie = 'refresh_token=; Max-Age=0; path=/;';
+    isLoggedIn.value = false;
+    router.push('/auth/login');
+}
 const loading = ref(false);
 const error = ref(null);
 const specialNotice = ref(null);
@@ -357,6 +525,7 @@ const dismissAnnouncement = () => {
     });
 };
 </script>
+-->
 
 <style scoped>
 /* Line clamp utilities for text truncation */

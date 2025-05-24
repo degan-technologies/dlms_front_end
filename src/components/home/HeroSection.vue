@@ -1,3 +1,12 @@
+<script setup>
+import { useHomeStore } from '@/stores/homeStore';
+import { storeToRefs } from 'pinia';
+
+const homeStore = useHomeStore();
+const { searchQuery } = storeToRefs(homeStore);
+const { searchResources, quickSearch } = homeStore;
+</script>
+
 <template>
     <!-- Ocean-themed Hero Section for Flipper's International School -->
     <section class="relative bg-white overflow-hidden">

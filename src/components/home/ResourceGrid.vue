@@ -1,3 +1,14 @@
+<script setup>
+import { useHomeStore } from '@/stores/homeStore';
+import { storeToRefs } from 'pinia';
+import Paginator from 'primevue/paginator';
+
+const homeStore = useHomeStore();
+const { loading, featuredResources, totalRecords, resourcesPerPage, first } = storeToRefs(homeStore);
+
+const { resetFilters, viewResource, capitalizeFirstLetter, onPageChange } = homeStore;
+</script>
+
 <template>
     <div class="lg:w-3/4">
         <!-- Enhanced Loading State -->
@@ -99,6 +110,7 @@
                             </div>
                         </div>
                     </div>
+                    <button v-if="resource.type.toLowerCase() === 'book'" @click="viewResource(resource)" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Details</button>
                 </div>
             </div>
         </div>
