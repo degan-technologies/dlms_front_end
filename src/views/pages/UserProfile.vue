@@ -115,9 +115,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength } from '@vuelidate/validators'
-import axios from 'axios'
+import axiosInstance from '@/util/axios-config' // <-- Use axiosInstance
 import { useToast } from 'primevue/usetoast'
-import Cookies from 'js-cookie' // Add this import
+import Cookies from 'js-cookie'
 
 const toast = useToast()
 const loading = ref(false)
@@ -169,11 +169,7 @@ async function fetchUser() {
     toast.add({ severity: 'error', summary: 'Error', detail: 'No access token found. Please log in again.', life: 3000 })
     return
   }
-  const response = await axios.get('http://localhost:8000/api/user', {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+  const response = await axiosInstance.get('/user')
   user.value = response.data.user
   editUser.value = {
     username: response.data.user.username || '',
@@ -189,20 +185,14 @@ async function saveProfile() {
     loading.value = true
     const isValid = await v$.value.editUser.$validate()
     if (!isValid) return
-
     let token = Cookies.get('access_token')
     if (!token) token = localStorage.getItem('access_token')
     if (!token) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'No access token found. Please log in again.', life: 3000 })
       return
     }
-
-    await axios.put('http://localhost:8000/api/user', editUser.value, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    await fetchUser() // <-- Fetch latest user data after update
+    await axiosInstance.put('/user', editUser.value)
+    await fetchUser()
     showEdit.value = false
     toast.add({ severity: 'success', summary: 'Success', detail: 'Profile updated successfully', life: 3000 })
   } catch (error) {
@@ -217,29 +207,21 @@ async function changePassword() {
     loading.value = true
     const isValid = await v$.value.passwords.$validate()
     if (!isValid) return
-
     if (passwords.value.new !== passwords.value.confirm) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'Passwords do not match', life: 3000 })
       return
     }
-
     let token = Cookies.get('access_token')
     if (!token) token = localStorage.getItem('access_token')
     if (!token) {
       toast.add({ severity: 'error', summary: 'Error', detail: 'No access token found. Please log in again.', life: 3000 })
       return
     }
-
-    await axios.post('http://localhost:8000/api/user', {
+    await axiosInstance.post('/user', {
       current_password: passwords.value.current,
       password: passwords.value.new,
       password_confirmation: passwords.value.confirm
-    }, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
     })
-
     showPassword.value = false
     passwords.value = { current: '', new: '', confirm: '' }
     toast.add({ severity: 'success', summary: 'Success', detail: 'Password changed successfully', life: 3000 })
@@ -272,7 +254,7 @@ async function sendResetLink() {
 
   loading.value = true
   try {
-    const response = await axios.post('http://localhost:8000/api/forgot-password', {
+    const response = await axiosInstance.post('/forgot-password', {
       email: forgotEmail.value
     })
     toast.add({ severity: 'success', summary: 'Success', detail: 'OTP sent to your email', life: 3000 })

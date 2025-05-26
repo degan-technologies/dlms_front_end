@@ -2,7 +2,7 @@
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import axiosInstance from '@/util/axios-config';
 
 const route = useRoute();
 const router = useRouter();
@@ -37,7 +37,7 @@ async function resetPassword() {
   try {
     loading.value = true;
 
-    const response = await axios.post('http://localhost:8000/api/reset-password', {
+    const response = await axiosInstance.post('/reset-password', {
       email: email.value,
       otp: otp.value,
       password: password.value,

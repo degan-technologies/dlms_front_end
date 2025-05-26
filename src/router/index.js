@@ -53,12 +53,14 @@ const router = createRouter({
                     component: () => import('@/views/pages/usermanagment/staff/StaffRegister.vue')
                 },
                 // Book Management Routes
+               
                 // {
-                //     path: '/books',
-                //     name: 'books-list',
-                //     component: () => import('@/views/pages/book/BooksList.vue'),
-                //     meta: { requiresAuth: true }
+                //     path: '/books/physical/create',
+                //     name: 'physical-book-create',
+                //     component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
                 // },
+               
                 // {
                 //     path: '/books/physical/create',
                 //     name: 'physical-book-create',
@@ -97,7 +99,37 @@ const router = createRouter({
                 //     component: () => import('@/views/pages/book/EBookEdit.vue'),
                 //     meta: { requiresAuth: true, isLibrarian: true }
                 // },
-
+                // {
+                //     path: '/books/ebooks',
+                //     name: 'ebooks-list',
+                //     component: () => import('@/views/pages/book/EBooksList.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/ebooks/create',
+                //     name: 'ebook-create',
+                //     component: () => import('@/views/pages/book/EBookCreate.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/books/ebooks/edit/:id',
+                //     name: 'ebook-edit',
+                //     component: () => import('@/views/pages/book/EBookEdit.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                
+                // {
+                //     path: '/books/ebooks/:id',
+                //     name: 'ebook-details',
+                //     component: () => import('@/views/pages/book/EBookDetails.vue'),
+                //     meta: { requiresAuth: true }
+                // },
+                // {
+                //     path: '/books/ebooks/read/:id',
+                //     name: 'ebook-reader',
+                //     component: () => import('@/views/pages/book/EBookReader.vue'),
+                //     meta: { requiresAuth: true }
+                // },
                 // {
                 //     path: '/books/ebooks/:id',
                 //     name: 'ebook-details',
