@@ -64,7 +64,7 @@ const quickLinks = ref([
         title: 'My Account',
         description: 'Manage your loans, holds, and account settings',
         icon: 'pi pi-user',
-        url: '/student/account',
+        url: '/my-profile',
         bgColor: 'bg-green-600',
         accentColor: 'bg-green-500'
     }
