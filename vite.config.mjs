@@ -9,7 +9,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
     optimizeDeps: {
         noDiscovery: true,
-        include: ['pusher-js']
+        include: ['pusher-js', 'pdfjs-dist', 'pako']
     },
     plugins: [
         vue(),

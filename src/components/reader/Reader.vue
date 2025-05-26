@@ -319,23 +319,23 @@ const addNote = async (noteData) => {
                 e_book_id: ebook.value.id,
                 content: noteData.content,
                 page_number: noteData.page_number,
-                highlight_text: noteData.highlight_text || ''
-                // Removed metadata field as it doesn't exist in database
+                highlight_text: noteData.highlight_text || null
             };
         } else if (isYouTube.value) {
             payload = {
                 e_book_id: ebook.value.id,
                 content: noteData.content,
-                timestamp: noteData.timestamp
+                timestamp: noteData.timestamp,
+                sent_at: noteData.sent_at || new Date().toISOString().slice(0, 19).replace('T', ' ')
             };
         }
 
         const response = await axiosInstance.post('/notes', payload);
 
-        // Add the new note to local state instead of fetching all notes again
+        // Add the new note to local state for live display
         if (response.data.data) {
             notes.value.push(response.data.data);
-            console.log('Note added to local state');
+            notes.value.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
         }
 
         toast.add({ severity: 'success', summary: 'Note Added', detail: 'Your note has been saved successfully', life: 3000 });
@@ -370,30 +370,26 @@ const addChatMessage = async (chatData) => {
             payload = {
                 e_book_id: ebook.value.id,
                 question: chatData.question,
-                is_anonymous: false, // Always set to false to fix validation errors
+                is_anonymous: false,
                 page_number: chatData.page_number,
-                highlight_text: chatData.highlight_text || ''
+                highlight_text: chatData.highlight_text || null
             };
         } else if (isYouTube.value) {
             payload = {
                 e_book_id: ebook.value.id,
                 question: chatData.question,
-                is_anonymous: false, // Always set to false to fix validation errors
-                timestamp: chatData.timestamp
+                is_anonymous: false,
+                timestamp: chatData.timestamp,
+                sent_at: chatData.sent_at || new Date().toISOString().slice(0, 19).replace('T', ' ')
             };
         }
 
         const response = await axiosInstance.post('/chat-messages', payload);
 
-        // Add the new chat message to local state instead of fetching all messages again
+        // Add the new chat message to local state for live display
         if (response.data.data) {
-            // Format the newly created message consistently
-            const newMessage = {
-                ...response.data.data,
-                creation_date: new Date().toLocaleString()
-            };
-            chatMessages.value.push(newMessage);
-            console.log('Chat message added to local state');
+            chatMessages.value.push(response.data.data);
+            chatMessages.value.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
         }
 
         toast.add({ severity: 'success', summary: 'Message Sent', detail: 'Your question has been sent successfully', life: 3000 });
