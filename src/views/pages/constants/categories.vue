@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 const toast = useToast();
 const categories = ref([]);
 const category = ref({});
@@ -17,6 +17,12 @@ const totalRecords = ref(0);
 const first = ref(0);
 const rows = ref(10); // Default rows per page
 const rowsPerPageOptions = [5, 10, 20, 50];
+const categorySearch = ref('');
+
+const filteredCategories = computed(() => {
+    if (!categorySearch.value) return categories.value;
+    return categories.value.filter((cat) => (cat.category_name && cat.category_name.toLowerCase().includes(categorySearch.value.toLowerCase())) || (cat.id && String(cat.id).includes(categorySearch.value)));
+});
 
 const loadCategories = async (page, pageSize = 10) => {
     loading.value = true;
@@ -217,9 +223,12 @@ onMounted(() => {
                         <Button label="Delete" icon="pi pi-trash" class="p-button-danger" @click="confirmDeleteSelected" :disabled="!selectedCategories || !selectedCategories.length" />
                     </template>
                 </Toolbar>
+                <div class="mb-3 flex items-center gap-2">
+                    <InputText v-model="categorySearch" placeholder="Search categories..." class="w-full max-w-xs" />
+                </div>
                 <div style="overflow: auto">
                     <DataTable
-                        :value="categories"
+                        :value="filteredCategories"
                         v-model:selection="selectedCategories"
                         dataKey="id"
                         :paginator="true"

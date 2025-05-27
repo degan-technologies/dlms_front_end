@@ -9,7 +9,7 @@ const toast = useToast();
 const loans = ref([]);
 const loading = ref(false);
 const totalRecords = ref(0);
-const rows = ref(15);
+const rows = ref(10);
 const page = ref(1);
 const filter = ref('');
 const status = ref('');
@@ -27,7 +27,9 @@ const fetchLoans = async () => {
         if (dateRange.value.length === 2) params.dateRange = dateRange.value;
         const res = await axiosInstance.get('/loans', { params });
         loans.value = res.data.data;
-        totalRecords.value = res.data.pagination.total_records;
+        // Only set totalRecords from meta, do not overwrite rows/page
+        const meta = res.data.meta || res.data.pagination || {};
+        totalRecords.value = meta.total_records ?? meta.total ?? totalRecords.value;
     } catch (error) {
         toast.add({
             severity: 'error',
@@ -41,6 +43,7 @@ const fetchLoans = async () => {
 };
 
 const onPage = (event) => {
+    // PrimeVue DataTable uses zero-based page index, but our API expects 1-based
     page.value = event.page + 1;
     rows.value = event.rows;
     fetchLoans();
@@ -209,13 +212,18 @@ function getDueStatus(loan) {
                             :loading="loading"
                             :paginator="true"
                             :rows="rows"
-                            :total-records="totalRecords"
+                            :totalRecords="totalRecords"
+                            :rowsPerPageOptions="[5, 10, 20, 50]"
+                            :first="(page - 1) * rows"
+                            :lazy="true"
                             @page="onPage"
                             dataKey="id"
                             responsive-layout="scroll"
                             class="p-datatable-sm min-w-full"
                             scrollable
                             style="min-width: 700px"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} loans"
                         >
                             <Column field="id" header="#" style="width: 4rem" />
                             <Column header="Book">
