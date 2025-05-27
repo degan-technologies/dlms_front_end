@@ -22,13 +22,22 @@ const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` re
 const searchQuery = ref('');
 const currentAnnouncementIndex = ref(0);
 const showAnnouncements = ref(true);
-
+const mobileMenuOpen = ref(false)
 const logout = authStore.logout;
 
 import Toast from 'primevue/toast';
 
 // Mobile menu state
 const showMobileMenu = ref(false);
+const showProfileMenu = ref(false);
+function toggleProfileMenu() {
+  showProfileMenu.value = !showProfileMenu.value;
+}
+function handleSignOut() {
+  logout();
+  showProfileMenu.value = false;
+  showMobileMenu.value = false;
+}
 let announcementInterval;
 onMounted(() => {
     authStore.authCheck();
@@ -101,6 +110,8 @@ const prevAnnouncement = () => {
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <img src="https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" class="h-16 w-auto" />
+        <!-- Top Navigation Bar -->
+        
                         </div>
                     </div>
 
@@ -122,8 +133,8 @@ const prevAnnouncement = () => {
                             </button>
                         </div>
                     </div>
-                    <!-- Desktop Navigation -->
-                    <nav class="hidden lg:flex items-center space-x-8">
+                    <!-- Desktop Navigation (already correct) -->
+                    <nav class="hidden md:flex items-center space-x-6">
                         <RouterLink to="/my-notes" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1">
                             <i class="pi pi-pencil text-xs"></i>
                             Notes
@@ -136,17 +147,30 @@ const prevAnnouncement = () => {
                             <i class="pi pi-heart text-xs"></i>
                             My Collection
                         </RouterLink>
-
-                        <!-- Notifications -->
                         <button class="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
                             <i class="pi pi-bell text-lg"></i>
                             <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
-
-                        <!-- User Menu -->
-                        <div class="flex items-center gap-3">
-                            <RouterLink to="/auth/login" class="px-4 py-2 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium text-sm"> Log in </RouterLink>
-                            <RouterLink to="/auth/register" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm"> Sign up </RouterLink>
+                        <div v-if="auth.isAuthenticated" class="relative">
+                            <button @click="toggleProfileMenu" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group">
+                                <i class="pi pi-user"></i>
+                                <span>My Account</span>
+                                <i class="pi pi-chevron-down text-xs ml-1" :class="{'rotate-180': showProfileMenu}" style="transition: transform 0.2s ease"></i>
+                            </button>
+                            <div v-if="showProfileMenu" class="absolute mt-6 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <RouterLink to="/my-profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2">
+                                        <i class="pi pi-user-edit text-sky-600"></i> My Profile
+                                    </RouterLink>
+                                    <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                        <i class="pi pi-sign-out text-red-500"></i> Sign Out
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="flex items-center gap-3">
+                          <RouterLink to="/auth/login" class="px-4 py-2 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium text-sm"> Log in </RouterLink>
+                          <RouterLink to="/auth/register" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm"> Sign up </RouterLink>
                         </div>
                     </nav>
 
@@ -197,25 +221,57 @@ const prevAnnouncement = () => {
                         <i class="pi pi-heart text-lg"></i>
                         <span class="font-medium">My Collection</span>
                     </RouterLink>
-
                     <div class="border-t border-gray-200 my-4"></div>
-
                     <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
                         <i class="pi pi-bell text-lg"></i>
                         <span class="font-medium">Notifications</span>
                         <span class="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
                     </a>
+                    <!-- My Account Dropdown (add here, before Settings) -->
+                    <template v-if="auth.isAuthenticated">
+                        <div>
+                            <button @click="toggleProfileMenu" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
+                                <i class="pi pi-user text-lg"></i>
+                                <span class="font-medium">My Account</span>
+                                <i class="pi pi-chevron-down ml-auto" :class="{'rotate-180': showProfileMenu}" style="transition: transform 0.2s ease"></i>
+                            </button>
+                            <div v-if="showProfileMenu" class="pl-8 pb-2">
+                                <RouterLink to="/my-profile" @click="showMobileMenu = false; showProfileMenu = false" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2">
+                                    <i class="pi pi-user-edit text-sky-600"></i> My Profile
+                                </RouterLink>
+                                <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                    <i class="pi pi-sign-out text-red-500"></i> Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </template>
                     <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
                         <i class="pi pi-cog text-lg"></i>
                         <span class="font-medium">Settings</span>
                     </a>
                 </nav>
 
-                <!-- Mobile Auth Buttons -->
-                <div class="p-4 border-t border-gray-200 space-y-3">
+                <!-- Mobile Auth Buttons (replace this section) -->
+                <!-- <div class="p-4 border-t border-gray-200 space-y-3">
+                  <template v-if="auth.isAuthenticated">
+                    <button @click="toggleProfileMenu" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 focus:outline-none">
+                      <span>My Account</span>
+                      <i class="pi pi-chevron-down ml-2" :class="{'rotate-180': showProfileMenu}" style="transition: transform 0.2s ease"></i>
+                    </button>
+                    <div v-if="showProfileMenu" class="pl-4 pb-2">
+                      <RouterLink to="/my-profile" @click="showMobileMenu = false; showProfileMenu = false" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2">
+                        <i class="pi pi-user-edit text-sky-600"></i> My Profile
+                      </RouterLink>
+                      <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2">
+                        <i class="pi pi-sign-out text-red-500"></i> Sign Out
+                      </button>
+                    </div>
+                  </template>
+                  <template v-else>
                     <RouterLink to="/auth/login" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center text-purple-600 border border-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"> Log in </RouterLink>
                     <RouterLink to="/auth/register" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"> Sign up </RouterLink>
-                </div>
+                  </template>
+                </div> -->
             </div>
         </div>
         <!-- Udemy-style Announcement Banner -->
@@ -371,157 +427,6 @@ const prevAnnouncement = () => {
         <!-- <ResourceModal /> -->
     </div>
 </template>
-
-<!-- <script setup>
-import HeroSection from '@/components/home/HeroSection.vue';
-import NewArrivals from '@/components/home/NewArrivals.vue';
-import QuickLinks from '@/components/home/QuickLinks.vue';
-import ReadingLists from '@/components/home/ReadingLists.vue';
-import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
-import ResourceFilters from '@/components/home/ResourceFilters.vue';
-import ResourceGrid from '@/components/home/ResourceGrid.vue';
-import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
-// import ResourceModal from '@/components/home/ResourceModal.vue';
-import StatsBar from '@/components/home/StatsBar.vue';
-
-import Toast from 'primevue/toast';
-import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
-
-const toast = useToast();
-const showMobileMenu = ref(false);
-
-// Profile dropdown state
-const showProfileMenu = ref(false);
-
-// Dropdown toggle
-function toggleProfileMenu() {
-    showProfileMenu.value = !showProfileMenu.value;
-}
-
-// Click outside handler to close dropdown
-function handleClickOutside(event) {
-    const menu = document.getElementById('profile-dropdown-menu');
-    const button = document.getElementById('profile-dropdown-button');
-    if (menu && !menu.contains(event.target) && button && !button.contains(event.target)) {
-        showProfileMenu.value = false;
-    }
-}
-onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-});
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-});
-
-// Sign out handler
-// function handleSignOut() {
-//     // Remove tokens from localStorage and cookies
-//     localStorage.removeItem('access_token');
-//     localStorage.removeItem('refresh_token');
-//     document.cookie = 'access_token=; Max-Age=0; path=/;';
-//     document.cookie = 'refresh_token=; Max-Age=0; path=/;';
-//     // Redirect to login page
-//     router.push('/auth/login');
-// }
-
-// Helper to check login status
-function checkIsLoggedIn() {
-    return !!localStorage.getItem('access_token') || document.cookie.includes('access_token');
-}
-
-const isLoggedIn = ref(checkIsLoggedIn());
-
-// Update isLoggedIn when storage changes (e.g., login/logout in another tab)
-function handleStorageChange() {
-    isLoggedIn.value = checkIsLoggedIn();
-}
-onMounted(() => {
-    window.addEventListener('storage', handleStorageChange);
-    // Also check on mount in case of direct navigation
-    isLoggedIn.value = checkIsLoggedIn();
-});
-onUnmounted(() => {
-    window.removeEventListener('storage', handleStorageChange);
-});
-
-// When logging in or out, update isLoggedIn
-function handleSignOut() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    document.cookie = 'access_token=; Max-Age=0; path=/;';
-    document.cookie = 'refresh_token=; Max-Age=0; path=/;';
-    isLoggedIn.value = false;
-    router.push('/auth/login');
-}
-const loading = ref(false);
-const error = ref(null);
-const specialNotice = ref(null);
-const showAnnouncement = ref(true); // Controls the visibility of the announcement
-const currentFilters = ref({}); // For filter communication between components
-
-// Add the missing libraryInfo definition
-const libraryInfo = ref({
-    name: 'Digital Learning Management System',
-    description: 'Your gateway to comprehensive educational resources',
-    totalResources: 10000,
-    activeUsers: 5000,
-    categories: 50,
-    special_notices: [
-        {
-            id: 1,
-            title: 'New Digital Collection Available',
-            message: 'Explore our latest collection of interactive science textbooks and multimedia resources.',
-            type: 'info',
-            active: true
-        }
-    ]
-});
-
-// Handle filter changes from ResourceFilters component
-const handleFiltersChanged = (filters) => {
-    console.log('Filters changed in Home:', filters);
-    currentFilters.value = filters;
-};
-
-onMounted(() => {
-    loading.value = true;
-    console.log('Home component mounted - initializing data');
-
-    // Initialize with static data
-    if (libraryInfo.value?.special_notices?.length > 0) {
-        specialNotice.value = libraryInfo.value.special_notices[0];
-    }
-
-    // Check if the user previously dismissed the announcement
-    if (localStorage.getItem('announcementDismissed') === 'true') {
-        showAnnouncement.value = false;
-    }
-
-    loading.value = false;
-});
-
-// Simplified function to simulate tracking resource views (no API calls)
-const trackResourceView = (resourceId) => {
-    console.log('Resource view tracked (simulation):', resourceId);
-};
-
-// Function to dismiss the announcement
-const dismissAnnouncement = () => {
-    showAnnouncement.value = false;
-
-    // Optional: Store in localStorage to keep it dismissed between page reloads
-    localStorage.setItem('announcementDismissed', 'true');
-
-    toast.add({
-        severity: 'info',
-        summary: 'Notification Dismissed',
-        detail: 'You can reactivate notifications in settings',
-        life: 3000
-    });
-};
-</script> -->
 
 <style scoped>
 /* Line clamp utilities for text truncation */

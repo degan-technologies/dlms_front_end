@@ -51,7 +51,7 @@ watchEffect(() => {
                 items: [
                     { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/books/borrowed' },
                     { label: 'Borrowing History', icon: 'pi pi-fw pi-clock', to: '/books/history' },
-                    { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' }
+                    { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/my-profile' }
                 ]
             },
             {
@@ -82,7 +82,7 @@ watchEffect(() => {
             ? {
                   items: [
                       { label: 'Manage Library Branch', icon: 'pi pi-fw pi-building', to: '/library/branches' },
-                      { label: 'Manage Admins', icon: 'pi pi-fw pi-user-plus', to: '/admins/manage' }
+                      { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' }
                   ]
               }
             : null,
@@ -94,7 +94,7 @@ watchEffect(() => {
                       { label: 'Manage Students', icon: 'pi pi-fw pi-users', to: '/students/manage' },
                       { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' },
                       { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/admin/roles' },
-                      { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/admin/settings' }
+                      { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/my-profile' }
                   ]
               }
             : null,
@@ -104,26 +104,25 @@ watchEffect(() => {
                 { label: 'All Books', icon: 'pi pi-fw pi-list', to: '/books' },
                 { label: 'E-Books', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks' },
                 { label: 'Digital Assets', icon: 'pi pi-fw pi-video', to: '/books/assets' },
-                { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/books/categories' },
+                { label: 'Categories', icon: 'pi pi-fw pi-tags', to: '/constants/categories' },
                 { label: 'Publishers', icon: 'pi pi-fw pi-building', to: '/books/publishers' }
             ]
         },
         {
             label: 'My Account',
             items: [
-                { label: 'Borrowed Items', icon: 'pi pi-fw pi-shopping-bag', to: '/books/borrowed' },
+                { label: 'Reservation History', icon: 'pi pi-fw pi-shopping-bag', to: '/books/reserved/history' },
                 { label: 'Borrowing History', icon: 'pi pi-fw pi-clock', to: '/books/history' },
-                { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/account/settings' }
+                { label: 'Profile Settings', icon: 'pi pi-fw pi-cog', to: '/my-profile' }
             ]
         },
         hasRole(ROLE.LIBRARIAN)
             ? {
                   label: 'Resource Management',
                   items: [
-                      { label: 'Add Physical Book', icon: 'pi pi-fw pi-book', to: '/books/physical/create' },
-                      { label: 'Add E-Book', icon: 'pi pi-fw pi-file-pdf', to: '/books/ebooks/create' },
-                      { label: 'Add Digital Asset', icon: 'pi pi-fw pi-plus-circle', to: '/books/assets/create' }
-
+                      { label: 'Languages and Subjects', icon: 'pi pi-fw pi-book', to: '/books/constants/langandsub' },
+                      { label: 'LoanHistory', icon: 'pi pi-fw pi-file-pdf', to: '/loans/loan/history' },
+                      { label: 'Fine History', icon: 'pi pi-fw pi-plus-circle', to: '/loans/fine/history' }
                   ]
               }
             : null,
