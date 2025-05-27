@@ -1,27 +1,3 @@
-<template>
-    <div>
-        <header>
-            <h1>{{ libraryInfo.name }}</h1>
-            <p>{{ libraryInfo.description }}</p>
-        </header>
-
-        <section id="resources-section">
-            <h2>Resources ({{ libraryInfo.totalResources }})</h2>
-            <!-- Resources content -->
-        </section>
-
-        <section id="collections-section">
-            <h2>Collections</h2>
-            <!-- Collections content -->
-        </section>
-
-        <footer>
-            <p>Active Users: {{ libraryInfo.activeUsers }}</p>
-            <p>Categories: {{ libraryInfo.categories }}</p>
-        </footer>
-    </div>
-</template>
-
 <script>
 export default {
     data() {
@@ -60,6 +36,29 @@ export default {
     }
 };
 </script>
+<template>
+    <div>
+        <header>
+            <h1>{{ libraryInfo.name }}</h1>
+            <p>{{ libraryInfo.description }}</p>
+        </header>
+
+        <section id="resources-section">
+            <h2>Resources ({{ libraryInfo.totalResources }})</h2>
+            <!-- Resources content -->
+        </section>
+
+        <section id="collections-section">
+            <h2>Collections</h2>
+            <!-- Collections content -->
+        </section>
+
+        <footer>
+            <p>Active Users: {{ libraryInfo.activeUsers }}</p>
+            <p>Categories: {{ libraryInfo.categories }}</p>
+        </footer>
+    </div>
+</template>
 
 <style scoped>
 /* Add your styles here */
