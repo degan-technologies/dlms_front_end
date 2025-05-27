@@ -1,16 +1,15 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { debounce } from 'lodash-es';
+import Button from 'primevue/button';
+import DataView from 'primevue/dataview';
 import { useConfirm } from 'primevue/useconfirm';
 import { onMounted, reactive, ref } from 'vue';
 
-import Button from 'primevue/button';
 import Column from 'primevue/column';
 import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
 
@@ -209,64 +208,71 @@ const onGlobalFilter = debounce(async (e) => {
         </div>
 
         <!-- Dialog -->
-        <Dialog :header="branch.id ? 'Edit Branch' : 'New Branch'" v-model:visible="dialog" modal :style="{ width: '600px' }" class="p-dialog-rounded">
-            <div class="card flex justify-center">
-                <Toast />
-                <Form
-                    :initialValues="{ branch_name: branch.branch_name, address: branch.address, contact_number: branch.contact_number, email: branch.email, opening_hours: branch.opening_hours, location: branch.location }"
-                    :resolver="
-                        ({ values }) => {
-                            const errors = {};
-                            const phoneRegex = /^\+251[0-9]{9}$/;
-                            const locationRegex = /^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+$/;
+        <Dialog :header="branch.id ? 'Edit Library Branch' : 'New Library Branch'" v-model:visible="dialog" modal :style="{ width: '700px' }" class="p-dialog-rounded surface-100 shadow-3">
+            <div class="p-fluid grid formgrid p-3 gap-4">
+                <!-- Branch Name -->
+                <div class="col-12 md:col-6">
+                    <label for="branch_name" class="font-semibold mb-2">Branch Name *</label>
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-building" />
+                        <InputText id="branch_name" v-model="branch.branch_name" placeholder="e.g. Central Library" :class="{ 'p-invalid': errors.branch_name }" class="w-full" />
+                    </span>
+                    <small v-if="errors.branch_name" class="p-error">{{ errors.branch_name[0] }}</small>
+                </div>
 
-                            if (!values.branch_name) errors.branch_name = [{ message: 'Branch name is required.' }];
-                            if (!values.address) errors.address = [{ message: 'Address is required.' }];
-                            if (values.contact_number && !phoneRegex.test(values.contact_number)) errors.contact_number = [{ message: 'Use +251 format with 9 digits after.' }];
-                            if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errors.email = [{ message: 'Invalid email format.' }];
-                            if (!values.location || !locationRegex.test(values.location)) errors.location = [{ message: 'Location must be in latitude,longitude format.' }];
+                <!-- Contact Number -->
+                <div class="col-12 md:col-6">
+                    <label for="contact_number" class="font-semibold mb-2">Contact Number</label>
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-phone" />
+                        <InputText id="contact_number" v-model="branch.contact_number" placeholder="+251912345678" :class="{ 'p-invalid': errors.contact_number }" class="w-full" />
+                    </span>
+                    <small v-if="errors.contact_number" class="p-error">{{ errors.contact_number[0] }}</small>
+                </div>
 
-                            return { errors };
-                        }
-                    "
-                    @submit="
-                        ({ valid, values }) => {
-                            if (valid) {
-                                Object.assign(branch, values);
-                                saveBranch();
-                            }
-                        }
-                    "
-                    class="flex flex-col gap-4 w-full"
-                >
-                    <InputText name="branch_name" v-model="branch.branch_name" placeholder="Enter branch name" />
-                    <small v-if="errors.branch_name" class="p-error">{{ errors.branch_name[0]?.message }}</small>
-                    <Textarea name="address" v-model="branch.address" rows="3" placeholder="Enter address" autoResize />
-                    <small v-if="errors.address" class="p-error">{{ errors.address[0]?.message }}</small>
-                    <InputText name="contact_number" v-model="branch.contact_number" placeholder="Enter contact number" />
-                    <small v-if="errors.contact_number" class="p-error">{{ errors.contact_number[0]?.message }}</small>
-                    <InputText name="email" v-model="branch.email" placeholder="Enter email" />
-                    <small v-if="errors.email" class="p-error">{{ errors.email[0]?.message }}</small>
-                    <Dropdown
-                        name="opening_hours"
-                        v-model="branch.opening_hours"
-                        :options="[
-                            { label: '08:00-17:00', value: '08:00-17:00' },
-                            { label: '09:00-18:00', value: '09:00-18:00' },
-                            { label: '10:00-19:00', value: '10:00-19:00' }
-                        ]"
-                        placeholder="Select opening hours"
-                    />
-                    <small v-if="errors.opening_hours" class="p-error">{{ errors.opening_hours[0]?.message }}</small>
-                    <InputText name="location" v-model="branch.location" placeholder="Latitude,Longitude" />
-                    <small v-if="errors.location" class="p-error">{{ errors.location[0]?.message }}</small>
+                <!-- Email -->
+                <div class="col-12 md:col-6">
+                    <label for="email" class="font-semibold mb-2">Email</label>
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-envelope" />
+                        <InputText id="email" v-model="branch.email" placeholder="branch@example.com" :class="{ 'p-invalid': errors.email }" class="w-full" />
+                    </span>
+                    <small v-if="errors.email" class="p-error">{{ errors.email[0] }}</small>
+                </div>
 
-                    <div class="flex justify-end gap-2">
-                        <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary" @click="hideDialog" />
-                        <Button label="Save" icon="pi pi-check" type="submit" class="p-button-primary" />
-                    </div>
-                </Form>
+                <!-- Opening Hours -->
+                <div class="col-12 md:col-6">
+                    <label for="opening_hours" class="font-semibold mb-2">Opening Hours</label>
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-clock" />
+                        <InputText id="opening_hours" v-model="branch.opening_hours" placeholder="08:00 - 17:00" :class="{ 'p-invalid': errors.opening_hours }" class="w-full" />
+                    </span>
+                    <small v-if="errors.opening_hours" class="p-error">{{ errors.opening_hours[0] }}</small>
+                </div>
+
+                <!-- Address -->
+                <div class="col-12">
+                    <label for="address" class="font-semibold mb-2">Address</label>
+                    <Textarea id="address" v-model="branch.address" autoResize rows="3" class="w-full" placeholder="123 Main St, Addis Ababa" />
+                </div>
+
+                <!-- Google Maps URL -->
+                <div class="col-12">
+                    <label for="location" class="font-semibold mb-2">Google Maps URL *</label>
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-map-marker" />
+                        <InputText id="location" v-model="branch.location" placeholder="https://maps.google.com/..." :class="{ 'p-invalid': errors.location }" class="w-full" />
+                    </span>
+                    <small v-if="errors.location" class="p-error">{{ errors.location[0] }}</small>
+                </div>
             </div>
+
+            <template #footer>
+                <div class="flex justify-content-between w-full">
+                    <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="hideDialog" />
+                    <Button label="Save" icon="pi pi-check" class="p-button-success" @click="saveBranch" />
+                </div>
+            </template>
         </Dialog>
 
         <ConfirmDialog />

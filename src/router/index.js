@@ -23,7 +23,10 @@ const router = createRouter({
                     component: () => import('@/views/pages/UserProfile.vue'),
                     meta: { requiresAuth: true }
                 },
+
+
                 // User Management Routes
+
                 {
                     path: '/students/manage',
                     name: 'students-manage',
@@ -248,6 +251,8 @@ const router = createRouter({
             component: () => import('@/views/pages/home/Home.vue'),
             meta: { public: true }
         },
+
+
         {
             path: '/auth/forgot-password',
             name: 'forgot-password',
