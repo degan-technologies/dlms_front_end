@@ -1,310 +1,3 @@
-<template>
-    <div class="card">
-        <!-- Add buttons to open modals -->
-        <div class="flex gap-2 mb-4">
-            <Button label="Add Book Item" icon="pi pi-plus" @click="showAddBookItemModal = true" />
-        </div>
-        <!-- Main Products Table -->
-        <DataTable
-            v-model:expandedRows="expandedRows"
-            v-model:filters="mainFilters"
-            v-model:editingRows="editingRows"
-            editMode="row"
-            paginator
-            :rows="pagination.perPage"
-            :totalRecords="pagination.total"
-            :rowsPerPageOptions="[5, 10, 15, 20, 50]"
-            :value="bookItems"
-            dataKey="id"
-            :loading="loading"
-            @rowExpand="onRowExpand"
-            @rowCollapse="onRowCollapse"
-            @row-edit-save="onRowEditSave"
-            @page="onPageChange"
-            tableStyle="min-width: 60rem"
-            :globalFilterFields="['title', 'author', 'description', 'cover_image_url', 'language', 'category', 'library', 'shelf', 'subject', 'grade']"
-            :pt="{
-                table: { style: 'min-width: 60rem' }
-            }"
-        >
-            <template #header>
-                <div class="flex flex-wrap justify-between gap-2 items-center">
-                    <div class="flex gap-2 items-center">
-                        <IconField>
-                            <InputIcon>
-                                <i class="pi pi-search" />
-                            </InputIcon>
-                            <InputText v-model="mainFilters['global'].value" placeholder="Search products..." />
-                        </IconField>
-                        <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" @change="onFilterChange" />
-                    </div>
-                    <div>
-                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
-                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
-                    </div>
-                </div>
-            </template>
-            <Column expander />
-            <Column field="title" header="Title" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
-            <Column field="author" header="Author" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
-            <Column field="description" header="Description" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
-            <Column field="cover_image" header="Cover Image" style="min-width: 100px; max-width: 150px">
-                <template #body="slotProps">
-                    <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
-                </template>
-                <template #editor="{ data, field }">
-                    <FileUpload mode="basic" name="cover" accept="image/*" :auto="false" chooseLabel="Upload Cover Image" class="w-full" />
-                </template>
-            </Column>
-            <Column field="language.name" header="Language" style="min-width: 100px; max-width: 120px">
-                <template #body="slotProps">
-                    {{ slotProps.data.language?.name }}
-                </template>
-            </Column>
-            <Column field="category.name" header="Category" style="min-width: 100px; max-width: 120px">
-                <template #body="slotProps">
-                    {{ slotProps.data.category?.name }}
-                </template>
-            </Column>
-            <Column field="library.name" header="Library" style="min-width: 100px; max-width: 120px">
-                <template #body="slotProps">
-                    {{ slotProps.data.library?.name }}
-                </template>
-            </Column>
-            <Column field="subject.name" header="Subject" style="min-width: 100px; max-width: 120px">
-                <template #body="slotProps">
-                    {{ slotProps.data.subject?.name }}
-                </template>
-            </Column>
-            <Column field="grade.name" header="Grade" style="min-width: 80px; max-width: 100px">
-                <template #body="slotProps">
-                    {{ slotProps.data.grade?.name }}
-                </template>
-            </Column>
-            <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
-            <template #expansion="slotProps">
-                <div class="p-4">
-                    <div>
-                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAllChildren(slotProps.data.id)" />
-                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAllChildren(slotProps.data.id)" />
-                    </div>
-                    <div class="flex items-center gap-2 mt-4 mb-2">
-                        <h5 class="cursor-pointer select-none mb-0" @click="toggleOrders(slotProps.data.id)">
-                            <i :class="ordersExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
-                            Physical Books for {{ slotProps.data.title }}
-                        </h5>
-                        <Button icon="pi pi-plus" text label="Add Book" @click="openAddBookModal(slotProps.data.id)" class="ml-2" />
-                    </div>
-                    <DataTable
-                        v-if="ordersExpanded[slotProps.data.id]"
-                        :value="slotProps.data.books"
-                        editMode="row"
-                        v-model:editingRows="booksEditingRows[slotProps.data.id]"
-                        @row-edit-save="(event) => onBookRowEditSave(event, slotProps.data)"
-                        paginator
-                        :rows="5"
-                        :rowsPerPageOptions="[5, 10, 20, 50]"
-                        dataKey="isbn"
-                        tableStyle="min-width: 60rem"
-                    >
-                        <template #header>
-                            <div class="flex flex-wrap justify-between gap-2 items-center">
-                                <div class="flex gap-2 items-center">
-                                    <IconField>
-                                        <InputIcon>
-                                            <i class="pi pi-search" />
-                                        </InputIcon>
-                                        <InputText v-model="booksFilters['global'].value" placeholder="Search books..." />
-                                    </IconField>
-                                    <Dropdown v-model="booksFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" />
-                                </div>
-                            </div>
-                        </template>
-                        <Column field="edition" header="Edition">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="title" header="Title">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="cover_image" header="Cover Image">
-                            <template #body="slotProps">
-                                <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
-                            </template>
-                        </Column>
-                        <Column field="pages" header="Pages">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="is_borrowable" header="Borrowable">
-                            <template #body="slotProps">
-                                {{ slotProps.data.is_borrowable ? 'Yes' : 'No' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <Dropdown v-model="data[field]" :options="borrowableOptions" optionLabel="label" optionValue="value" placeholder="Borrowable" />
-                            </template>
-                        </Column>
-                        <Column field="shelf" header="Shelf">
-                            <template #body="slotProps">
-                                {{ slotProps.data.shelf?.name || '-' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field].name" fluid />
-                            </template>
-                        </Column>
-                        <Column field="library" header="Library">
-                            <template #body="slotProps">
-                                {{ slotProps.data.library?.name || '-' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field].name" fluid />
-                            </template>
-                        </Column>
-                        <Column field="is_reserved" header="Reserved">
-                            <template #body="slotProps">
-                                {{ slotProps.data.is_reserved ? 'Yes' : 'No' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <Dropdown v-model="data[field]" :options="reservedOptions" optionLabel="label" optionValue="value" placeholder="Reserved" />
-                            </template>
-                        </Column>
-                        <Column field="publication_year" header="Publication Year">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column header="Actions" style="width: 80px; text-align: center">
-                            <template #body="slotProps">
-                                <Button icon="pi pi-pencil" text @click="openEditBookModal(slotProps.data)" class="p-1" />
-                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteBookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
-                            </template>
-                        </Column>
-                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
-                    </DataTable>
-                    <div class="flex items-center gap-2 mt-6 mb-2">
-                        <h5 class="cursor-pointer select-none mb-0" @click="toggleShipments(slotProps.data.id)">
-                            <i :class="shipmentsExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
-                            EBooks for {{ slotProps.data.title }}
-                        </h5>
-                        <Button icon="pi pi-plus" text label="Add Ebook" @click="openAddEbookModal(slotProps.data.id)" class="ml-2" />
-                    </div>
-                    <DataTable
-                        v-if="shipmentsExpanded[slotProps.data.id]"
-                        :value="slotProps.data.ebooks"
-                        editMode="row"
-                        v-model:editingRows="ebooksEditingRows[slotProps.data.id]"
-                        @row-edit-save="(event) => onEBookRowEditSave(event, slotProps.data)"
-                        paginator
-                        :rows="5"
-                        :rowsPerPageOptions="[5, 10, 20, 50]"
-                        dataKey="isbn"
-                        tableStyle="min-width: 60rem"
-                    >
-                        <template #header>
-                            <div class="flex flex-wrap justify-between gap-2 items-center">
-                                <div class="flex gap-2 items-center">
-                                    <IconField>
-                                        <InputIcon>
-                                            <i class="pi pi-search" />
-                                        </InputIcon>
-                                        <InputText v-model="ebooksFilters.global.value" placeholder="Search ebooks..." />
-                                    </IconField>
-
-                                    <Dropdown v-model="ebooksFilters.is_downloadable.value" :options="downloadableOptions" optionLabel="label" optionValue="value" placeholder="Downloadable" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="ebooksFilters.e_book_type_id.value" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" showClear style="min-width: 120px" />
-                                </div>
-                            </div>
-                        </template>
-                        <Column field="book_item_id" header="Book Item ID">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-
-                        <Column field="file_name" header="File Name">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-
-                        <Column field="file_size_mb" header="File Size (MB)">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="pages" header="Pages">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="is_downloadable" header="Downloadable">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="ebookType.name" header="Type">
-                            <template #body="slotProps">
-                                {{ slotProps.data.e_book_type?.name || '-' }}
-                            </template>
-                            <template #editor="{ data }">
-                                <Dropdown v-model="data.e_book_type_id" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" class="w-full" />
-                            </template>
-                        </Column>
-                        <Column header="Actions" style="width: 80px; text-align: center">
-                            <template #body="slotProps">
-                                <Button icon="pi pi-pencil" text @click="openEditEbookModal(slotProps.data)" class="p-1" />
-                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteEbookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
-                            </template>
-                        </Column>
-                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
-                    </DataTable>
-                    <Dialog v-model:visible="showDeleteDialog" header="Confirm Delete" :modal="true" :closable="true" :style="{ width: '350px' }">
-                        <div class="mb-4">Are you sure you want to delete this item?</div>
-                        <div class="flex justify-end gap-2">
-                            <Button label="Cancel" text @click="showDeleteDialog = false" />
-                            <Button label="Delete" severity="danger" @click="performDelete" />
-                        </div>
-                    </Dialog>
-                </div>
-            </template>
-        </DataTable>
-        <Toast />
-        <!-- Import modals from components -->
-        <AddBookItemDialog :visible="showAddBookItemModal" @update:visible="showAddBookItemModal = $event" :filter-options="mainFilterOptions" @book-item-added="onBookItemAdded" />
-
-        <EditBookItemDialog :visible="showEditBookItemModal" @update:visible="showEditBookItemModal = $event" :book-item="selectedBookItem" :filter-options="mainFilterOptions" @book-item-updated="onBookItemUpdated" />
-        <AddBookDialog :visible="showAddBookModal" @update:visible="showAddBookModal = $event" :book-item-id="addBookParentId" :filter-options="mainFilterOptions" @book-added="onBookAdded" />
-
-        <EditBookDialog :visible="showEditBookModal" @update:visible="showEditBookModal = $event" :book="selectedBook" :filter-options="mainFilterOptions" @book-updated="onBookUpdated" />
-
-        <AddEbookDialog :visible="showAddEbookModal" @update:visible="showAddEbookModal = $event" :book-item-id="addEbookParentId" :ebook-types="mainFilterOptions.ebook_types" @ebook-added="onEbookAdded" />
-
-        <EditEbookDialog :visible="showEditEbookModal" @update:visible="showEditEbookModal = $event" :ebook="selectedEbook" :ebook-types="mainFilterOptions.ebook_types" @ebook-updated="onEbookUpdated" />
-    </div>
-</template>
-
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { FilterMatchMode } from '@primevue/core/api';
@@ -622,7 +315,7 @@ const onEbookUpdated = () => {
 // Row edit handlers
 const onRowEditSave = async (event) => {
     try {
-        const { newData, index } = event;
+        const { newData } = event;
 
         await axiosInstance.put(`/book-items/${newData.id}`, newData);
 
@@ -663,7 +356,7 @@ const onEBookRowEditSave = async (event, bookItem) => {
 };
 
 // Delete handlers
-const confirmDeleteBookRow = (book, index, slotProps) => {
+const confirmDeleteBookRow = (book) => {
     showDeleteDialog.value = true;
     deleteAction = async () => {
         try {
@@ -684,7 +377,7 @@ const confirmDeleteBookRow = (book, index, slotProps) => {
     };
 };
 
-const confirmDeleteEbookRow = (ebook, index, slotProps) => {
+const confirmDeleteEbookRow = (ebook) => {
     showDeleteDialog.value = true;
     deleteAction = async () => {
         try {
@@ -760,3 +453,309 @@ const onFilterChange = () => {
     fetchBookItems();
 };
 </script>
+<template>
+    <div class="card">
+        <!-- Add buttons to open modals -->
+        <div class="flex gap-2 mb-4">
+            <Button label="Add Book Item" icon="pi pi-plus" @click="showAddBookItemModal = true" />
+        </div>
+        <!-- Main Products Table -->
+        <DataTable
+            v-model:expandedRows="expandedRows"
+            v-model:filters="mainFilters"
+            v-model:editingRows="editingRows"
+            editMode="row"
+            paginator
+            :rows="pagination.perPage"
+            :totalRecords="pagination.total"
+            :rowsPerPageOptions="[5, 10, 15, 20, 50]"
+            :value="bookItems"
+            dataKey="id"
+            :loading="loading"
+            @rowExpand="onRowExpand"
+            @rowCollapse="onRowCollapse"
+            @row-edit-save="onRowEditSave"
+            @page="onPageChange"
+            tableStyle="min-width: 60rem"
+            :globalFilterFields="['title', 'author', 'description', 'cover_image_url', 'language', 'category', 'library', 'shelf', 'subject', 'grade']"
+            :pt="{
+                table: { style: 'min-width: 60rem' }
+            }"
+        >
+            <template #header>
+                <div class="flex flex-wrap justify-between gap-2 items-center">
+                    <div class="flex gap-2 items-center">
+                        <IconField>
+                            <InputIcon>
+                                <i class="pi pi-search" />
+                            </InputIcon>
+                            <InputText v-model="mainFilters['global'].value" placeholder="Search products..." />
+                        </IconField>
+                        <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" @change="onFilterChange" />
+                    </div>
+                    <div>
+                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
+                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
+                    </div>
+                </div>
+            </template>
+            <Column expander />
+            <Column field="title" header="Title" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="author" header="Author" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="description" header="Description" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="cover_image" header="Cover Image" style="min-width: 100px; max-width: 150px">
+                <template #body="slotProps">
+                    <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
+                </template>
+                <template #editor="">
+                    <FileUpload mode="basic" name="cover" accept="image/*" :auto="false" chooseLabel="Upload Cover Image" class="w-full" />
+                </template>
+            </Column>
+            <Column field="language.name" header="Language" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.language?.name }}
+                </template>
+            </Column>
+            <Column field="category.name" header="Category" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.category?.name }}
+                </template>
+            </Column>
+            <Column field="library.name" header="Library" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.library?.name }}
+                </template>
+            </Column>
+            <Column field="subject.name" header="Subject" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.subject?.name }}
+                </template>
+            </Column>
+            <Column field="grade.name" header="Grade" style="min-width: 80px; max-width: 100px">
+                <template #body="slotProps">
+                    {{ slotProps.data.grade?.name }}
+                </template>
+            </Column>
+            <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+            <template #expansion="slotProps">
+                <div class="p-4">
+                    <div>
+                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAllChildren(slotProps.data.id)" />
+                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAllChildren(slotProps.data.id)" />
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 mb-2">
+                        <h5 class="cursor-pointer select-none mb-0" @click="toggleOrders(slotProps.data.id)">
+                            <i :class="ordersExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
+                            Physical Books for {{ slotProps.data.title }}
+                        </h5>
+                        <Button icon="pi pi-plus" text label="Add Book" @click="openAddBookModal(slotProps.data.id)" class="ml-2" />
+                    </div>
+                    <DataTable
+                        v-if="ordersExpanded[slotProps.data.id]"
+                        :value="slotProps.data.books"
+                        editMode="row"
+                        v-model:editingRows="booksEditingRows[slotProps.data.id]"
+                        @row-edit-save="(event) => onBookRowEditSave(event, slotProps.data)"
+                        paginator
+                        :rows="5"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                        dataKey="isbn"
+                        tableStyle="min-width: 60rem"
+                    >
+                        <template #header>
+                            <div class="flex flex-wrap justify-between gap-2 items-center">
+                                <div class="flex gap-2 items-center">
+                                    <IconField>
+                                        <InputIcon>
+                                            <i class="pi pi-search" />
+                                        </InputIcon>
+                                        <InputText v-model="booksFilters['global'].value" placeholder="Search books..." />
+                                    </IconField>
+                                    <Dropdown v-model="booksFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" />
+                                </div>
+                            </div>
+                        </template>
+                        <Column field="edition" header="Edition">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="title" header="Title">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="cover_image" header="Cover Image">
+                            <template #body="slotProps">
+                                <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
+                            </template>
+                        </Column>
+                        <Column field="pages" header="Pages">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_borrowable" header="Borrowable">
+                            <template #body="slotProps">
+                                {{ slotProps.data.is_borrowable ? 'Yes' : 'No' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown v-model="data[field]" :options="borrowableOptions" optionLabel="label" optionValue="value" placeholder="Borrowable" />
+                            </template>
+                        </Column>
+                        <Column field="shelf" header="Shelf">
+                            <template #body="slotProps">
+                                {{ slotProps.data.shelf?.name || '-' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field].name" fluid />
+                            </template>
+                        </Column>
+                        <Column field="library" header="Library">
+                            <template #body="slotProps">
+                                {{ slotProps.data.library?.name || '-' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field].name" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_reserved" header="Reserved">
+                            <template #body="slotProps">
+                                {{ slotProps.data.is_reserved ? 'Yes' : 'No' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown v-model="data[field]" :options="reservedOptions" optionLabel="label" optionValue="value" placeholder="Reserved" />
+                            </template>
+                        </Column>
+                        <Column field="publication_year" header="Publication Year">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column header="Actions" style="width: 80px; text-align: center">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-pencil" text @click="openEditBookModal(slotProps.data)" class="p-1" />
+                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteBookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
+                            </template>
+                        </Column>
+                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+                    </DataTable>
+                    <div class="flex items-center gap-2 mt-6 mb-2">
+                        <h5 class="cursor-pointer select-none mb-0" @click="toggleShipments(slotProps.data.id)">
+                            <i :class="shipmentsExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
+                            EBooks for {{ slotProps.data.title }}
+                        </h5>
+                        <Button icon="pi pi-plus" text label="Add Ebook" @click="openAddEbookModal(slotProps.data.id)" class="ml-2" />
+                    </div>
+                    <DataTable
+                        v-if="shipmentsExpanded[slotProps.data.id]"
+                        :value="slotProps.data.ebooks"
+                        editMode="row"
+                        v-model:editingRows="ebooksEditingRows[slotProps.data.id]"
+                        @row-edit-save="(event) => onEBookRowEditSave(event, slotProps.data)"
+                        paginator
+                        :rows="5"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                        dataKey="isbn"
+                        tableStyle="min-width: 60rem"
+                    >
+                        <template #header>
+                            <div class="flex flex-wrap justify-between gap-2 items-center">
+                                <div class="flex gap-2 items-center">
+                                    <IconField>
+                                        <InputIcon>
+                                            <i class="pi pi-search" />
+                                        </InputIcon>
+                                        <InputText v-model="ebooksFilters.global.value" placeholder="Search ebooks..." />
+                                    </IconField>
+
+                                    <Dropdown v-model="ebooksFilters.is_downloadable.value" :options="downloadableOptions" optionLabel="label" optionValue="value" placeholder="Downloadable" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="ebooksFilters.e_book_type_id.value" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" showClear style="min-width: 120px" />
+                                </div>
+                            </div>
+                        </template>
+                        <Column field="book_item_id" header="Book Item ID">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+
+                        <Column field="file_name" header="File Name">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+
+                        <Column field="file_size_mb" header="File Size (MB)">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="pages" header="Pages">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_downloadable" header="Downloadable">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="ebookType.name" header="Type">
+                            <template #body="slotProps">
+                                {{ slotProps.data.e_book_type?.name || '-' }}
+                            </template>
+                            <template #editor="{ data }">
+                                <Dropdown v-model="data.e_book_type_id" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" class="w-full" />
+                            </template>
+                        </Column>
+                        <Column header="Actions" style="width: 80px; text-align: center">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-pencil" text @click="openEditEbookModal(slotProps.data)" class="p-1" />
+                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteEbookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
+                            </template>
+                        </Column>
+                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+                    </DataTable>
+                    <Dialog v-model:visible="showDeleteDialog" header="Confirm Delete" :modal="true" :closable="true" :style="{ width: '350px' }">
+                        <div class="mb-4">Are you sure you want to delete this item?</div>
+                        <div class="flex justify-end gap-2">
+                            <Button label="Cancel" text @click="showDeleteDialog = false" />
+                            <Button label="Delete" severity="danger" @click="performDelete" />
+                        </div>
+                    </Dialog>
+                </div>
+            </template>
+        </DataTable>
+        <Toast />
+        <!-- Import modals from components -->
+        <AddBookItemDialog :visible="showAddBookItemModal" @update:visible="showAddBookItemModal = $event" :filter-options="mainFilterOptions" @book-item-added="onBookItemAdded" />
+
+        <EditBookItemDialog :visible="showEditBookItemModal" @update:visible="showEditBookItemModal = $event" :book-item="selectedBookItem" :filter-options="mainFilterOptions" @book-item-updated="onBookItemUpdated" />
+        <AddBookDialog :visible="showAddBookModal" @update:visible="showAddBookModal = $event" :book-item-id="addBookParentId" :filter-options="mainFilterOptions" @book-added="onBookAdded" />
+
+        <EditBookDialog :visible="showEditBookModal" @update:visible="showEditBookModal = $event" :book="selectedBook" :filter-options="mainFilterOptions" @book-updated="onBookUpdated" />
+
+        <AddEbookDialog :visible="showAddEbookModal" @update:visible="showAddEbookModal = $event" :book-item-id="addEbookParentId" :ebook-types="mainFilterOptions.ebook_types" @ebook-added="onEbookAdded" />
+
+        <EditEbookDialog :visible="showEditEbookModal" @update:visible="showEditEbookModal = $event" :ebook="selectedEbook" :ebook-types="mainFilterOptions.ebook_types" @ebook-updated="onEbookUpdated" />
+    </div>
+</template>

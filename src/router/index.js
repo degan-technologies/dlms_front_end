@@ -53,18 +53,30 @@ const router = createRouter({
                     component: () => import('@/views/pages/usermanagment/staff/StaffRegister.vue')
                 },
                 // Book Management Routes
-               
+                {
+                    path: '/loans/fine/history',
+                    name: 'FineHistory',
+                    component: () => import('@/views/pages/loan/fine.vue'),
+                    meta: { requiresAuth: true }
+                },
+                {
+                    path: '/books/constants/langandsub',
+                    name: 'language-and-subject',
+                    component: () => import('@/views/pages/constants/languages.vue'),
+                    meta: { requiresAuth: true, isLibrarian: true }
+                },
+
+                {
+                    path: '/constants/categories',
+                    name: 'categories-create',
+                    component: () => import('@/views/pages/constants/categories.vue'),
+                    meta: { requiresAuth: true, isLibrarian: true }
+                },
+
                 // {
                 //     path: '/books/physical/create',
                 //     name: 'physical-book-create',
-                //     component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
-                //     meta: { requiresAuth: true, isLibrarian: true }
-                // },
-               
-                // {
-                //     path: '/books/physical/create',
-                //     name: 'physical-book-create',
-                //     component: () => import('@/views/pages/book/PhysicalBookCreate.vue'),
+                //     component: () => import('@/views/pages/loan/languages.vue'),
                 //     meta: { requiresAuth: true, isLibrarian: true }
                 // },
                 {
@@ -99,37 +111,7 @@ const router = createRouter({
                 //     component: () => import('@/views/pages/book/EBookEdit.vue'),
                 //     meta: { requiresAuth: true, isLibrarian: true }
                 // },
-                // {
-                //     path: '/books/ebooks',
-                //     name: 'ebooks-list',
-                //     component: () => import('@/views/pages/book/EBooksList.vue'),
-                //     meta: { requiresAuth: true }
-                // },
-                // {
-                //     path: '/books/ebooks/create',
-                //     name: 'ebook-create',
-                //     component: () => import('@/views/pages/book/EBookCreate.vue'),
-                //     meta: { requiresAuth: true, isLibrarian: true }
-                // },
-                // {
-                //     path: '/books/ebooks/edit/:id',
-                //     name: 'ebook-edit',
-                //     component: () => import('@/views/pages/book/EBookEdit.vue'),
-                //     meta: { requiresAuth: true, isLibrarian: true }
-                // },
-                
-                // {
-                //     path: '/books/ebooks/:id',
-                //     name: 'ebook-details',
-                //     component: () => import('@/views/pages/book/EBookDetails.vue'),
-                //     meta: { requiresAuth: true }
-                // },
-                // {
-                //     path: '/books/ebooks/read/:id',
-                //     name: 'ebook-reader',
-                //     component: () => import('@/views/pages/book/EBookReader.vue'),
-                //     meta: { requiresAuth: true }
-                // },
+
                 // {
                 //     path: '/books/ebooks/:id',
                 //     name: 'ebook-details',
@@ -164,18 +146,18 @@ const router = createRouter({
                 // Category and Publisher Routes
 
                 // User borrowing and history routes
-                // {
-                //     path: '/books/borrowed',
-                //     name: 'borrowed-books',
-                //     component: () => import('@/views/pages/book/BorrowedBooks.vue'),
-                //     meta: { requiresAuth: true }
-                // },
-                // {
-                //     path: '/books/history',
-                //     name: 'borrowing-history',
-                //     component: () => import('@/views/pages/book/BorrowingHistory.vue'),
-                //     meta: { requiresAuth: true }
-                // },
+                {
+                    path: '/books/reserved/history',
+                    name: 'borrowed-books',
+                    component: () => import('@/views/pages/loan/reservations.vue'),
+                    meta: { requiresAuth: true }
+                },
+                {
+                    path: '/loans/loan/history',
+                    name: 'loan-history',
+                    component: () => import('@/views/pages/loan/loanHistory.vue'),
+                    meta: { requiresAuth: true }
+                },
                 {
                     path: '/librarianReply',
                     name: 'LibrarianReply',
