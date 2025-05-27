@@ -133,7 +133,7 @@ onMounted(fetchFines);
                     :loading="loadingFines"
                     :paginator="true"
                     :rows="fineRows"
-                    :total-records="totalFines"
+                    :totalRecords="totalFines"
                     @page="onFinePage"
                     dataKey="id"
                     responsive-layout="scroll"
