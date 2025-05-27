@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 
+import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import HeroSection from '@/components/home/HeroSection.vue';
 import NewArrivals from '@/components/home/NewArrivals.vue';
 import QuickLinks from '@/components/home/QuickLinks.vue';
@@ -11,9 +12,9 @@ import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+import SchoolBranch from '@/components/home/SchoolBranch.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 import { useAuthStore } from '@/stores/authStore';
-// import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
 
 const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
@@ -96,6 +97,13 @@ const prevAnnouncement = () => {
         currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
     }, 50);
 };
+
+// Chatbot modal state and toggle function
+const chatbotVisible = ref(false);
+const showChatbot = ref(false);
+const toggleChatbot = () => {
+    showChatbot.value = !showChatbot.value;
+};
 </script>
 
 <template>
@@ -111,7 +119,7 @@ const prevAnnouncement = () => {
                         <div class="flex-shrink-0">
                             <img src="https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" class="h-16 w-auto" />
         <!-- Top Navigation Bar -->
-        
+
                         </div>
                     </div>
 
@@ -338,7 +346,7 @@ const prevAnnouncement = () => {
         <ReadingLists />
         <QuickLinks />
         <ResourceRequestForm />
-
+        <SchoolBranch />
         <!-- Enhanced Footer -->
         <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
             <div class="max-w-7xl mx-auto px-5">
@@ -420,7 +428,7 @@ const prevAnnouncement = () => {
             </button>
         </div>
         <!-- Chatbot Modal -->
-        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center">
+        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center" @click.self="toggleChatbot">
             <AskLibrarian @some-event="toggleChatbot" />
         </div>
         <!-- Resource Modal -->
