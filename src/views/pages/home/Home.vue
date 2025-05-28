@@ -11,6 +11,7 @@ import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+import SchoolBranch from '@/components/home/SchoolBranch.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 // Note: AskLibrarian component would need to be created separately
 // import AskLibrarian from '@/components/home/AskLibrarian.vue';
@@ -19,7 +20,6 @@ import { useAuthStore } from '@/stores/authStore';
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
-// import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
 const router = useRouter();
 const toast = useToast();
@@ -66,7 +66,7 @@ const specialNotice = ref(null);
 const currentFilters = ref({});
 const searchCurrentPage = ref(1);
 const searchPerPage = ref(15);
-
+const mobileMenuOpen = ref(false);
 const logout = authStore.logout;
 
 import axiosInstance from '@/util/axios-config';
@@ -74,6 +74,15 @@ import Toast from 'primevue/toast';
 
 // Mobile menu state
 const showMobileMenu = ref(false);
+const showProfileMenu = ref(false);
+function toggleProfileMenu() {
+    showProfileMenu.value = !showProfileMenu.value;
+}
+function handleSignOut() {
+    logout();
+    showProfileMenu.value = false;
+    showMobileMenu.value = false;
+}
 let announcementInterval;
 onMounted(() => {
     authStore.authCheck();
@@ -131,6 +140,13 @@ const prevAnnouncement = () => {
     setTimeout(() => {
         currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
     }, 50);
+};
+
+// Chatbot modal state and toggle function
+const chatbotVisible = ref(false);
+const showChatbot = ref(false);
+const toggleChatbot = () => {
+    showChatbot.value = !showChatbot.value;
 };
 
 // Navigate to ebook details
@@ -430,8 +446,10 @@ const toggleFilterSection = (section) => {
                         <div class="flex-shrink-0">
                             <img src="https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" class="h-16 w-auto" />
                         </div>
-                    </div>                    <!-- Desktop Navigation -->
-                    <nav class="hidden lg:flex items-center space-x-8">                        <!-- Lollipop Search Button -->
+                    </div>
+                    <!-- Desktop Navigation -->
+                    <nav class="hidden lg:flex items-center space-x-8">
+                        <!-- Lollipop Search Button -->
                         <button @click="openSearchDialog" class="group relative flex items-center gap-3 p-2 text-gray-600 hover:text-gray-800 transition-all duration-300 transform hover:scale-105">
                             <!-- Lollipop-style Search Icon -->
                             <div class="relative">
@@ -445,16 +463,14 @@ const toggleFilterSection = (section) => {
                                 </div>
                                 <!-- Lollipop stick (search handle) -->
                                 <div class="absolute -bottom-1 -right-1 w-4 h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transform rotate-45 transition-all duration-300 group-hover:scale-125 shadow-md"></div>
-                                
+
                                 <!-- Subtle floating elements -->
                                 <div class="absolute -top-1 -right-1 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:animate-pulse"></div>
                                 <div class="absolute -bottom-1 left-2 w-0.5 h-0.5 bg-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:animate-bounce"></div>
                             </div>
-                            
+
                             <!-- Professional text label -->
-                            <span class="hidden xl:inline font-medium text-base group-hover:font-semibold transition-all duration-300">
-                                Search
-                            </span>
+                            <span class="hidden xl:inline font-medium text-base group-hover:font-semibold transition-all duration-300"> Search </span>
                         </button>
 
                         <RouterLink to="/my-notes" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1">
@@ -469,19 +485,29 @@ const toggleFilterSection = (section) => {
                             <i class="pi pi-heart text-xs"></i>
                             My Collection
                         </RouterLink>
-
-                        <!-- Notifications -->
                         <button class="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
                             <i class="pi pi-bell text-lg"></i>
                             <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
-
-                        <!-- User Menu -->
-                        <div class="flex items-center gap-3">
+                        <div v-if="auth.isAuthenticated" class="relative">
+                            <button @click="toggleProfileMenu" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group">
+                                <i class="pi pi-user"></i>
+                                <span>My Account</span>
+                                <i class="pi pi-chevron-down text-xs ml-1" :class="{ 'rotate-180': showProfileMenu }" style="transition: transform 0.2s ease"></i>
+                            </button>
+                            <div v-if="showProfileMenu" class="absolute mt-6 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <RouterLink to="/my-profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2"> <i class="pi pi-user-edit text-sky-600"></i> My Profile </RouterLink>
+                                    <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="pi pi-sign-out text-red-500"></i> Sign Out</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="flex items-center gap-3">
                             <RouterLink to="/auth/login" class="px-4 py-2 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium text-sm"> Log in </RouterLink>
                             <RouterLink to="/auth/register" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm"> Sign up </RouterLink>
                         </div>
-                    </nav>                    <!-- Mobile Search & Menu -->
+                    </nav>
+                    <!-- Mobile Search & Menu -->
                     <div class="flex items-center gap-2 md:hidden">
                         <button @click="openSearchDialog" class="group relative p-3 text-gray-700 hover:text-purple-600 transition-all duration-300 transform hover:scale-110">
                             <div class="relative">
@@ -543,25 +569,62 @@ const toggleFilterSection = (section) => {
                         <i class="pi pi-heart text-lg"></i>
                         <span class="font-medium">My Collection</span>
                     </RouterLink>
-
                     <div class="border-t border-gray-200 my-4"></div>
-
                     <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
                         <i class="pi pi-bell text-lg"></i>
                         <span class="font-medium">Notifications</span>
                         <span class="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
                     </a>
+                    <!-- My Account Dropdown (add here, before Settings) -->
+                    <template v-if="auth.isAuthenticated">
+                        <div>
+                            <button @click="toggleProfileMenu" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
+                                <i class="pi pi-user text-lg"></i>
+                                <span class="font-medium">My Account</span>
+                                <i class="pi pi-chevron-down ml-auto" :class="{ 'rotate-180': showProfileMenu }" style="transition: transform 0.2s ease"></i>
+                            </button>
+                            <div v-if="showProfileMenu" class="pl-8 pb-2">
+                                <RouterLink
+                                    to="/my-profile"
+                                    @click="
+                                        showMobileMenu = false;
+                                        showProfileMenu = false;
+                                    "
+                                    class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-user-edit text-sky-600"></i> My Profile
+                                </RouterLink>
+                                <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="pi pi-sign-out text-red-500"></i> Sign Out</button>
+                            </div>
+                        </div>
+                    </template>
                     <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
                         <i class="pi pi-cog text-lg"></i>
                         <span class="font-medium">Settings</span>
                     </a>
                 </nav>
 
-                <!-- Mobile Auth Buttons -->
-                <div class="p-4 border-t border-gray-200 space-y-3">
+                <!-- Mobile Auth Buttons (replace this section) -->
+                <!-- <div class="p-4 border-t border-gray-200 space-y-3">
+                  <template v-if="auth.isAuthenticated">
+                    <button @click="toggleProfileMenu" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 focus:outline-none">
+                      <span>My Account</span>
+                      <i class="pi pi-chevron-down ml-2" :class="{'rotate-180': showProfileMenu}" style="transition: transform 0.2s ease"></i>
+                    </button>
+                    <div v-if="showProfileMenu" class="pl-4 pb-2">
+                      <RouterLink to="/my-profile" @click="showMobileMenu = false; showProfileMenu = false" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2">
+                        <i class="pi pi-user-edit text-sky-600"></i> My Profile
+                      </RouterLink>
+                      <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2">
+                        <i class="pi pi-sign-out text-red-500"></i> Sign Out
+                      </button>
+                    </div>
+                  </template>
+                  <template v-else>
                     <RouterLink to="/auth/login" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center text-purple-600 border border-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"> Log in </RouterLink>
                     <RouterLink to="/auth/register" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"> Sign up </RouterLink>
-                </div>
+                  </template>
+                </div> -->
             </div>
         </div>
         <!-- Udemy-style Announcement Banner -->
@@ -630,7 +693,7 @@ const toggleFilterSection = (section) => {
         <ReadingLists />
         <QuickLinks />
         <ResourceRequestForm />
-
+        <SchoolBranch />
         <!-- Enhanced Footer -->
         <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
             <div class="max-w-7xl mx-auto px-5">
@@ -714,7 +777,7 @@ const toggleFilterSection = (section) => {
         <!-- Chatbot Modal -->
         <!-- Note: AskLibrarian component needs to be created -->
         <!--
-        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center">
+        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center" @click.self="toggleChatbot">
             <AskLibrarian @some-event="toggleChatbot" />
         </div>
         -->

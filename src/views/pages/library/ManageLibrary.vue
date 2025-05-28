@@ -1,18 +1,16 @@
 <script setup>
-// NOTE: Ensure primeflex.css is imported in your main.js:
-// import 'primeflex/primeflex.css';
 import axiosInstance from '@/util/axios-config';
+import { debounce } from 'lodash-es';
+import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
 import { useConfirm } from 'primevue/useconfirm';
 import { onMounted, reactive, ref } from 'vue';
-
-import { debounce } from 'lodash-es';
 
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import ConfirmDialog from 'primevue/confirmdialog';
 import DataView from 'primevue/dataview';
 import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
 
@@ -227,38 +225,23 @@ const onGlobalFilter = debounce(async (e) => {
         <Dialog :header="library.id ? 'Edit Library' : 'New Library'" v-model:visible="dialog" modal :style="{ width: '600px' }" class="p-dialog-rounded">
             <div class="card flex justify-center">
                 <Toast />
-                <Form
-                    :initialValues="{ name: library.name, contact_number: library.contact_number, library_branch_id: library.library_branch_id }"
-                    :resolver="
-                        ({ values }) => {
-                            const errors = {};
-                            if (!values.name) errors.name = [{ message: 'Library name is required.' }];
-                            if (!values.contact_number) errors.contact_number = [{ message: 'Contact number is required.' }];
-                            // if (!values.address) errors.address = [{ message: 'Address is required.' }];
-                            if (!values.library_branch_id) errors.library_branch_id = [{ message: 'Library branch is required.' }];
-                            return { errors };
-                        }
-                    "
-                    @submit="
-                        ({ valid, values }) => {
-                            if (valid) {
-                                Object.assign(library, values);
-                                saveLibrary();
-                            }
+                <form
+                    @submit.prevent="
+                        () => {
+                            saveLibrary();
                         }
                     "
                     class="flex flex-col gap-4 w-full"
                 >
                     <InputText name="name" v-model="library.name" placeholder="Enter library name" />
                     <InputText name="contact_number" v-model="library.contact_number" placeholder="Enter contact number" />
-                    <!-- <Textarea name="address" v-model="library.address" rows="3" placeholder="Enter address" autoResize /> -->
-                    <Select name="library_branch_id" v-model="library.library_branch_id" :options="branches" optionLabel="label" optionValue="value" placeholder="Select a branch" />
+                    <Dropdown name="library_branch_id" v-model="library.library_branch_id" :options="branches" optionLabel="label" optionValue="value" placeholder="Select a branch" />
                     <small v-if="errors.library_branch_id" class="p-error">{{ errors.library_branch_id[0]?.message }}</small>
                     <div class="flex justify-end gap-2">
                         <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary" @click="hideDialog" />
                         <Button label="Save" icon="pi pi-check" type="submit" class="p-button-primary" />
                     </div>
-                </Form>
+                </form>
             </div>
         </Dialog>
 

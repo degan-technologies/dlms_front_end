@@ -21,6 +21,7 @@
         "jspdf": "^3.0.1",
         "jspdf-autotable": "^5.0.2",
         "laravel-echo": "^2.1.4",
+        "lodash-es": "^4.17.21",
         "pdf-lib": "^1.17.1",
         "pinia": "^3.0.2",
         "pinia-plugin-persistedstate": "^4.3.0",
@@ -33,6 +34,7 @@
         "vue-pdf": "^4.3.0",
         "vue-pdf-embed": "^2.1.2",
         "vue-router": "^4.4.0",
+        "vue3-google-map": "^0.22.0",
         "xlsx": "^0.18.5",
         "youtube-transcript": "^1.2.1",
         "zod": "^3.25.13"
