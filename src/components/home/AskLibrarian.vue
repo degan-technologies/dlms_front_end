@@ -1,15 +1,11 @@
 <template>
     <div class="fixed bottom-6 right-6 flex flex-col items-end z-50 space-y-2">
-        <!-- Buttons -->
-        <button @click="toggleChat" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">Ask a Librarian</button>
-        <button @click="openTawk" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">Live Support</button>
-
         <!-- Custom Chat Panel -->
         <transition name="slide-fade">
-            <section v-if="isOpen" class="mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow-xl border border-indigo-100 flex flex-col">
+            <section v-if="chatStore.isChatOpen" class="mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow-xl border border-indigo-100 flex flex-col">
                 <header class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3">
                     <h2 class="font-semibold text-lg select-none">Ask a Librarian</h2>
-                    <button @click="toggleChat" aria-label="Close chat" class="hover:text-indigo-300 transition">
+                    <button @click="chatStore.closeChat" aria-label="Close chat" class="hover:text-indigo-300 transition">
                         <i class="pi pi-times"></i>
                     </button>
                 </header>
@@ -63,9 +59,12 @@
 
 <script setup>
 import axiosInstance from '@/util/axios-config';
+import { useChatStore } from '@/stores/chatStore';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
-const isOpen = ref(false);
+// Get chat store
+const chatStore = useChatStore();
+
 const messages = ref([]);
 const newMessage = ref('');
 const chatBox = ref(null);
@@ -145,59 +144,38 @@ const simulateTyping = () => {
     }, 1600);
 };
 
-const toggleChat = () => {
-    isOpen.value = !isOpen.value;
-    if (isOpen.value) fetchMessages();
-    toggleTawk(!isOpen.value); // hide Tawk.to when chat open
-};
+// Initialize Tawk.to script injection
+let tawkScriptInjected = false;
 
-let tawkClickHandler = null;
-
-const openTawk = () => {
-    if (window.Tawk_API?.maximize) window.Tawk_API.maximize();
-
-    // Add click listener to close Tawk.to when clicking outside
-    tawkClickHandler = (e) => {
-        // Tawk iframe usually has id="tawkchat-container"
-        const tawkIframe = document.getElementById('tawkchat-container');
-        if (tawkIframe && !tawkIframe.contains(e.target)) {
-            window.Tawk_API?.hideWidget();
-            document.removeEventListener('mousedown', tawkClickHandler);
-        }
-    };
-    document.addEventListener('mousedown', tawkClickHandler);
-};
-
-const toggleTawk = (visible = true) => {
-    if (window.Tawk_API?.toggleVisibility) {
-        visible ? window.Tawk_API.showWidget() : window.Tawk_API.hideWidget();
-    }
-};
-
-// Inject Tawk.to Live Chat Script
-(function addTawkToScript() {
+const initializeTawk = () => {
+    if (tawkScriptInjected) return;
+    
     const script = document.createElement('script');
     script.src = 'https://embed.tawk.to/6830a9ba12ae50190a96f480/1irv1e0vk';
     script.async = true;
     script.charset = 'UTF-8';
     script.setAttribute('crossorigin', '*');
     document.body.appendChild(script);
-})();
+    tawkScriptInjected = true;
+    
+    // Initially hide Tawk widget
+    setTimeout(() => {
+        if (window.Tawk_API?.hideWidget) {
+            window.Tawk_API.hideWidget();
+        }
+    }, 1000);
+};
 
 onMounted(() => {
-    // Make sure Tawk.to is loaded
-    const script = document.createElement('script');
-    script.src = 'https://embed.tawk.to/6830a9ba12ae50190a96f480/1irv1e0vk';
-    script.async = true;
-    script.charset = 'UTF-8';
-    script.setAttribute('crossorigin', '*');
-    document.body.appendChild(script);
+    initializeTawk();
+    // Fetch messages when chat is opened
+    if (chatStore.isChatOpen) {
+        fetchMessages();
+    }
 });
 
 onBeforeUnmount(() => {
-    if (tawkClickHandler) {
-        document.removeEventListener('mousedown', tawkClickHandler);
-    }
+    // Clean up if needed
 });
 </script>
 

@@ -15,8 +15,8 @@
             </div>
         </div>
 
-        <div class="map-section" v-if="selectedBranch" style="grid-column: 1 / -1">
-            <div v-html="selectedBranch.location"></div>
+        <div class="map-section" v-if="selectedBranch">
+            <div class="map-container" v-html="selectedBranch.location"></div>
         </div>
     </div>
 </template>
@@ -136,6 +136,46 @@ h2 {
     overflow: hidden;
     box-shadow: 0 2px 12px rgba(80, 120, 200, 0.1);
     background: #e0e7ff;
+    margin-top: 2rem;
+    position: relative;
+    display: block;
+}
+
+.map-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Force any embedded content to be full width */
+.map-container * {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Add override for Google Maps iframes specifically */
+.map-container iframe[src*='google.com/maps'] {
+    width: 100% !important;
+    height: 400px !important;
+    display: block !important;
+}
+
+/* Make sure no padding or margins on container elements */
+.map-section,
+.map-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block;
+    width: 100%;
+}
+
+.map-container iframe {
+    width: 100% !important;
+    height: 400px !important;
+    border: none;
+    position: relative;
+    display: block;
+    max-width: 100%;
 }
 @media (max-width: 900px) {
     .school-branches {
