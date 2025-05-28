@@ -1,8 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from 'primevue/usetoast';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { nextTick, onMounted, ref } from 'vue';
 const toast = useToast();
 
 const login = ref(''); // Changed from email to login to match backend
@@ -11,8 +10,25 @@ const rememberMe = ref(false);
 const submitted = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
-const router = useRouter();
 const authStore = useAuthStore();
+const loginInput = ref(null);
+
+// Focus login input only after component is fully mounted
+// This helps avoid the "autofocus processing was blocked" warning
+onMounted(() => {
+    // Use nextTick to ensure DOM is fully updated
+    nextTick(() => {
+        // A small delay helps prevent focus issues
+        setTimeout(() => {
+            // Only focus if nothing else is focused
+            if (!document.activeElement || document.activeElement === document.body) {
+                if (loginInput.value && loginInput.value.$el) {
+                    loginInput.value.$el.querySelector('input').focus();
+                }
+            }
+        }, 100);
+    });
+});
 
 const handleLogin = async () => {
     submitted.value = true;
@@ -121,7 +137,7 @@ const loginWithLinkedIn = () => {
                     <form @submit.prevent="handleLogin" class="space-y-5">
                         <div>
                             <FloatLabel variant="on" class="w-full">
-                                <InputText id="login" v-model="login" type="text" class="w-full" :class="{ 'p-invalid': submitted && !login }" autocomplete="username" />
+                                <InputText id="login" v-model="login" type="text" class="w-full" :class="{ 'p-invalid': submitted && !login }" autocomplete="username" ref="loginInput" />
                                 <label for="login">Username or Email</label>
                             </FloatLabel>
                             <small v-if="submitted && !login" class="p-error">Username or email is required</small>

@@ -30,14 +30,21 @@ function smoothScroll(id) {
                 />
             </g>
         </svg>
-        <span class="text-surface-900 dark:text-surface-0 font-medium text-2xl leading-normal mr-20">SAKAI</span>
+        <span class="text-surface-900 dark:text-surface-0 font-medium text-2xl leading-normal mr-20">FIS Digital Library</span>
     </a>
     <Button
         class="lg:!hidden"
         text
         severity="secondary"
         rounded
-        v-styleclass="{ selector: '@next', enterFromClass: 'hidden', enterActiveClass: 'animate-scalein', leaveToClass: 'hidden', leaveActiveClass: 'animate-fadeout', hideOnOutsideClick: true }"
+        v-styleclass="{
+            selector: '@next',
+            enterFromClass: 'hidden',
+            enterActiveClass: 'animate-scalein',
+            leaveToClass: 'hidden',
+            leaveActiveClass: 'animate-fadeout',
+            hideOnOutsideClick: true
+        }"
     >
         <i class="pi pi-bars !text-2xl"></i>
     </Button>

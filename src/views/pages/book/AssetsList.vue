@@ -1,383 +1,761 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import axiosInstance from '@/util/axios-config';
+import { FilterMatchMode } from '@primevue/core/api';
+import { useToast } from 'primevue/usetoast';
+import { onMounted, reactive, ref } from 'vue';
 
-const router = useRouter();
-const assets = ref([]);
-const loading = ref(true);
-const filters = ref({
-    global: { value: null, matchMode: 'contains' }
-});
-const totalRecords = ref(0);
-const selectedAssets = ref([]);
-const lazyParams = ref({
-    first: 0,
-    rows: 10,
-    sortField: 'title',
-    sortOrder: 1,
-    filters: {}
-});
-const pdfPreviewDialog = ref(false);
-const selectedPdfAsset = ref(null);
+// Import modals
+import AddBookDialog from './components/AddBookDialog.vue';
+import AddBookItemDialog from './components/AddBookItemDialog.vue';
+import AddEbookDialog from './components/AddEbookDialog.vue';
+import EditBookDialog from './components/EditBookDialog.vue';
+import EditBookItemDialog from './components/EditBookItemDialog.vue';
+import EditEbookDialog from './components/EditEbookDialog.vue';
 
-// Asset type filter options
-const assetTypes = ref([
-    { label: 'All Types', value: '' },
-    { label: 'Video', value: 'video' },
-    { label: 'Audio', value: 'audio' },
-    { label: 'Worksheet', value: 'worksheet' },
-    { label: 'Presentation', value: 'presentation' },
-    { label: 'Research Paper', value: 'research_paper' },
-    { label: 'Other', value: 'other' }
-]);
-const selectedAssetType = ref('');
-
-onMounted(() => {
-    fetchAssets();
+// State for BookItems with pagination
+const bookItems = ref([]);
+const loading = ref(false);
+const pagination = ref({
+    page: 1,
+    perPage: 15,
+    total: 0
 });
 
-const fetchAssets = async () => {
-    loading.value = true;
+// Main table filter
+const mainFilters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    language_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    subject_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    grade_id: { value: null, matchMode: FilterMatchMode.EQUALS }
+});
+
+// Define separate filters for books and ebooks tables
+const booksFilters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    language_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    subject_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    grade_id: { value: null, matchMode: FilterMatchMode.EQUALS }
+});
+
+const ebooksFilters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    is_downloadable: { value: null, matchMode: FilterMatchMode.EQUALS },
+    e_book_type_id: { value: null, matchMode: FilterMatchMode.EQUALS }
+});
+
+// Toast instance
+const toast = useToast();
+
+// Expanded rows state
+const expandedRows = ref({});
+const editingRows = ref({});
+const booksEditingRows = reactive({});
+const ebooksEditingRows = reactive({});
+
+// Fetch BookItems from API
+const fetchBookItems = async () => {
     try {
-        // Simulated API call - replace with actual API call
-        setTimeout(() => {
-            // Mock data with enhanced PDF content and preview URLs
-            assets.value = [
-                {
-                    id: 1,
-                    title: 'Introduction to Programming',
-                    author: 'Prof. John Smith',
-                    publication_year: 2022,
-                    category: 'Computer Science',
-                    availability_status: 'available',
-                    cover_image_url: 'https://img.youtube.com/vi/zOjov-2OZ0E/maxresdefault.jpg',
-                    description: 'A comprehensive video course introducing programming concepts for beginners.',
-                    asset_type: 'video',
-                    media_type: 'mp4',
-                    media_url: 'https://www.youtube.com/embed/zOjov-2OZ0E',
-                    duration_minutes: 120,
-                    restricted_access: false,
-                    isbn: '9781234567890',
-                    shelf_id: 'DIG-V001'
-                },
-                {
-                    id: 2,
-                    title: 'Classical Music Compilation',
-                    author: 'Various Artists',
-                    publication_year: 2021,
-                    category: 'Music',
-                    availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61yqXWBQStL._UF1000,1000_QL80_.jpg',
-                    description: 'A collection of classical music pieces for educational purposes.',
-                    asset_type: 'audio',
-                    media_type: 'mp3',
-                    duration_minutes: 85,
-                    restricted_access: false,
-                    isbn: '9781234567891',
-                    shelf_id: 'DIG-A003'
-                },
-                {
-                    id: 3,
-                    title: 'Advanced Mathematics Worksheet',
-                    author: 'Dr. Sarah Johnson',
-                    publication_year: 2023,
-                    category: 'Mathematics',
-                    availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/61ItRb1o7nL._AC_UF1000,1000_QL80_.jpg',
-                    description: 'Practice problems for advanced calculus and linear algebra.',
-                    asset_type: 'worksheet',
-                    media_type: 'pdf',
-                    media_url: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
-                    restricted_access: false,
-                    isbn: '9780987654321',
-                    shelf_id: 'DIG-P025',
-                    preview_available: true
-                },
-                {
-                    id: 4,
-                    title: 'History of Art Presentation',
-                    author: 'Prof. Michael Williams',
-                    publication_year: 2022,
-                    category: 'Arts',
-                    availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/91-v+CyYAeL._AC_UF1000,1000_QL80_.jpg',
-                    description: 'A slide presentation covering the major art movements throughout history.',
-                    asset_type: 'presentation',
-                    media_type: 'pdf',
-                    media_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                    restricted_access: true,
-                    isbn: '9780987654322',
-                    shelf_id: 'DIG-P026',
-                    preview_available: true
-                },
-                {
-                    id: 5,
-                    title: 'Research Paper on Climate Change',
-                    author: 'Dr. Emily Chen',
-                    publication_year: 2023,
-                    category: 'Environmental Science',
-                    availability_status: 'available',
-                    cover_image_url: 'https://m.media-amazon.com/images/I/71zWJMkcCQL._AC_UF1000,1000_QL80_.jpg',
-                    description: 'A comprehensive research paper on climate change effects and potential solutions.',
-                    asset_type: 'research_paper',
-                    media_type: 'pdf',
-                    media_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                    restricted_access: false,
-                    isbn: '9780987654323',
-                    shelf_id: 'DIG-P027',
-                    preview_available: true
-                }
-            ];
-            totalRecords.value = assets.value.length;
-            loading.value = false;
-        }, 1000);
+        loading.value = true;
+
+        const params = {
+            page: pagination.value.page,
+            per_page: pagination.value.perPage,
+            with: 'language,category,subject,grade,library'
+        };
+        if (mainFilters.value.global.value) {
+            params.title = mainFilters.value.global.value;
+        }
+
+        if (mainFilters.value.language_id.value) {
+            params.language_id = mainFilters.value.language_id.value;
+        }
+
+        if (mainFilters.value.category_id.value) {
+            params.category_id = mainFilters.value.category_id.value;
+        }
+
+        if (mainFilters.value.subject_id.value) {
+            params.subject_id = mainFilters.value.subject_id.value;
+        }
+
+        if (mainFilters.value.grade_id.value) {
+            params.grade_id = mainFilters.value.grade_id.value;
+        }
+
+        const response = await axiosInstance.get('/book-items', { params });
+
+        bookItems.value = response.data.data;
+        pagination.value = {
+            page: response.data.meta.current_page,
+            perPage: response.data.meta.per_page,
+            total: response.data.meta.total
+        };
+
+        bookItems.value.forEach((item) => {
+            ordersExpanded[item.id] = false;
+            shipmentsExpanded[item.id] = false;
+            if (!booksEditingRows[item.id]) booksEditingRows[item.id] = ref([]);
+            if (!ebooksEditingRows[item.id]) ebooksEditingRows[item.id] = ref([]);
+        });
     } catch (error) {
-        console.error('Failed to fetch assets:', error);
+        console.error('Error fetching book items:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch book items', life: 3000 });
     } finally {
         loading.value = false;
     }
 };
 
-const isPdf = computed(() => {
-    return (asset) => asset.media_type === 'pdf';
+const fetchBooks = async (bookItemId) => {
+    try {
+        const bookItem = bookItems.value.find((item) => item.id === bookItemId);
+        if (!bookItem) return;
+
+        if (bookItem.books && bookItem.books.length > 0) return;
+
+        bookItem.loadingBooks = true;
+
+        const response = await axiosInstance.get(`/books`, {
+            params: {
+                book_item_id: bookItemId,
+                with: 'bookItem,library,shelf,bookCondition'
+            }
+        });
+
+        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
+        if (index !== -1) {
+            bookItems.value[index].books = Array.isArray(response.data.data) ? response.data.data : [];
+        }
+
+        if (!booksEditingRows[bookItemId]) {
+            booksEditingRows[bookItemId] = ref([]);
+        }
+    } catch (error) {
+        console.error(`Error fetching books for item ${bookItemId}:`, error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch books', life: 3000 });
+    } finally {
+        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
+        if (index !== -1) {
+            bookItems.value[index].loadingBooks = false;
+        }
+    }
+};
+
+const fetchEbooks = async (bookItemId) => {
+    try {
+        const bookItem = bookItems.value.find((item) => item.id === bookItemId);
+        if (!bookItem) return;
+
+        if (bookItem.ebooks && bookItem.ebooks.length > 0) return;
+
+        bookItem.loadingEbooks = true;
+
+        const response = await axiosInstance.get(`/ebooks`, {
+            params: {
+                book_item_id: bookItemId,
+                with: 'bookItem,ebookType'
+            }
+        });
+
+        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
+        if (index !== -1) {
+            bookItems.value[index].ebooks = Array.isArray(response.data.data) ? response.data.data : [];
+        }
+
+        if (!ebooksEditingRows[bookItemId]) {
+            ebooksEditingRows[bookItemId] = ref([]);
+        }
+    } catch (error) {
+        console.error(`Error fetching ebooks for item ${bookItemId}:`, error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch ebooks', life: 3000 });
+    } finally {
+        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
+        if (index !== -1) {
+            bookItems.value[index].loadingEbooks = false;
+        }
+    }
+};
+
+const toggleOrders = (id) => {
+    ordersExpanded.value[id] = !ordersExpanded.value[id];
+    if (ordersExpanded.value[id]) {
+        fetchBooks(id);
+    }
+};
+
+const toggleShipments = (id) => {
+    shipmentsExpanded.value[id] = !shipmentsExpanded.value[id];
+    if (shipmentsExpanded.value[id]) {
+        // If expanding, fetch ebooks if we don't have them already
+        fetchEbooks(id);
+    }
+};
+
+// Update row expand to fetch both books and ebooks
+const onRowExpand = async (event) => {
+    const id = event.data.id;
+
+    // Fetch books and ebooks when a row is expanded
+    await Promise.all([fetchBooks(id), fetchEbooks(id)]);
+
+    toast.add({ severity: 'info', summary: 'Item Expanded', detail: event.data.title, life: 3000 });
+};
+
+// Expand all children function
+const expandAllChildren = async (id) => {
+    ordersExpanded.value[id] = true;
+    shipmentsExpanded.value[id] = true;
+
+    // Fetch both books and ebooks
+    await Promise.all([fetchBooks(id), fetchEbooks(id)]);
+};
+
+const ordersExpanded = ref({});
+const shipmentsExpanded = ref({});
+
+const collapseAllChildren = (id) => {
+    ordersExpanded.value[id] = false;
+    shipmentsExpanded.value[id] = false;
+};
+const onRowCollapse = (event) => {
+    toast.add({ severity: 'success', summary: 'Item Collapsed', detail: event.data.title, life: 3000 });
+};
+
+const expandAll = () => {
+    expandedRows.value = bookItems.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+};
+const collapseAll = () => {
+    expandedRows.value = null;
+};
+
+// Options for dropdowns
+const borrowableOptions = [
+    { label: 'Yes', value: true },
+    { label: 'No', value: false }
+];
+const reservedOptions = [
+    { label: 'Yes', value: true },
+    { label: 'No', value: false }
+];
+const downloadableOptions = [
+    { label: 'Yes', value: true },
+    { label: 'No', value: false }
+];
+
+// Dialog state
+const showAddBookItemModal = ref(false);
+const showEditBookItemModal = ref(false);
+const showAddBookModal = ref(false);
+const showEditBookModal = ref(false);
+const showAddEbookModal = ref(false);
+const showEditEbookModal = ref(false);
+const showDeleteDialog = ref(false);
+
+// Selected items for editing
+const selectedBookItem = ref(null);
+const selectedBook = ref(null);
+const selectedEbook = ref(null);
+const addBookParentId = ref(null);
+const addEbookParentId = ref(null);
+
+// Delete action
+let deleteAction = null;
+
+// Modal opening handlers
+const openAddBookModal = (parentId) => {
+    addBookParentId.value = parentId;
+    showAddBookModal.value = true;
+};
+
+const openEditBookModal = (book) => {
+    selectedBook.value = book;
+    showEditBookModal.value = true;
+};
+
+const openAddEbookModal = (parentId) => {
+    addEbookParentId.value = parentId;
+    showAddEbookModal.value = true;
+};
+
+const openEditEbookModal = (ebook) => {
+    selectedEbook.value = ebook;
+    showEditEbookModal.value = true;
+};
+
+// Handlers for modal events
+const onBookItemAdded = () => {
+    fetchBookItems();
+};
+
+const onBookItemUpdated = () => {
+    fetchBookItems();
+};
+
+const onBookAdded = () => {
+    fetchBooks(addBookParentId.value);
+};
+
+const onBookUpdated = () => {
+    if (selectedBook.value?.book_item_id) {
+        fetchBooks(selectedBook.value.book_item_id);
+    }
+};
+
+const onEbookAdded = () => {
+    fetchEbooks(addEbookParentId.value);
+};
+
+const onEbookUpdated = () => {
+    if (selectedEbook.value?.book_item_id) {
+        fetchEbooks(selectedEbook.value.book_item_id);
+    }
+};
+
+// Row edit handlers
+const onRowEditSave = async (event) => {
+    try {
+        const { newData } = event;
+
+        await axiosInstance.put(`/book-items/${newData.id}`, newData);
+
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Book item updated', life: 3000 });
+        fetchBookItems();
+    } catch (error) {
+        console.error('Error updating book item:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update book item', life: 3000 });
+    }
+};
+
+const onBookRowEditSave = async (event, bookItem) => {
+    try {
+        const { newData } = event;
+
+        await axiosInstance.put(`/books/${newData.id}`, newData);
+
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Book updated', life: 3000 });
+        fetchBooks(bookItem.id);
+    } catch (error) {
+        console.error('Error updating book:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update book', life: 3000 });
+    }
+};
+
+const onEBookRowEditSave = async (event, bookItem) => {
+    try {
+        const { newData } = event;
+
+        await axiosInstance.put(`/ebooks/${newData.id}`, newData);
+
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Ebook updated', life: 3000 });
+        fetchEbooks(bookItem.id);
+    } catch (error) {
+        console.error('Error updating ebook:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update ebook', life: 3000 });
+    }
+};
+
+// Delete handlers
+const confirmDeleteBookRow = (book) => {
+    showDeleteDialog.value = true;
+    deleteAction = async () => {
+        try {
+            // Delete the book from API
+            await axiosInstance.delete(`/books/${book.id}`);
+
+            toast.add({ severity: 'success', summary: 'Success', detail: 'Book deleted successfully', life: 3000 });
+
+            // Refresh books for this item
+            const bookItemId = book.book_item_id;
+            await fetchBooks(bookItemId);
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete book', life: 3000 });
+        } finally {
+            showDeleteDialog.value = false;
+        }
+    };
+};
+
+const confirmDeleteEbookRow = (ebook) => {
+    showDeleteDialog.value = true;
+    deleteAction = async () => {
+        try {
+            // Delete the ebook from API
+            await axiosInstance.delete(`/ebooks/${ebook.id}`);
+
+            toast.add({ severity: 'success', summary: 'Success', detail: 'Ebook deleted successfully', life: 3000 });
+
+            // Refresh ebooks for this item
+            const bookItemId = ebook.book_item_id;
+            await fetchEbooks(bookItemId);
+        } catch (error) {
+            console.error('Error deleting ebook:', error);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete ebook', life: 3000 });
+        } finally {
+            showDeleteDialog.value = false;
+        }
+    };
+};
+
+const performDelete = () => {
+    if (deleteAction) deleteAction();
+};
+
+// Main filter options (from API)
+const mainFilterOptions = reactive({
+    categories: [],
+    languages: [],
+    grades: [],
+    subjects: [],
+    libraries: [],
+    ebook_types: [],
+    shelves: []
 });
 
-// Enhanced PDF preview with more features
-const previewPdf = (asset) => {
-    selectedPdfAsset.value = asset;
-    pdfPreviewDialog.value = true;
-
-    // Increment view count for analytics
-    const index = assets.value.findIndex((a) => a.id === asset.id);
-    if (index !== -1 && assets.value[index].view_count !== undefined) {
-        assets.value[index].view_count++;
-    }
-};
-
-// Function to view details - Modified to directly open PDF viewer for PDFs and YouTube for videos
-const viewDetails = (asset) => {
-    // Clear any existing viewer session flags first
-    sessionStorage.removeItem('openPdfViewer');
-    sessionStorage.removeItem('openVideoPlayer');
-
-    if (asset.media_type === 'pdf' || asset.asset_type === 'worksheet' || asset.asset_type === 'research_paper' || asset.asset_type === 'presentation') {
-        // For PDF assets, store the flag to auto-open PDF viewer
-        sessionStorage.setItem('openPdfViewer', 'true');
-        sessionStorage.setItem('assetType', 'pdf');
-    } else if (asset.media_type === 'mp4' || asset.asset_type === 'video') {
-        // For video assets, store the flag to auto-open video player
-        sessionStorage.setItem('openVideoPlayer', 'true');
-        sessionStorage.setItem('assetType', 'video');
-    }
-
-    router.push(`/books/assets/${asset.id}`);
-};
-
-const openPdfReader = (asset) => {
-    router.push(`/books/assets/${asset.id}`);
-};
-
-const onPage = (event) => {
-    lazyParams.value = { ...lazyParams.value, ...event };
-    fetchAssets();
-};
-
-const onSort = (event) => {
-    lazyParams.value = { ...lazyParams.value, ...event };
-    fetchAssets();
-};
-
-const onFilter = () => {
-    lazyParams.value.first = 0;
-    fetchAssets();
-};
-
-const filterByAssetType = () => {
-    // In a real app, this would update the fetch parameters
-    fetchAssets();
-};
-
-const editAsset = (asset) => {
-    router.push(`/books/assets/edit/${asset.id}`);
-};
-
-const createAsset = () => {
-    router.push('/books/assets/create');
-};
-
-const downloadAsset = (asset) => {
-    // In a real app, this would initiate a download from the server
-    alert(`Downloading ${asset.title}.${asset.media_type}`);
-};
-
-const confirmDeleteAsset = (asset) => {
-    if (confirm(`Are you sure you want to delete "${asset.title}"?`)) {
-        deleteAsset(asset.id);
-    }
-};
-
-const deleteAsset = async (id) => {
+// Fetch filter options
+const fetchMainFilters = async () => {
     try {
-        // Simulated API call
-        assets.value = assets.value.filter((asset) => asset.id !== id);
-        totalRecords.value--;
+        const response = await axiosInstance.get('/constants/all');
+        const data = response.data;
+
+        mainFilterOptions.categories = (data.categories?.data || []).map((c) => ({ label: c.name, value: c.id }));
+        mainFilterOptions.languages = (data.languages?.data || []).map((l) => ({ label: l.name, value: l.id }));
+        mainFilterOptions.grades = (data.grades?.data || []).map((g) => ({ label: g.name, value: g.id }));
+        mainFilterOptions.subjects = (data.subjects?.data || []).map((s) => ({ label: s.name, value: s.id }));
+        mainFilterOptions.libraries = (data.libraries?.data || []).map((l) => ({ label: l.name, value: l.id }));
+        mainFilterOptions.ebook_types = (data.ebook_types?.data || []).map((t) => ({ label: t.name, value: t.id }));
+        mainFilterOptions.shelves = (data.shelves?.data || []).map((s) => ({ label: s.name, value: s.id }));
     } catch (error) {
-        console.error(`Failed to delete asset with ID ${id}:`, error);
+        console.error('Error fetching filter options:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch filter options', life: 3000 });
     }
 };
 
-const getAssetIcon = (assetType) => {
-    switch (assetType) {
-        case 'video':
-            return 'pi pi-video';
-        case 'audio':
-            return 'pi pi-volume-up';
-        case 'worksheet':
-            return 'pi pi-file-pdf';
-        case 'presentation':
-            return 'pi pi-images';
-        case 'research_paper':
-            return 'pi pi-file-o';
-        default:
-            return 'pi pi-file';
-    }
+onMounted(() => {
+    // Fetch filter options first
+    fetchMainFilters().then(() => {
+        // Then fetch bookItems with initial page
+        fetchBookItems();
+    });
+});
+
+// Add pagination event handler
+const onPageChange = (event) => {
+    pagination.value.page = event.page + 1; // PrimeVue pages are zero-based
+    pagination.value.perPage = event.rows;
+    fetchBookItems();
 };
 
-const getAssetSeverity = (assetType) => {
-    switch (assetType) {
-        case 'video':
-            return 'info';
-        case 'audio':
-            return 'success';
-        case 'worksheet':
-            return 'warning';
-        case 'presentation':
-            return 'help';
-        case 'research_paper':
-            return 'danger';
-        default:
-            return null;
-    }
-};
-
-const exportCSV = () => {
-    // Will use PrimeVue's DataTable export feature
+// Handle filter changes
+const onFilterChange = () => {
+    pagination.value.page = 1; // Reset to first page when filters change
+    fetchBookItems();
 };
 </script>
-
 <template>
-    <div class="grid">
-        <div class="col-12">
-            <div class="card">
-                <h5 class="m-0">Digital Assets Collection</h5>
-                <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage the digital assets available in the library.</p>
-
-                <div class="flex flex-column md:flex-row md:justify-content-between mb-4">
-                    <div class="flex gap-3 mb-3 md:mb-0">
-                        <div>
-                            <label for="assetType" class="block text-sm font-medium text-gray-700 mb-1"> Filter by Asset Type </label>
-                            <Dropdown id="assetType" v-model="selectedAssetType" :options="assetTypes" optionLabel="label" optionValue="value" placeholder="Select Asset Type" class="w-full md:w-14rem" @change="filterByAssetType" />
-                        </div>
+    <div class="card">
+        <!-- Add buttons to open modals -->
+        <div class="flex gap-2 mb-4">
+            <Button label="Add Book Item" icon="pi pi-plus" @click="showAddBookItemModal = true" />
+        </div>
+        <!-- Main Products Table -->
+        <DataTable
+            v-model:expandedRows="expandedRows"
+            v-model:filters="mainFilters"
+            v-model:editingRows="editingRows"
+            editMode="row"
+            paginator
+            :rows="pagination.perPage"
+            :totalRecords="pagination.total"
+            :rowsPerPageOptions="[5, 10, 15, 20, 50]"
+            :value="bookItems"
+            dataKey="id"
+            :loading="loading"
+            @rowExpand="onRowExpand"
+            @rowCollapse="onRowCollapse"
+            @row-edit-save="onRowEditSave"
+            @page="onPageChange"
+            tableStyle="min-width: 60rem"
+            :globalFilterFields="['title', 'author', 'description', 'cover_image_url', 'language', 'category', 'library', 'shelf', 'subject', 'grade']"
+            :pt="{
+                table: { style: 'min-width: 60rem' }
+            }"
+        >
+            <template #header>
+                <div class="flex flex-wrap justify-between gap-2 items-center">
+                    <div class="flex gap-2 items-center">
+                        <IconField>
+                            <InputIcon>
+                                <i class="pi pi-search" />
+                            </InputIcon>
+                            <InputText v-model="mainFilters['global'].value" placeholder="Search products..." />
+                        </IconField>
+                        <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" @change="onFilterChange" />
+                        <Dropdown v-model="mainFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" @change="onFilterChange" />
+                    </div>
+                    <div>
+                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
+                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
                     </div>
                 </div>
+            </template>
+            <Column expander />
+            <Column field="title" header="Title" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="author" header="Author" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="description" header="Description" style="min-width: 100px; max-width: 150px">
+                <template #editor="{ data, field }">
+                    <InputText v-model="data[field]" fluid />
+                </template>
+            </Column>
+            <Column field="cover_image" header="Cover Image" style="min-width: 100px; max-width: 150px">
+                <template #body="slotProps">
+                    <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
+                </template>
+                <template #editor="">
+                    <FileUpload mode="basic" name="cover" accept="image/*" :auto="false" chooseLabel="Upload Cover Image" class="w-full" />
+                </template>
+            </Column>
+            <Column field="language.name" header="Language" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.language?.name }}
+                </template>
+            </Column>
+            <Column field="category.name" header="Category" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.category?.name }}
+                </template>
+            </Column>
+            <Column field="library.name" header="Library" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.library?.name }}
+                </template>
+            </Column>
+            <Column field="subject.name" header="Subject" style="min-width: 100px; max-width: 120px">
+                <template #body="slotProps">
+                    {{ slotProps.data.subject?.name }}
+                </template>
+            </Column>
+            <Column field="grade.name" header="Grade" style="min-width: 80px; max-width: 100px">
+                <template #body="slotProps">
+                    {{ slotProps.data.grade?.name }}
+                </template>
+            </Column>
+            <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+            <template #expansion="slotProps">
+                <div class="p-4">
+                    <div>
+                        <Button text icon="pi pi-plus" label="Expand All" @click="expandAllChildren(slotProps.data.id)" />
+                        <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAllChildren(slotProps.data.id)" />
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 mb-2">
+                        <h5 class="cursor-pointer select-none mb-0" @click="toggleOrders(slotProps.data.id)">
+                            <i :class="ordersExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
+                            Physical Books for {{ slotProps.data.title }}
+                        </h5>
+                        <Button icon="pi pi-plus" text label="Add Book" @click="openAddBookModal(slotProps.data.id)" class="ml-2" />
+                    </div>
+                    <DataTable
+                        v-if="ordersExpanded[slotProps.data.id]"
+                        :value="slotProps.data.books"
+                        editMode="row"
+                        v-model:editingRows="booksEditingRows[slotProps.data.id]"
+                        @row-edit-save="(event) => onBookRowEditSave(event, slotProps.data)"
+                        paginator
+                        :rows="5"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                        dataKey="isbn"
+                        tableStyle="min-width: 60rem"
+                    >
+                        <template #header>
+                            <div class="flex flex-wrap justify-between gap-2 items-center">
+                                <div class="flex gap-2 items-center">
+                                    <IconField>
+                                        <InputIcon>
+                                            <i class="pi pi-search" />
+                                        </InputIcon>
+                                        <InputText v-model="booksFilters['global'].value" placeholder="Search books..." />
+                                    </IconField>
+                                    <Dropdown v-model="booksFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="booksFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" />
+                                </div>
+                            </div>
+                        </template>
+                        <Column field="edition" header="Edition">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="title" header="Title">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="cover_image" header="Cover Image">
+                            <template #body="slotProps">
+                                <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
+                            </template>
+                        </Column>
+                        <Column field="pages" header="Pages">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_borrowable" header="Borrowable">
+                            <template #body="slotProps">
+                                {{ slotProps.data.is_borrowable ? 'Yes' : 'No' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown v-model="data[field]" :options="borrowableOptions" optionLabel="label" optionValue="value" placeholder="Borrowable" />
+                            </template>
+                        </Column>
+                        <Column field="shelf" header="Shelf">
+                            <template #body="slotProps">
+                                {{ slotProps.data.shelf?.name || '-' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field].name" fluid />
+                            </template>
+                        </Column>
+                        <Column field="library" header="Library">
+                            <template #body="slotProps">
+                                {{ slotProps.data.library?.name || '-' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field].name" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_reserved" header="Reserved">
+                            <template #body="slotProps">
+                                {{ slotProps.data.is_reserved ? 'Yes' : 'No' }}
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown v-model="data[field]" :options="reservedOptions" optionLabel="label" optionValue="value" placeholder="Reserved" />
+                            </template>
+                        </Column>
+                        <Column field="publication_year" header="Publication Year">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column header="Actions" style="width: 80px; text-align: center">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-pencil" text @click="openEditBookModal(slotProps.data)" class="p-1" />
+                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteBookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
+                            </template>
+                        </Column>
+                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+                    </DataTable>
+                    <div class="flex items-center gap-2 mt-6 mb-2">
+                        <h5 class="cursor-pointer select-none mb-0" @click="toggleShipments(slotProps.data.id)">
+                            <i :class="shipmentsExpanded[slotProps.data.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="mr-2" />
+                            EBooks for {{ slotProps.data.title }}
+                        </h5>
+                        <Button icon="pi pi-plus" text label="Add Ebook" @click="openAddEbookModal(slotProps.data.id)" class="ml-2" />
+                    </div>
+                    <DataTable
+                        v-if="shipmentsExpanded[slotProps.data.id]"
+                        :value="slotProps.data.ebooks"
+                        editMode="row"
+                        v-model:editingRows="ebooksEditingRows[slotProps.data.id]"
+                        @row-edit-save="(event) => onEBookRowEditSave(event, slotProps.data)"
+                        paginator
+                        :rows="5"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                        dataKey="isbn"
+                        tableStyle="min-width: 60rem"
+                    >
+                        <template #header>
+                            <div class="flex flex-wrap justify-between gap-2 items-center">
+                                <div class="flex gap-2 items-center">
+                                    <IconField>
+                                        <InputIcon>
+                                            <i class="pi pi-search" />
+                                        </InputIcon>
+                                        <InputText v-model="ebooksFilters.global.value" placeholder="Search ebooks..." />
+                                    </IconField>
 
-                <Toolbar class="mb-4">
-                    <template v-slot:start>
-                        <Button label="New Asset" icon="pi pi-plus" severity="success" class="mr-2" @click="createAsset" />
-                        <Button label="Delete Selected" icon="pi pi-trash" severity="danger" :disabled="!selectedAssets.length" />
-                    </template>
-                    <template v-slot:end>
-                        <div class="flex flex-wrap gap-2">
-                            <Button icon="pi pi-file-excel" severity="success" @click="exportCSV" />
-                            <Button icon="pi pi-filter" severity="info" />
-                            <span class="p-input-icon-left">
-                                <i class="pi pi-search" />
-                                <InputText v-model="filters.global.value" placeholder="Search..." />
-                            </span>
+                                    <Dropdown v-model="ebooksFilters.is_downloadable.value" :options="downloadableOptions" optionLabel="label" optionValue="value" placeholder="Downloadable" showClear style="min-width: 120px" />
+                                    <Dropdown v-model="ebooksFilters.e_book_type_id.value" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" showClear style="min-width: 120px" />
+                                </div>
+                            </div>
+                        </template>
+                        <Column field="book_item_id" header="Book Item ID">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+
+                        <Column field="file_name" header="File Name">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+
+                        <Column field="file_size_mb" header="File Size (MB)">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="pages" header="Pages">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="is_downloadable" header="Downloadable">
+                            <template #editor="{ data, field }">
+                                <InputText v-model="data[field]" fluid />
+                            </template>
+                        </Column>
+                        <Column field="ebookType.name" header="Type">
+                            <template #body="slotProps">
+                                {{ slotProps.data.e_book_type?.name || '-' }}
+                            </template>
+                            <template #editor="{ data }">
+                                <Dropdown v-model="data.e_book_type_id" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" class="w-full" />
+                            </template>
+                        </Column>
+                        <Column header="Actions" style="width: 80px; text-align: center">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-pencil" text @click="openEditEbookModal(slotProps.data)" class="p-1" />
+                                <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteEbookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
+                            </template>
+                        </Column>
+                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+                    </DataTable>
+                    <Dialog v-model:visible="showDeleteDialog" header="Confirm Delete" :modal="true" :closable="true" :style="{ width: '350px' }">
+                        <div class="mb-4">Are you sure you want to delete this item?</div>
+                        <div class="flex justify-end gap-2">
+                            <Button label="Cancel" text @click="showDeleteDialog = false" />
+                            <Button label="Delete" severity="danger" @click="performDelete" />
                         </div>
-                    </template>
-                </Toolbar>
+                    </Dialog>
+                </div>
+            </template>
+        </DataTable>
+        <Toast />
+        <!-- Import modals from components -->
+        <AddBookItemDialog :visible="showAddBookItemModal" @update:visible="showAddBookItemModal = $event" :filter-options="mainFilterOptions" @book-item-added="onBookItemAdded" />
 
-                <DataTable
-                    v-model:selection="selectedAssets"
-                    :value="assets"
-                    :paginator="true"
-                    :rows="10"
-                    :loading="loading"
-                    :lazy="true"
-                    :total-records="totalRecords"
-                    :row-hover="true"
-                    paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    current-page-report-template="Showing {first} to {last} of {totalRecords} assets"
-                    responsive-layout="scroll"
-                    :global-filter-fields="['title', 'author', 'category', 'asset_type']"
-                    v-model:filters="filters"
-                    @page="onPage($event)"
-                    @sort="onSort($event)"
-                    @filter="onFilter()"
-                    style-class="p-datatable-gridlines p-datatable-sm"
-                >
-                    <template #empty> No assets found. </template>
-                    <template #loading> Loading assets data. Please wait. </template>
+        <EditBookItemDialog :visible="showEditBookItemModal" @update:visible="showEditBookItemModal = $event" :book-item="selectedBookItem" :filter-options="mainFilterOptions" @book-item-updated="onBookItemUpdated" />
+        <AddBookDialog :visible="showAddBookModal" @update:visible="showAddBookModal = $event" :book-item-id="addBookParentId" :filter-options="mainFilterOptions" @book-added="onBookAdded" />
 
-                    <Column selectionMode="multiple" style="width: 3rem"></Column>
+        <EditBookDialog :visible="showEditBookModal" @update:visible="showEditBookModal = $event" :book="selectedBook" :filter-options="mainFilterOptions" @book-updated="onBookUpdated" />
 
-                    <Column field="title" header="Title" sortable>
-                        <template #body="{ data }">
-                            <div class="flex align-items-center">
-                                <span class="mr-2">
-                                    <i :class="getAssetIcon(data.asset_type)" style="font-size: 1.5rem"></i>
-                                </span>
-                                <span>{{ data.title }}</span>
-                            </div>
-                        </template>
-                    </Column>
+        <AddEbookDialog :visible="showAddEbookModal" @update:visible="showAddEbookModal = $event" :book-item-id="addEbookParentId" :ebook-types="mainFilterOptions.ebook_types" @ebook-added="onEbookAdded" />
 
-                    <Column field="author" header="Author" sortable></Column>
-                    <Column field="category" header="Category" sortable></Column>
-
-                    <Column field="asset_type" header="Asset Type" sortable>
-                        <template #body="{ data }">
-                            <Tag :value="data.asset_type" :severity="getAssetSeverity(data.asset_type)" :icon="getAssetIcon(data.asset_type)" />
-                        </template>
-                    </Column>
-
-                    <Column field="media_type" header="Format" sortable>
-                        <template #body="{ data }">
-                            <Tag :value="data.media_type.toUpperCase()" />
-                        </template>
-                    </Column>
-
-                    <Column field="restricted_access" header="Access" sortable>
-                        <template #body="{ data }">
-                            <Tag :value="data.restricted_access ? 'Restricted' : 'Open'" :severity="data.restricted_access ? 'danger' : 'success'" />
-                        </template>
-                    </Column>
-
-                    <Column style="min-width: 12rem">
-                        <template #header>Actions</template>
-                        <template #body="{ data }">
-                            <div class="flex justify-content-center gap-2">
-                                <Button icon="pi pi-eye" tooltip="View Details" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-info p-button-sm" @click="viewDetails(data)" />
-                                <Button v-if="isPdf(data)" icon="pi pi-file-pdf" tooltip="Preview PDF" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-warning p-button-sm" @click="previewPdf(data)" />
-                                <Button icon="pi pi-download" tooltip="Download" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-warning p-button-sm" @click="downloadAsset(data)" />
-                                <Button icon="pi pi-pencil" tooltip="Edit" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-success p-button-sm" @click="editAsset(data)" />
-                                <Button icon="pi pi-trash" tooltip="Delete" tooltipOptions="{ position: 'top' }" class="p-button-rounded p-button-danger p-button-sm" @click="confirmDeleteAsset(data)" />
-                            </div>
-                        </template>
-                    </Column>
-                </DataTable>
-
-                <Dialog v-model:visible="pdfPreviewDialog" header="PDF Preview" :modal="true" :closable="true" :style="{ width: '80vw' }">
-                    <iframe v-if="selectedPdfAsset" :src="selectedPdfAsset.media_url" style="width: 100%; height: 500px" frameborder="0"></iframe>
-                </Dialog>
-            </div>
-        </div>
+        <EditEbookDialog :visible="showEditEbookModal" @update:visible="showEditEbookModal = $event" :ebook="selectedEbook" :ebook-types="mainFilterOptions.ebook_types" @ebook-updated="onEbookUpdated" />
     </div>
 </template>
-
-<style scoped>
-.p-datatable ::v-deep(.p-datatable-tbody > tr > td) {
-    padding: 0.75rem;
-}
-</style>
