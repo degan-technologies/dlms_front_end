@@ -902,7 +902,7 @@ const goToDetailsPage = (resource) => {
     </div>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { useFilterStore } from '@/stores/filterStore';
 import axiosInstance from '@/util/axios-config';
 import { storeToRefs } from 'pinia';
@@ -1049,7 +1049,7 @@ const goToDetailsPage = (resource) => {
         }
     }
 };
-</script>
+</script> -->
 
 <style scoped>
 /* Enhanced animations and utilities */

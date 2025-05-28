@@ -279,12 +279,6 @@ const getAvailableBooksDisplay = (books) => {
     return `${available} of ${total} available`;
 };
 
-// Missing functions for chatbot (referenced in template)
-const showChatbot = ref(false);
-const toggleChatbot = () => {
-    showChatbot.value = !showChatbot.value;
-};
-
 const showSearchDialog = ref(false);
 
 const openSearchDialog = () => {
