@@ -36,50 +36,108 @@
                 <!-- Collections Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <div v-for="(list, index) in readingLists" :key="list.id" @click="viewReadingList(list)" class="group cursor-pointer">
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200">
-                            <!-- Collection header -->
-                            <div class="relative h-32 bg-gray-100 overflow-hidden">
-                                <div class="absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100"></div>
+                        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
+                            <!-- Collection header with fixed height - Udemy-inspired design -->
+                            <div class="relative h-48 bg-gray-50 overflow-hidden">
+                                <!-- Dynamic gradient based on content types -->
+                                <div :class="getCollectionGradient(list)" class="absolute inset-0"></div>
 
-                                <!-- Collection icon -->
+                                <!-- Subtle pattern overlay -->
+                                <div class="absolute inset-0 opacity-10 bg-white bg-opacity-5"></div>
+
+                                <!-- Content type icons display -->
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                                        <i :class="getCategoryIcon(list.name)" class="text-xl text-purple-600"></i>
+                                    <div class="flex items-center gap-3">
+                                        <!-- PDF Icon -->
+                                        <div v-if="list.ebooks_count?.by_type?.pdf > 0" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                                            <i class="pi pi-file-pdf text-xl text-red-500"></i>
+                                        </div>
+
+                                        <!-- Video Icon -->
+                                        <div v-if="list.ebooks_count?.by_type?.video > 0" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                                            <i class="pi pi-video text-xl text-blue-500"></i>
+                                        </div>
+
+                                        <!-- Fallback category icon if no specific types -->
+                                        <div v-if="!list.ebooks_count?.by_type?.pdf && !list.ebooks_count?.by_type?.video" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
+                                            <i :class="getCategoryIcon(list.name)" class="text-xl text-purple-600"></i>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Item count badge -->
-                                <div class="absolute top-3 right-3">
-                                    <span class="bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs"> {{ list.itemCount }} items </span>
+                                <!-- Total count badge -->
+                                <div class="absolute top-4 right-4">
+                                    <div class="bg-white bg-opacity-90 backdrop-blur-sm text-gray-800 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm border border-white border-opacity-20">
+                                        {{ list.ebooks_count?.total || list.itemCount || 0 }} resources
+                                    </div>
+                                </div>
+
+                                <!-- Content type breakdown badges -->
+                                <div class="absolute bottom-4 left-4 flex flex-wrap gap-1.5">
+                                    <div v-if="list.ebooks_count?.by_type?.pdf > 0" class="bg-red-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-file-pdf text-xs"></i>
+                                        <span>{{ list.ebooks_count.by_type.pdf }}</span>
+                                    </div>
+                                    <div v-if="list.ebooks_count?.by_type?.video > 0" class="bg-blue-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-video text-xs"></i>
+                                        <span>{{ list.ebooks_count.by_type.video }}</span>
+                                    </div>
+                                    <div v-if="list.ebooks_count?.downloadable > 0" class="bg-green-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-download text-xs"></i>
+                                        <span>{{ list.ebooks_count.downloadable }}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Collection info -->
-                            <div class="p-4">
-                                <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
+                            <!-- Collection info with flex-grow to fill remaining space -->
+                            <div class="p-4 flex-1 flex flex-col">
+                                <!-- Title -->
+                                <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
                                     {{ list.name }}
                                 </h3>
 
-                                <p class="text-gray-600 text-sm mb-3 line-clamp-2">
+                                <!-- Description -->
+                                <p class="text-gray-600 text-sm mb-3 line-clamp-3 leading-relaxed flex-grow">
                                     {{ getCollectionDescription(list) }}
                                 </p>
 
                                 <!-- Creator info -->
-                                <div class="flex items-center gap-2 mb-3">
-                                    <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
+                                <div class="flex items-center gap-2 mb-3 text-sm text-gray-500">
+                                    <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
                                         <i class="pi pi-user text-gray-600 text-xs"></i>
                                     </div>
-                                    <span class="text-xs text-gray-600">{{ list.creator?.name || 'Anonymous' }}</span>
+                                    <span>{{ list.creator?.name || 'Anonymous' }}</span>
+                                    <span class="text-gray-400">•</span>
+                                    <span>{{ formatDate(list.created_at) }}</span>
                                 </div>
 
-                                <!-- Resource types -->
-                                <div class="flex gap-2 mb-4">
-                                    <div class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">{{ getResourceTypeCount(list.ebooks, 'PDF') }} PDFs</div>
-                                    <div class="bg-red-50 text-red-700 px-2 py-1 rounded text-xs">{{ getResourceTypeCount(list.ebooks, 'VIDEO') }} Videos</div>
+                                <!-- Enhanced metadata using new data structure -->
+                                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                        <div class="flex items-center justify-between">
+                                            <span>PDF Files:</span>
+                                            <span class="font-semibold text-red-600">{{ list.ebooks_count?.by_type?.pdf || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Videos:</span>
+                                            <span class="font-semibold text-blue-600">{{ list.ebooks_count?.by_type?.video || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Downloadable:</span>
+                                            <span class="font-semibold text-green-600">{{ list.ebooks_count?.downloadable || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Total Size:</span>
+                                            <span class="font-semibold text-gray-700">{{ getTotalSize(list.ebooks) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <!-- Action button -->
-                                <button class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors">Start Learning</button>
+                                <!-- Action button at bottom -->
+                                <button class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 mt-auto">
+                                    <i class="pi pi-play-circle"></i>
+                                    <span>Start Learning</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -133,13 +191,18 @@ const fetchCollections = async () => {
             }
         });
 
-        // Map API data to UI format with proper data structure
+        // Map API data to UI format with new data structure
         readingLists.value = (response.data.data || []).map((col) => ({
             id: col.id,
             name: col.name,
-            description: col.description || generateDescription(col.name, col.ebooks),
-            itemCount: col.ebooks ? col.ebooks.length : 0,
+            description: col.description || generateDescription(col),
+            itemCount: col.ebooks_count?.total || col.ebooks?.length || 0,
             ebooks: col.ebooks || [],
+            ebooks_count: col.ebooks_count || {
+                total: col.ebooks?.length || 0,
+                downloadable: 0,
+                by_type: { pdf: 0, video: 0 }
+            },
             creator: col.user
                 ? {
                       name: col.user.username || col.user.name,
@@ -172,10 +235,7 @@ const viewAllReadingLists = () => {
 
 // View a specific reading list
 const viewReadingList = (list) => {
-    router.push({
-        name: 'reading-list-details',
-        params: { id: list.id }
-    });
+    router.push(`/reading-list-details/${list.id}`);
 };
 
 // Handle page change
@@ -183,6 +243,22 @@ const onPageChange = (event) => {
     first.value = event.first;
     collectionsPerPage.value = event.rows;
     fetchCollections();
+};
+
+// Get collection gradient based on content types
+const getCollectionGradient = (list) => {
+    const hasPdf = list.ebooks_count?.by_type?.pdf > 0;
+    const hasVideo = list.ebooks_count?.by_type?.video > 0;
+
+    if (hasPdf && hasVideo) {
+        return 'bg-gradient-to-br from-red-100 via-purple-100 to-blue-100';
+    } else if (hasPdf) {
+        return 'bg-gradient-to-br from-red-100 to-orange-100';
+    } else if (hasVideo) {
+        return 'bg-gradient-to-br from-blue-100 to-indigo-100';
+    } else {
+        return 'bg-gradient-to-br from-purple-100 to-blue-100';
+    }
 };
 
 // Helper functions for reading list display
@@ -346,6 +422,14 @@ const browseFeaturedResources = () => {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

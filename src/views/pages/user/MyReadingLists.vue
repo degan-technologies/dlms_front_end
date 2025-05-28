@@ -1,81 +1,137 @@
 <template>
-    <section class="bg-white py-12 px-5">
-        <div class="max-w-7xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+    <section class="bg-white py-0 px-0 min-h-screen">
+        <!-- Visually rich header -->
+        <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto py-10 px-5 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div>
-                    <div class="text-blue-600 font-semibold mb-1">MY COLLECTIONS</div>
-                    <h2 class="text-3xl font-bold">My Reading Lists</h2>
-                </div>
-                <div class="mt-4 md:mt-0">
-                    <button @click="createCollection" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">Create Collection <i class="pi pi-plus"></i></button>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">My Reading Lists</h2>
+                    <p class="text-gray-700 text-lg">Your personal collections to organize and accelerate your learning</p>
                 </div>
             </div>
+        </div>
+        <div class="max-w-7xl mx-auto pt-8">
+            <!-- Loading state -->
             <div v-if="loading" class="flex justify-center items-center py-16">
-                <div class="flex flex-col items-center">
-                    <i class="pi pi-spin pi-spinner text-3xl text-blue-600 mb-4"></i>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                     <span class="text-gray-600">Loading your collections...</span>
                 </div>
             </div>
-            <div v-else-if="myCollections.length === 0" class="bg-white p-8 rounded-lg text-center shadow-sm">
-                <div class="flex flex-col items-center">
-                    <i class="pi pi-folder-open text-4xl text-gray-300 mb-3"></i>
-                    <h3 class="text-xl font-semibold mb-2">No Collections Yet</h3>
-                    <p class="text-gray-500 max-w-md mx-auto">Create your first collection to organize your favorite resources.</p>
-                    <button @click="createCollection" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all flex items-center gap-1">
-                        <i class="pi pi-plus"></i>
-                        <span>Create Collection</span>
-                    </button>
+            <!-- Empty state -->
+            <div v-else-if="myCollections.length === 0" class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="pi pi-folder-open text-2xl text-gray-400"></i>
                 </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Collections Yet</h3>
+                <p class="text-gray-600 mb-4">Create your first collection to organize your favorite resources.</p>
+                <button @click="createCollection" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Create Collection</button>
             </div>
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-2">
-                <div
-                    v-for="list in myCollections"
-                    :key="list.id"
-                    @click="viewCollection(list)"
-                    class="cursor-pointer overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative group bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200"
-                >
-                    <div class="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-blue-500 via-sky-400 to-cyan-400"></div>
-                    <div class="relative p-6 h-full flex flex-col justify-between z-10">
-                        <div>
-                            <h3 class="text-xl font-bold mb-2 text-gray-900">{{ list.name }}</h3>
-                            <p class="text-gray-600 text-sm line-clamp-2 mb-4">{{ list.description }}</p>
-                        </div>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-sm font-bold text-gray-700">{{ list.ebooks ? list.ebooks.length : 0 }} items</span>
-                        </div>
-                        <div v-if="list.user" class="flex items-center gap-2 mt-4">
-                            <div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                <i class="pi pi-user text-blue-600" v-if="!list.user.avatar"></i>
-                                <img v-else :src="list.user.avatar" alt="Creator" class="w-full h-full object-cover" />
+            <!-- Collections Grid -->
+            <div v-else>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div v-for="list in myCollections" :key="list.id" @click="viewCollection(list)" class="group cursor-pointer">
+                        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
+                            <!-- Collection header with fixed height - Udemy-inspired design -->
+                            <div class="relative h-48 bg-gray-50 overflow-hidden">
+                                <!-- Dynamic gradient based on content types -->
+                                <div :class="getCollectionGradient(list)" class="absolute inset-0"></div>
+                                <div class="absolute inset-0 opacity-10 bg-white bg-opacity-5"></div>
+                                <!-- Content type icons display -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="flex items-center gap-3">
+                                        <div v-if="list.ebooks_count?.by_type?.pdf > 0" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                                            <i class="pi pi-file-pdf text-xl text-red-500"></i>
+                                        </div>
+                                        <div v-if="list.ebooks_count?.by_type?.video > 0" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                                            <i class="pi pi-video text-xl text-blue-500"></i>
+                                        </div>
+                                        <div v-if="!list.ebooks_count?.by_type?.pdf && !list.ebooks_count?.by_type?.video" class="w-14 h-14 bg-white bg-opacity-90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
+                                            <i class="pi pi-bookmark text-xl text-purple-600"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Total count badge -->
+                                <div class="absolute top-4 right-4">
+                                    <div class="bg-white bg-opacity-90 backdrop-blur-sm text-gray-800 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm border border-white border-opacity-20">
+                                        {{ list.ebooks_count?.total || list.ebooks?.length || 0 }} resources
+                                    </div>
+                                </div>
+                                <!-- Content type breakdown badges -->
+                                <div class="absolute bottom-4 left-4 flex flex-wrap gap-1.5">
+                                    <div v-if="list.ebooks_count?.by_type?.pdf > 0" class="bg-red-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-file-pdf text-xs"></i>
+                                        <span>{{ list.ebooks_count.by_type.pdf }}</span>
+                                    </div>
+                                    <div v-if="list.ebooks_count?.by_type?.video > 0" class="bg-blue-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-video text-xs"></i>
+                                        <span>{{ list.ebooks_count.by_type.video }}</span>
+                                    </div>
+                                    <div v-if="list.ebooks_count?.downloadable > 0" class="bg-green-500 bg-opacity-90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                                        <i class="pi pi-download text-xs"></i>
+                                        <span>{{ list.ebooks_count.downloadable }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="text-xs text-gray-700 font-medium">By {{ list.user.username }}</span>
-                        </div>
-                        <div class="absolute inset-0 bg-blue-50/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-20">
-                            <button class="px-4 py-2 bg-blue-600 text-white rounded-md shadow-md flex items-center gap-1.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 font-semibold">
-                                <i class="pi pi-eye"></i>
-                                <span>View Collection</span>
-                            </button>
+                            <!-- Collection info with flex-grow to fill remaining space -->
+                            <div class="p-4 flex-1 flex flex-col">
+                                <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                    {{ list.name }}
+                                </h3>
+                                <p class="text-gray-600 text-sm mb-3 line-clamp-3 leading-relaxed flex-grow">
+                                    {{ list.description || 'A curated collection of resources.' }}
+                                </p>
+                                <div class="flex items-center gap-2 mb-3 text-sm text-gray-500">
+                                    <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <i class="pi pi-user text-gray-600 text-xs"></i>
+                                    </div>
+                                    <span>{{ list.user?.username || 'Anonymous' }}</span>
+                                    <span class="text-gray-400">•</span>
+                                    <span>{{ formatDate(list.created_at) }}</span>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                        <div class="flex items-center justify-between">
+                                            <span>PDF Files:</span>
+                                            <span class="font-semibold text-red-600">{{ list.ebooks_count?.by_type?.pdf || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Videos:</span>
+                                            <span class="font-semibold text-blue-600">{{ list.ebooks_count?.by_type?.video || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Downloadable:</span>
+                                            <span class="font-semibold text-green-600">{{ list.ebooks_count?.downloadable || 0 }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span>Total:</span>
+                                            <span class="font-semibold text-gray-700">{{ list.ebooks_count?.total || 0 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 mt-auto">
+                                    <i class="pi pi-eye"></i>
+                                    <span>View Collection</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="mt-8 flex justify-center">
-                <Paginator
-                    :rows="collectionsPerPage"
-                    :totalRecords="totalRecords"
-                    v-model:first="first"
-                    :rowsPerPageOptions="[8, 12, 16, 24]"
-                    @page="onPageChange($event)"
-                    class="border-none"
-                    :loading="loading"
-                    :template="{
-                        '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown',
-                        '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown',
-                        '1300px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport'
-                    }"
-                    currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                    alwaysShow="true"
-                />
+                <div class="mt-8 flex justify-center">
+                    <Paginator
+                        :rows="collectionsPerPage"
+                        :totalRecords="totalRecords"
+                        v-model:first="first"
+                        :rowsPerPageOptions="[8, 12, 16, 24]"
+                        @page="onPageChange($event)"
+                        class="border-none bg-transparent"
+                        :template="{
+                            '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink',
+                            '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink',
+                            '1300px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport'
+                        }"
+                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                    />
+                </div>
             </div>
         </div>
     </section>
@@ -134,6 +190,21 @@ const onPageChange = (event) => {
     first.value = event.first;
     collectionsPerPage.value = event.rows;
     fetchMyCollections();
+};
+
+const getCollectionGradient = (list) => {
+    if (list.ebooks_count?.by_type?.video > 0) {
+        return 'bg-gradient-to-br from-blue-500 to-blue-300';
+    } else if (list.ebooks_count?.by_type?.pdf > 0) {
+        return 'bg-gradient-to-br from-red-500 to-red-300';
+    } else {
+        return 'bg-gradient-to-br from-purple-500 to-purple-300';
+    }
+};
+
+const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
 };
 </script>
 

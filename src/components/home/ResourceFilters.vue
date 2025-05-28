@@ -21,7 +21,7 @@
                 </div>
                 <input
                     type="text"
-                    v-model="filterKeyword"
+                    v-model="filters.keyword"
                     placeholder="Search for anything"
                     class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     @keyup.enter="applyFilters"
@@ -32,6 +32,22 @@
         <!-- Filter Sections - Scrollable Container -->
         <div class="flex-1 overflow-y-auto">
             <div class="space-y-0">
+                <!-- Format -->
+                <div class="border-b border-gray-200">
+                    <button @click="openSection = openSection === 'format' ? '' : 'format'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <span class="font-semibold text-gray-900">Format</span>
+                        <i :class="openSection === 'format' ? 'pi pi-minus' : 'pi pi-plus'" class="text-gray-500"></i>
+                    </button>
+                    <div v-if="openSection === 'format'" class="px-6 pb-4">
+                        <div class="flex gap-3">
+                            <label v-for="option in formatOptions" :key="option.value" class="flex items-center cursor-pointer">
+                                <input type="radio" :value="option.value" v-model="filters.format" class="mr-2" />
+                                <span class="text-sm text-gray-700">{{ option.label }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Resource Type -->
                 <div class="border-b border-gray-200">
                     <button @click="openSection = openSection === 'resourceType' ? '' : 'resourceType'" class="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
@@ -41,7 +57,7 @@
                     <div v-if="openSection === 'resourceType'" class="px-6 pb-4">
                         <div class="max-h-32 overflow-y-auto space-y-3">
                             <label v-for="type in itemTypeOptions" :key="type.id" class="flex items-center cursor-pointer">
-                                <input type="checkbox" :value="type.id" v-model="activeFilters.itemType" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <input type="checkbox" :value="type.id" v-model="filters.itemType" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                                 <span class="text-sm text-gray-700">{{ type.name }}</span>
                             </label>
                         </div>
@@ -57,7 +73,7 @@
                     <div v-if="openSection === 'category'" class="px-6 pb-4">
                         <div class="max-h-40 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             <label v-for="category in categoryOptions" :key="category.id" class="flex items-center cursor-pointer">
-                                <input type="checkbox" :value="category.id" v-model="activeFilters.categoryId" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <input type="checkbox" :value="category.id" v-model="filters.categoryId" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                                 <span class="text-sm text-gray-700">{{ category.name }}</span>
                             </label>
                         </div>
@@ -73,7 +89,7 @@
                     <div v-if="openSection === 'grade'" class="px-6 pb-4">
                         <div class="max-h-32 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             <label v-for="grade in gradeOptions" :key="grade.id" class="flex items-center cursor-pointer">
-                                <input type="checkbox" :value="grade.id" v-model="activeFilters.gradeLevel" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <input type="checkbox" :value="grade.id" v-model="filters.gradeLevel" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                                 <span class="text-sm text-gray-700">{{ grade.name }}</span>
                             </label>
                         </div>
@@ -89,7 +105,7 @@
                     <div v-if="openSection === 'subject'" class="px-6 pb-4">
                         <div class="max-h-40 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             <label v-for="subject in subjectOptions" :key="subject.id" class="flex items-center cursor-pointer">
-                                <input type="checkbox" :value="subject.id" v-model="activeFilters.subject" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <input type="checkbox" :value="subject.id" v-model="filters.subject" class="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                                 <span class="text-sm text-gray-700">{{ subject.name }}</span>
                             </label>
                         </div>
@@ -104,7 +120,7 @@
                     </button>
                     <div v-if="openSection === 'language'" class="px-6 pb-4">
                         <div class="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                            <select v-model="activeFilters.language" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                            <select v-model="filters.language" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
                                 <option value="">All Languages</option>
                                 <option v-for="language in languageOptions" :key="language.id" :value="language.id">
                                     {{ language.name }}
@@ -130,35 +146,25 @@
 </template>
 
 <script setup>
-import axiosInstance from '@/util/axios-config';
+import { useFilterStore } from '@/stores/filterStore';
+import { storeToRefs } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
-// Define emits for parent communication
-const emit = defineEmits(['filtersChanged']);
+// Use Pinia store
+const filterStore = useFilterStore();
+const { filters, filterOptions, loading, filtersLoading } = storeToRefs(filterStore);
 
 // Local state
-const filterKeyword = ref('');
-const loading = ref(false);
-const filtersLoading = ref(true);
 const toast = useToast();
 const openSection = ref('resourceType'); // Default open section
-const activeFilters = ref({
-    itemType: [],
-    categoryId: [],
-    language: '',
-    gradeLevel: [],
-    subject: []
-});
 
-// Initialize with empty data that will be populated from API
-const filterOptions = ref({
-    ebook_types: [],
-    categories: [],
-    languages: [],
-    grades: [],
-    subjects: []
-});
+// Format options
+const formatOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'book', label: 'Physical Book' },
+    { value: 'ebook', label: 'Ebook' }
+];
 
 // Fetch all filter options from the backend
 const fetchFilterOptions = async () => {
@@ -190,34 +196,30 @@ const fetchFilterOptions = async () => {
     }
 };
 
+// Add format filter
+const selectedFormat = ref('all');
+
 // Helper functions
 const resetFilters = () => {
-    activeFilters.value = {
-        itemType: [],
-        categoryId: [],
-        language: '',
-        gradeLevel: [],
-        subject: []
-    };
-    filterKeyword.value = '';
+    filterStore.resetFilters();
     console.log('Filters reset');
 };
 
 const applyFilter = (filterType, value) => {
     if (filterType === 'language') {
-        activeFilters.value.language = value;
+        filters.value.language = value;
     } else {
-        if (!activeFilters.value[filterType].includes(value)) {
-            activeFilters.value[filterType].push(value);
+        if (!filters.value[filterType].includes(value)) {
+            filters.value[filterType].push(value);
         }
     }
 };
 
 const removeFilter = (filterType, value, index) => {
     if (filterType === 'language') {
-        activeFilters.value.language = '';
+        filters.value.language = '';
     } else {
-        activeFilters.value[filterType].splice(index, 1);
+        filters.value[filterType].splice(index, 1);
     }
 };
 
@@ -227,40 +229,50 @@ const fetchBookItem = () => {
 
 // Computed properties for filter options
 const itemTypeOptions = computed(() => {
-    return filterOptions.value.ebook_types.map((type) => ({
-        id: type.id,
-        name: type.name
-    }));
+    return (
+        filterOptions.value.ebook_types?.map((type) => ({
+            id: type.id,
+            name: type.name
+        })) || []
+    );
 });
 
 const categoryOptions = computed(() => {
-    return filterOptions.value.categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-        count: category.count || 0
-    }));
+    return (
+        filterOptions.value.categories?.map((category) => ({
+            id: category.id,
+            name: category.name,
+            count: category.count || 0
+        })) || []
+    );
 });
 
 const languageOptions = computed(() => {
-    return filterOptions.value.languages.map((lang) => ({
-        id: lang.id,
-        name: lang.name,
-        code: lang.code
-    }));
+    return (
+        filterOptions.value.languages?.map((lang) => ({
+            id: lang.id,
+            name: lang.name,
+            code: lang.code
+        })) || []
+    );
 });
 
 const gradeOptions = computed(() => {
-    return filterOptions.value.grades.map((grade) => ({
-        id: grade.id,
-        name: `Grade ${grade.name}`
-    }));
+    return (
+        filterOptions.value.grades?.map((grade) => ({
+            id: grade.id,
+            name: `Grade ${grade.name}`
+        })) || []
+    );
 });
 
 const subjectOptions = computed(() => {
-    return filterOptions.value.subjects.map((subject) => ({
-        id: subject.id,
-        name: subject.name
-    }));
+    return (
+        filterOptions.value.subjects?.map((subject) => ({
+            id: subject.id,
+            name: subject.name
+        })) || []
+    );
 });
 
 // Methods
@@ -274,32 +286,23 @@ const toggleFilter = (filterType, value) => {
 };
 
 // Apply all current filters
-const applyFilters = () => {
-    const filtersToEmit = {
-        itemType: activeFilters.value.itemType,
-        categoryId: activeFilters.value.categoryId,
-        language: activeFilters.value.language,
-        gradeLevel: activeFilters.value.gradeLevel,
-        subject: activeFilters.value.subject,
-        keyword: filterKeyword.value
-    };
-
-    console.log('Applying filters:', filtersToEmit);
-
-    // Emit to parent component
-    emit('filtersChanged', filtersToEmit);
-
-    // Show loading state briefly for UX
-    loading.value = true;
-    setTimeout(() => {
-        loading.value = false;
+const applyFilters = async () => {
+    try {
+        await filterStore.applyFilters();
         toast.add({
             severity: 'success',
             summary: 'Filters Applied',
             detail: 'Your search results have been updated',
             life: 2000
         });
-    }, 500);
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to apply filters. Please try again.',
+            life: 3000
+        });
+    }
 };
 
 // Toggle filter sections to show/hide them
@@ -313,49 +316,12 @@ const toggleFilterSection = (sectionName) => {
 
 // Get total count of active filters for the badge display
 const getActiveFilterCount = () => {
-    let count = 0;
-    count += activeFilters.value.itemType.length;
-    count += activeFilters.value.categoryId.length;
-    count += activeFilters.value.language ? 1 : 0;
-    count += activeFilters.value.gradeLevel.length;
-    count += activeFilters.value.subject.length;
-    return count;
-};
-
-// Helper function to get the name of a resource type by ID
-const getResourceTypeName = (id) => {
-    const type = itemTypeOptions.value.find((t) => t.id === id);
-    return type ? type.name : '';
-};
-
-// Helper function to get a category name by ID
-const getCategoryName = (id) => {
-    const category = categoryOptions.value.find((c) => c.id === id);
-    return category ? category.name : '';
-};
-
-// Helper function to get language name by code
-const getLanguageName = (code) => {
-    const language = languageOptions.value.find((l) => l.code === code);
-    return language ? language.name : '';
-};
-
-// Helper function to get grade name by ID
-const getGradeName = (id) => {
-    const grade = gradeOptions.value.find((g) => g.id === id);
-    return grade ? grade.name : '';
-};
-
-// Helper function to get subject name by ID
-const getSubjectName = (id) => {
-    const subject = subjectOptions.value.find((s) => s.id === id);
-    return subject ? subject.name : '';
+    return filterStore.getActiveFilterCount();
 };
 
 // Function to reset filters and emit to parent
 const resetAndEmitFilters = () => {
-    resetFilters();
-    applyFilters();
+    filterStore.resetFilters();
 };
 
 // Fetch filter options on component mount
@@ -366,7 +332,7 @@ onMounted(async () => {
         openSection.value = savedSection;
     }
 
-    await fetchFilterOptions();
+    await filterStore.fetchFilterOptions();
 });
 </script>
 

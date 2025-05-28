@@ -419,208 +419,31 @@
 </template>
 
 <script setup>
+import { useFilterStore } from '@/stores/filterStore';
 import axiosInstance from '@/util/axios-config';
+import { storeToRefs } from 'pinia';
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-const props = defineProps({
-    filters: {
-        type: Object,
-        default: () => ({})
-    }
-});
-
-// Define emits for parent communication
-const emit = defineEmits(['filterReset']);
+// Use Pinia store
+const filterStore = useFilterStore();
+const { resources, loading, totalRecords, currentPage, resourcesPerPage } = storeToRefs(filterStore);
 
 const router = useRouter();
 const toast = useToast();
-const loading = ref(true);
-const first = ref(0);
-const resourcesPerPage = ref(6); // Initial fetch limit of 6
-const totalRecords = ref(0);
 // We'll keep local bookmarks for non-authenticated users or fallback
 const bookmarkedResources = ref(JSON.parse(localStorage.getItem('bookmarkedResources') || '[]'));
 const userBookmarks = ref([]); // For bookmarks from the API
 
-// Initialize with empty resources array
-const resources = ref([]);
-
-// Watch for filter changes from parent component
-watch(
-    () => props.filters,
-    (newFilters) => {
-        console.log('Filters changed in ResourceGrid:', newFilters);
-        applyFiltersToAPI(newFilters);
-    },
-    { deep: true }
-);
-
-// Apply filters to API request
-const applyFiltersToAPI = async (filters) => {
-    if (!filters || Object.keys(filters).length === 0) {
-        await fetchResources();
-        return;
-    }
-
-    loading.value = true;
-    try {
-        const currentPage = Math.floor(first.value / resourcesPerPage.value) + 1;
-        const params = {
-            page: currentPage,
-            per_page: resourcesPerPage.value,
-            format: 'all'
-        };
-
-        // Add filters to API params
-        if (filters.keyword && filters.keyword.trim()) {
-            params.search = filters.keyword.trim();
-        }
-        if (filters.categoryId && filters.categoryId.length > 0) {
-            params.category_ids = filters.categoryId.join(',');
-        }
-        if (filters.language && filters.language !== '') {
-            params.language = filters.language;
-        }
-        if (filters.gradeLevel && filters.gradeLevel.length > 0) {
-            params.grade_ids = filters.gradeLevel.join(',');
-        }
-        if (filters.subject && filters.subject.length > 0) {
-            params.subject_ids = filters.subject.join(',');
-        }
-        if (filters.itemType && filters.itemType.length > 0) {
-            params.ebook_type_ids = filters.itemType.join(',');
-        }
-
-        const response = await axiosInstance.get('/book-items', { params });
-
-        if (response.data && response.data.data) {
-            processResourcesData(response.data);
-        }
-    } catch (error) {
-        console.error('Failed to fetch filtered resources:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to apply filters. Please try again.',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
-    }
-};
-
-// Fetch resources from API
-const fetchResources = async () => {
-    loading.value = true;
-    try {
-        // Calculate current page from first and rows per page
-        const currentPage = Math.floor(first.value / resourcesPerPage.value) + 1;
-
-        // Add pagination parameters to the request
-        const response = await axiosInstance.get('/book-items', {
-            params: {
-                page: currentPage,
-                per_page: resourcesPerPage.value,
-                format: 'all'
-            }
-        });
-
-        if (response.data && response.data.data) {
-            // Create a new array to hold our expanded resources
-            const expandedResources = [];
-
-            // Process each book item and create separate entries for physical books and ebooks
-            response.data.data.forEach((item) => {
-                const hasPhysicalBook = item.books_count && item.books_count.total > 0;
-                const hasEbook = item.ebooks_count && item.ebooks_count.total > 0;
-
-                // If it has physical books, create a physical book card
-                if (hasPhysicalBook) {
-                    const physicalBookCard = {
-                        id: `${item.id}-physical`,
-                        originalId: item.id,
-                        title: item.title,
-                        author: item.author,
-                        description: item.description,
-                        type: 'Physical Book',
-                        image: item.cover_image,
-                        category: item.category ? item.category.name : null,
-                        language: item.language ? item.language.name : null,
-                        grade: item.grade ? `Grade ${item.grade.name}` : '',
-                        subject: item.subject ? item.subject.name : null,
-                        library: item.library ? item.library.name : null,
-                        available_books_count: item.books_count.available,
-                        total_books_count: item.books_count.total,
-                        availability_status: item.books_count.available > 0 ? 'available' : 'borrowed',
-                        resource_type: 'physical',
-                        // Only include what's in the API response
-                        is_physical: true
-                    };
-                    expandedResources.push(physicalBookCard);
-                }
-
-                // If it has ebooks, create one combined ebook card
-                if (hasEbook) {
-                    const ebookTypes = item.ebooks_count.by_type || {};
-
-                    // Create combined type string showing all available formats
-                    const availableTypes = [];
-                    if (ebookTypes.pdf > 0) availableTypes.push(`PDF (${ebookTypes.pdf})`);
-                    if (ebookTypes.video > 0) availableTypes.push(`Video (${ebookTypes.video})`);
-                    if (ebookTypes.audio > 0) availableTypes.push(`Audio (${ebookTypes.audio})`);
-
-                    const ebookCard = {
-                        id: `${item.id}-ebook`,
-                        originalId: item.id,
-                        title: item.title,
-                        author: item.author,
-                        description: item.description,
-                        type: 'Digital Collection',
-                        image: item.cover_image,
-                        category: item.category ? item.category.name : null,
-                        language: item.language ? item.language.name : null,
-                        grade: item.grade ? `Grade ${item.grade.name}` : '',
-                        subject: item.subject ? item.subject.name : null,
-                        library: item.library ? item.library.name : null,
-                        total_ebooks_count: item.ebooks_count.total,
-                        downloadable_count: item.ebooks_count.downloadable,
-                        ebook_types: availableTypes.join(', '),
-                        ebooks_count: item.ebooks_count,
-                        availability_status: 'available',
-                        resource_type: 'ebook',
-                        ebook_types_breakdown: ebookTypes,
-                        is_ebook: true
-                    };
-                    expandedResources.push(ebookCard);
-                }
-            });
-
-            // Set the resources to our expanded list
-            resources.value = expandedResources;
-
-            // Set total records (now it's the number of cards, not book items)
-            totalRecords.value = expandedResources.length;
-        }
-    } catch (error) {
-        console.error('Failed to fetch resources:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to load resources. Please try again.',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
-    }
-};
+// Computed property to get current page first index
+const first = computed(() => (currentPage.value - 1) * resourcesPerPage.value);
 
 // Enhanced helper functions for better UI
 const clearAllFilters = () => {
-    emit('filterReset');
+    filterStore.resetFilters();
     toast.add({
         severity: 'success',
         summary: 'Filters Cleared',
@@ -638,87 +461,11 @@ const showSuggestions = () => {
     });
 };
 
-const processResourcesData = (apiResponse) => {
-    // Create a new array to hold our expanded resources
-    const expandedResources = [];
-
-    // Process each book item and create separate entries for physical books and ebooks
-    apiResponse.data.forEach((item) => {
-        const hasPhysicalBook = item.books_count && item.books_count.total > 0;
-        const hasEbook = item.ebooks_count && item.ebooks_count.total > 0;
-
-        // If it has physical books, create a physical book card
-        if (hasPhysicalBook) {
-            const physicalBookCard = {
-                id: `${item.id}-physical`,
-                originalId: item.id,
-                title: item.title,
-                author: item.author,
-                description: item.description,
-                type: 'Physical Book',
-                image: item.cover_image,
-                category: item.category ? item.category.name : null,
-                language: item.language ? item.language.name : null,
-                grade: item.grade ? `Grade ${item.grade.name}` : '',
-                subject: item.subject ? item.subject.name : null,
-                library: item.library ? item.library.name : null,
-                available_books_count: item.books_count.available,
-                total_books_count: item.books_count.total,
-                availability_status: item.books_count.available > 0 ? 'available' : 'borrowed',
-                resource_type: 'physical',
-                is_physical: true
-            };
-            expandedResources.push(physicalBookCard);
-        }
-
-        // If it has ebooks, create one combined ebook card
-        if (hasEbook) {
-            const ebookTypes = item.ebooks_count.by_type || {};
-
-            // Create combined type string showing all available formats
-            const availableTypes = [];
-            if (ebookTypes.pdf > 0) availableTypes.push(`PDF (${ebookTypes.pdf})`);
-            if (ebookTypes.video > 0) availableTypes.push(`Video (${ebookTypes.video})`);
-            if (ebookTypes.audio > 0) availableTypes.push(`Audio (${ebookTypes.audio})`);
-
-            const ebookCard = {
-                id: `${item.id}-ebook`,
-                originalId: item.id,
-                title: item.title,
-                author: item.author,
-                description: item.description,
-                type: 'Digital Collection',
-                image: item.cover_image,
-                category: item.category ? item.category.name : null,
-                language: item.language ? item.language.name : null,
-                grade: item.grade ? `Grade ${item.grade.name}` : '',
-                subject: item.subject ? item.subject.name : null,
-                library: item.library ? item.library.name : null,
-                total_ebooks_count: item.ebooks_count.total,
-                downloadable_count: item.ebooks_count.downloadable,
-                ebook_types: availableTypes.join(', '),
-                ebooks_count: item.ebooks_count,
-                availability_status: 'available',
-                resource_type: 'ebook',
-                ebook_types_breakdown: ebookTypes,
-                is_ebook: true
-            };
-            expandedResources.push(ebookCard);
-        }
-    });
-
-    // Set the resources to our expanded list
-    resources.value = expandedResources;
-
-    // Set pagination info from API response
-    totalRecords.value = apiResponse.total || 0;
-};
-
 // Helper functions
 const resetFilters = () => {
     // Reset the filters and fetch all resources
     console.log('Filters reset');
-    fetchResources();
+    filterStore.resetFilters();
 };
 
 const capitalizeFirstLetter = (string) => {
@@ -727,14 +474,11 @@ const capitalizeFirstLetter = (string) => {
 };
 
 const onPageChange = (event) => {
-    first.value = event.first;
-    resourcesPerPage.value = event.rows;
-
-    // Fetch resources with the new pagination parameters
-    fetchResources();
+    const page = Math.floor(event.first / resourcesPerPage.value) + 1;
+    filterStore.updatePage(page);
     console.log('Page changed:', {
-        page: Math.floor(event.first / event.rows) + 1,
-        perPage: event.rows,
+        page: page,
+        perPage: resourcesPerPage.value,
         first: event.first
     });
 };
@@ -768,7 +512,7 @@ const fetchUserBookmarks = async () => {
 
 // Fetch data when component mounts
 onMounted(() => {
-    fetchResources();
+    filterStore.fetchResources();
 });
 
 // Local state for preview modal
