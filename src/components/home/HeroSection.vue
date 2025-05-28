@@ -215,7 +215,7 @@
 
                         <!-- Main Image -->
                         <div class="relative bg-white rounded-2xl p-6 shadow-xl">
-                            <img src="/public/hero.jpg" alt="Students learning at Flipper's International School" class="w-full h-80 object-cover rounded-xl" />
+                            <img src="/hero.jpg" alt="Students learning at Flipper's International School" class="w-full h-80 object-cover rounded-xl" />
 
                             <!-- Floating Cards -->
                             <div class="absolute -top-4 -left-4 bg-white rounded-lg shadow-lg p-4 transform -rotate-6">
