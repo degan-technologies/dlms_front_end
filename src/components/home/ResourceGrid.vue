@@ -9,10 +9,10 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
-const user = computed(() => authStore.getUser); // Fix: don't use .value here
-console.log('User:', user.value.user);
-console.log('User ID:', user.value.user?.id);
-const userId = computed(() => user.value.user?.id);
+const user = computed(() => authStore?.getUser ?? null); // Null safety for authStore
+console.log('User:', user?.value?.user ?? null);
+console.log('User ID:', user?.value?.user?.id ?? null);
+const userId = computed(() => user?.value?.user?.id ?? null);
 const authLoading = ref(true);
 
 const props = defineProps({

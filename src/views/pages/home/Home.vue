@@ -69,9 +69,9 @@ const searchPerPage = ref(15);
 
 const logout = authStore.logout;
 
+import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
 import Toast from 'primevue/toast';
-import { useChatStore } from '@/stores/chatStore';
 
 // Mobile menu state
 const showMobileMenu = ref(false);
@@ -704,7 +704,8 @@ const toggleFilterSection = (section) => {
                     <p>&copy; {{ new Date().getFullYear() }} Digital Library Management System. All rights reserved.</p>
                 </div>
             </div>
-        </footer>        <!-- Chatbot Floating Button -->
+        </footer>
+        <!-- Chatbot Floating Button -->
         <div class="fixed bottom-6 right-6 z-50">
             <button @click="chatStore.openTawk" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Live Support">
                 <i class="pi pi-comments text-xl"></i>
@@ -713,7 +714,6 @@ const toggleFilterSection = (section) => {
 
         <!-- Custom Chat Component (Handles both custom chat and Tawk initialization) -->
         <AskLibrarian />
-       
 
         <!-- Physical Book Reservation Modal -->
         <Dialog v-model:visible="showReservationModal" modal :style="{ width: '500px' }" header="Reserve Physical Book" :closable="true" @hide="closeReservationModal">
@@ -817,7 +817,7 @@ const toggleFilterSection = (section) => {
         <!-- <ResourceModal /> -->
         <!-- Search Dialog -->
         <Dialog v-model:visible="showSearchDialog" modal :style="{ width: '95vw', maxWidth: '1400px', height: '90vh' }" header="Search Resources" :closable="true" @hide="closeSearchDialog">
-            <template #header class="mb-3">
+            <template #header>
                 <div class="flex items-center justify-between w-full pr-8">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900">Search Resources</h2>
