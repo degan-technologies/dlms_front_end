@@ -39,66 +39,81 @@
                     <div class="flex-1 h-px bg-gray-200"></div>
                     <span class="text-sm text-gray-500 font-medium">{{ recentlyViewedResources.length }} Recent Items</span>
                 </div>
-
                 <!-- PrimeVue Carousel -->
                 <Carousel :value="recentlyViewedResources" :numVisible="3" :numScroll="1" :responsiveOptions="carouselResponsiveOptions" :circular="true" :autoplayInterval="0" :showNavigators="true" :showIndicators="false" class="custom-carousel">
                     <template #item="{ data: item, index }">
                         <div class="px-3">
-                            <div class="group cursor-pointer relative">
-                                <!-- Timeline connector -->
-                                <div v-if="index < recentlyViewedResources.length - 1" class="absolute top-8 right-0 w-6 h-0.5 bg-gray-200 z-0"></div>
-
-                                <!-- Timeline dot -->
-                                <div class="absolute -left-3 top-8 w-6 h-6 bg-white border-2 border-purple-500 rounded-full shadow-sm z-10 flex items-center justify-center">
-                                    <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col border border-gray-200" @click="openInReader(item.ebook)">
+                                <!-- Media content (Video or PDF) at the top with no padding -->
+                                <div v-if="isVideoType(item.ebook)" class="aspect-video bg-gray-100 relative">
+                                    <div class="w-full h-full bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+                                        <div class="text-center">
+                                            <i class="pi pi-video text-red-500 text-4xl mb-2"></i>
+                                            <p class="text-red-600 font-medium text-sm">Video Content</p>
+                                        </div>
+                                    </div>
+                                    <!-- Video overlay -->
+                                    <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                        <div class="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                                            <i class="pi pi-play text-gray-800 text-xl ml-1"></i>
+                                        </div>
+                                    </div>
+                                    <!-- Time ago badge -->
+                                    <div class="absolute top-3 right-3">
+                                        <span class="bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                                            {{ formatTimeAgo(item.last_viewed_at) }}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <!-- Content card -->
-                                <div class="ml-3 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200" @click="showResourcePreview(item.ebook)">
-                                    <!-- Resource thumbnail -->
-                                    <div class="relative h-32 bg-gray-100 overflow-hidden">
-                                        <div class="absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100"></div>
-
-                                        <!-- Resource icon -->
-                                        <div class="absolute inset-0 flex items-center justify-center">
-                                            <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                                                <i v-if="isVideoType(item.ebook)" class="pi pi-video text-xl text-red-600"></i>
-                                                <i v-else-if="isPdfType(item.ebook)" class="pi pi-file-pdf text-xl text-orange-600"></i>
-                                                <i v-else class="pi pi-file text-xl text-purple-600"></i>
-                                            </div>
-                                        </div>
-
-                                        <!-- Time ago badge -->
-                                        <div class="absolute top-3 right-3">
-                                            <span class="bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
-                                                {{ formatTimeAgo(item.viewed_at) }}
-                                            </span>
+                                <div v-else-if="isPdfType(item.ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
+                                    <div class="flex items-center justify-center h-full">
+                                        <div class="text-center">
+                                            <i class="pi pi-file-pdf text-red-500 text-4xl mb-2"></i>
+                                            <p class="text-red-600 font-medium text-sm">PDF Document</p>
                                         </div>
                                     </div>
-
-                                    <!-- Resource info -->
-                                    <div class="p-4">
-                                        <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
-                                            {{ getResourceTitle(item.ebook) }}
-                                        </h3>
-
-                                        <!-- Resource type badge -->
-                                        <div class="mb-3">
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" :style="{ backgroundColor: getResourceTypeColor(item.ebook) + '20', color: getResourceTypeColor(item.ebook) }">
-                                                <i :class="getResourceTypeIcon(item.ebook)" class="mr-1"></i>
-                                                {{ getResourceTypeDisplay(item.ebook) }}
-                                            </span>
-                                        </div>
-
-                                        <!-- File size -->
-                                        <div v-if="item.ebook.file_size_mb" class="text-xs text-gray-400 mb-4">
-                                            <i class="pi pi-database mr-1"></i>
-                                            {{ formatFileSize(item.ebook.file_size_mb * 1024 * 1024) }}
-                                        </div>
-
-                                        <!-- Action button -->
-                                        <button @click.stop="openInReader(item.ebook)" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors">Continue Reading</button>
+                                    <!-- PDF overlay -->
+                                    <div class="absolute top-3 left-3">
+                                        <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
                                     </div>
+                                    <!-- Time ago badge -->
+                                    <div class="absolute top-3 right-3">
+                                        <span class="bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                                            {{ formatTimeAgo(item.last_viewed_at) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Content section below the media -->
+                                <div class="p-4 flex-1 flex flex-col">
+                                    <!-- Type badge and downloadable badge -->
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+                                            <i :class="getResourceTypeIcon(item.ebook)" class="text-gray-600"></i>
+                                            {{ getResourceTypeDisplay(item.ebook) }}
+                                        </span>
+                                        <span v-if="item.ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
+                                        <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                                    </div>
+
+                                    <!-- Title - larger and truncated -->
+                                    <h4 class="font-semibold text-gray-900 text-base mb-2 line-clamp-2 leading-tight">{{ getResourceTitle(item.ebook) }}</h4>
+
+                                    <!-- Metadata with larger text -->
+                                    <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                                        <span class="font-medium">{{ formatFileSize(item.ebook.file_size_mb * 1024 * 1024) }}</span>
+                                        <span v-if="item.ebook.pages" class="flex items-center font-medium">
+                                            <i class="pi pi-file-o mr-1"></i>
+                                            {{ item.ebook.pages }} pages
+                                        </span>
+                                    </div>
+
+                                    <!-- Action button -->
+                                    <button @click.stop="openInReader(item.ebook)" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center gap-2 transition-all text-sm font-semibold mt-auto">
+                                        <i class="pi pi-play-circle"></i>
+                                        <span>{{ isVideoType(item.ebook) ? 'Watch Now' : 'Read Now' }}</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -290,11 +305,7 @@ const fetchRecentlyViewed = async () => {
     loading.value = true;
     try {
         console.log('Fetching recently viewed resources...');
-        const response = await axiosInstance.get('/recently-viewed', {
-            params: {
-                with: 'ebook,ebook.bookItem'
-            }
-        });
+        const response = await axiosInstance.get('/recently-viewed');
 
         console.log('API response:', response.data);
         recentlyViewedResources.value = response.data.data || [];
@@ -577,7 +588,7 @@ addLineClampStyles();
 // Extract YouTube video ID from a URL
 const getYoutubeVideoId = (url) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
 };
@@ -592,7 +603,10 @@ const extractYoutubeId = (url) => {
 
 // Open in Reader function - similar to EbookDetails.vue
 const openInReader = (ebook) => {
-    if (!ebook) return;
+    if (!ebook || !ebook.book_item_id) {
+        console.error('No book_item_id found for ebook:', ebook);
+        return;
+    }
 
     // Get the video ID for YouTube videos
     if (isVideoType(ebook)) {

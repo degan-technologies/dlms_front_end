@@ -901,6 +901,156 @@ const goToDetailsPage = (resource) => {
         </Dialog>
     </div>
 </template>
+
+<!-- <script setup>
+import { useFilterStore } from '@/stores/filterStore';
+import axiosInstance from '@/util/axios-config';
+import { storeToRefs } from 'pinia';
+import Dialog from 'primevue/dialog';
+import Paginator from 'primevue/paginator';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+// Use Pinia store
+const filterStore = useFilterStore();
+const { resources, loading, totalRecords, currentPage, resourcesPerPage } = storeToRefs(filterStore);
+
+const router = useRouter();
+const toast = useToast();
+// We'll keep local bookmarks for non-authenticated users or fallback
+const bookmarkedResources = ref(JSON.parse(localStorage.getItem('bookmarkedResources') || '[]'));
+const userBookmarks = ref([]); // For bookmarks from the API
+
+// Computed property to get current page first index
+const first = computed(() => (currentPage.value - 1) * resourcesPerPage.value);
+
+// Enhanced helper functions for better UI
+const clearAllFilters = () => {
+    filterStore.resetFilters();
+    toast.add({
+        severity: 'success',
+        summary: 'Filters Cleared',
+        detail: 'All filters have been cleared. Showing all resources.',
+        life: 2000
+    });
+};
+
+const showSuggestions = () => {
+    toast.add({
+        severity: 'info',
+        summary: 'Tip',
+        detail: 'Try browsing by category or reducing filter criteria to find more resources.',
+        life: 4000
+    });
+};
+
+// Helper functions
+const resetFilters = () => {
+    // Reset the filters and fetch all resources
+    console.log('Filters reset');
+    filterStore.resetFilters();
+};
+
+const capitalizeFirstLetter = (string) => {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
+const onPageChange = (event) => {
+    const page = Math.floor(event.first / resourcesPerPage.value) + 1;
+    filterStore.updatePage(page);
+    console.log('Page changed:', {
+        page: page,
+        perPage: resourcesPerPage.value,
+        first: event.first
+    });
+};
+
+// We no longer need these functions since we're using the actual data from the API
+
+// Fetch user's bookmarks from the API
+const fetchUserBookmarks = async () => {
+    try {
+        const response = await axiosInstance.get('/bookmarks', {
+            params: {
+                with: 'ebook,ebook.bookItem'
+            }
+        });
+
+        if (response.data && response.data.data) {
+            // Map the bookmarks to an easier format for checking
+            userBookmarks.value = response.data.data.map((bookmark) => ({
+                id: bookmark.id,
+                e_book_id: bookmark.e_book_id,
+                resource_id: bookmark.ebook?.book_item_id || null
+            }));
+
+            console.log('User bookmarks loaded:', userBookmarks.value.length);
+        }
+    } catch (error) {
+        console.error('Error fetching user bookmarks:', error);
+        // We'll continue with local storage as fallback
+    }
+};
+
+// Fetch data when component mounts
+onMounted(() => {
+    filterStore.fetchResources();
+});
+
+// Local state for preview modal
+const previewModalVisible = ref(false);
+const selectedResource = ref(null);
+
+// Show resource preview
+const showResourcePreview = (resource) => {
+    // Set selected resource
+    selectedResource.value = resource;
+
+    // Show the modal
+    previewModalVisible.value = true;
+};
+
+// Function to request/reserve a book
+const requestBook = (resource) => {
+    if (resource && resource.available_books_count > 0) {
+        toast.add({
+            severity: 'info',
+            summary: 'Book Reservation',
+            detail: `Your request for "${resource.title}" has been submitted.`,
+            life: 3000
+        });
+
+        // Here you would normally send a request to the API
+        // For now we'll just show a confirmation toast
+    } else {
+        toast.add({
+            severity: 'error',
+            summary: 'Unavailable',
+            detail: 'This book is currently unavailable for reservation.',
+            life: 3000
+        });
+    }
+};
+
+// Navigate to details page
+const goToDetailsPage = (resource) => {
+    if (resource && resource.id) {
+        // Extract the original ID for the API call
+        const originalId = resource.originalId || resource.id.split('-')[0];
+        previewModalVisible.value = false;
+
+        if (resource.resource_type === 'ebook') {
+            // Close modal and navigate to EbookDetails page
+            setTimeout(() => {
+                router.push(`/ebook-details/${originalId}`);
+            }, 100);
+        }
+    }
+};
+</script> -->
+
 <style scoped>
 /* Enhanced animations and utilities */
 @keyframes float {

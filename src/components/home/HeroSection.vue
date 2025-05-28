@@ -215,11 +215,7 @@
 
                         <!-- Main Image -->
                         <div class="relative bg-white rounded-2xl p-6 shadow-xl">
-                            <img
-                                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                alt="Students learning at Flipper's International School"
-                                class="w-full h-80 object-cover rounded-xl"
-                            />
+                            <img src="/public/hero.jpg" alt="Students learning at Flipper's International School" class="w-full h-80 object-cover rounded-xl" />
 
                             <!-- Floating Cards -->
                             <div class="absolute -top-4 -left-4 bg-white rounded-lg shadow-lg p-4 transform -rotate-6">

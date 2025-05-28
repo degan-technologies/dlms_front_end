@@ -31,47 +31,39 @@
                     <p class="text-gray-500 max-w-md mx-auto text-lg">Our shelves are being restocked. Check back soon for new arrivals!</p>
                 </div>
             </div>
-
             <!-- Enhanced grid layout -->
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                <div v-for="(item, index) in newArrivalsData" :key="item.id" class="group cursor-pointer" @click="showResourcePreview(item)">
+                <div v-for="(item, index) in newArrivalsData" :key="item.id" class="group cursor-pointer" @click="openInReader(item)">
                     <!-- Course Card Container -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
                         <!-- Thumbnail Section -->
                         <div class="relative aspect-video bg-gray-100 overflow-hidden">
-                            <!-- Video Resources -->
-                            <div v-if="item.item_type === 'video'" class="w-full h-full">
-                                <iframe :src="`https://www.youtube.com/embed/${extractYoutubeId(item.video_url)}?modestbranding=1&rel=0&showinfo=0`" frameborder="0" allowfullscreen class="w-full h-full" :title="item.title"> </iframe>
+                            <!-- Video Resources (YouTube) -->
+                            <div v-if="isYoutubeVideo(item)" class="w-full h-full">
+                                <iframe :src="`https://www.youtube.com/embed/${getYoutubeVideoId(item.file_path)}?modestbranding=1&rel=0&showinfo=0`" frameborder="0" allowfullscreen class="w-full h-full" :title="item.file_name"></iframe>
                                 <div class="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors pointer-events-none"></div>
                             </div>
 
                             <!-- PDF/eBook Resources -->
-                            <div v-else-if="item.item_type === 'ebook' || item.item_type === 'pdf'" class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                            <div v-else-if="isPdfFile(item)" class="w-full h-full bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
                                 <div class="text-center">
-                                    <i class="pi pi-file-pdf text-4xl text-orange-600 mb-2"></i>
-                                    <p class="text-sm font-medium text-gray-700">PDF Document</p>
+                                    <i class="pi pi-file-pdf text-4xl text-red-500 mb-2"></i>
+                                    <p class="text-sm font-medium text-red-600">PDF Document</p>
                                 </div>
                             </div>
 
-                            <!-- Physical Books -->
-                            <div v-else class="w-full h-full">
-                                <img
-                                    :src="item.cover_image"
-                                    :alt="item.title"
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    @error="$event.target.src = 'https://via.placeholder.com/320x180/4F46E5/FFFFFF?text=Book+Cover'"
-                                />
-                            </div>
-
-                            <!-- Hover Overlay -->
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <div class="bg-white/90 px-4 py-2 rounded-full font-semibold text-gray-900 transform scale-95 group-hover:scale-100 transition-transform">View Details</div>
+                            <!-- Other file types -->
+                            <div v-else class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="pi pi-file text-4xl text-indigo-600 mb-2"></i>
+                                    <p class="text-sm font-medium text-gray-700">Document</p>
+                                </div>
                             </div>
 
                             <!-- Resource Type Badge -->
                             <div class="absolute top-3 left-3">
                                 <span class="bg-black/80 text-white px-2 py-1 rounded text-xs font-semibold">
-                                    {{ item.item_type?.toUpperCase() || 'RESOURCE' }}
+                                    {{ item.e_book_type ? item.e_book_type.name : 'RESOURCE' }}
                                 </span>
                             </div>
 
@@ -82,25 +74,22 @@
                         </div>
 
                         <!-- Content Section -->
-                        <div class="p-4">
+                        <div class="p-4 flex-1 flex flex-col">
                             <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                                {{ item.title }}
+                                {{ item.file_name || 'Untitled Resource' }}
                             </h3>
-                            <p class="text-gray-600 text-sm mb-3">By {{ item.author }}</p>
 
-                            <!-- Metadata -->
+                            <!-- File size and type info -->
                             <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
-                                <span>{{ item.publication_year }}</span>
-                                <div class="flex items-center gap-1">
-                                    <i class="pi pi-circle-fill text-green-500 text-xs"></i>
-                                    <span class="capitalize">{{ item.availability_status }}</span>
-                                </div>
+                                <span>{{ formatFileSize(item.file_size_mb * 1024 * 1024) }}</span>
+                                <span v-if="item.is_downloadable" class="text-green-600 font-medium">Downloadable</span>
+                                <span v-else class="text-orange-600 font-medium">View Only</span>
                             </div>
 
                             <!-- Action Button -->
-                            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 mt-auto">
                                 <i class="pi pi-play"></i>
-                                <span>Start Learning</span>
+                                <span>{{ isYoutubeVideo(item) ? 'Watch Now' : 'Read Now' }}</span>
                             </button>
                         </div>
                     </div>
@@ -239,86 +228,18 @@
 
 <script setup>
 import YouTubePlayer from '@/components/reader/YouTubePlayer.vue';
+import axiosInstance from '@/util/axios-config';
 import Dialog from 'primevue/dialog';
-import { computed, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const loading = ref(false);
+const loading = ref(true);
 const previewModalVisible = ref(false);
 const selectedResource = ref(null);
 
-// Add dummy new arrivals data
-const newArrivalsData = ref([
-    {
-        id: '1',
-        title: 'The Theory of Everything',
-        author: 'Stephen Hawking',
-        description: 'A comprehensive look at the universe and its mysteries',
-        item_type: 'ebook',
-        cover_image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        isbn: '9780553380163',
-        publication_year: '2022',
-        availability_status: 'available',
-        pages: 256
-    },
-    {
-        id: '2',
-        title: 'Principles of Neural Science',
-        author: 'Eric Kandel',
-        description: 'The definitive guide to neuroscience and brain function',
-        item_type: 'physical_book',
-        cover_image: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        isbn: '9780071390118',
-        publication_year: '2023',
-        availability_status: 'available'
-    },
-    {
-        id: '3',
-        title: 'Introduction to Algorithms Video Course',
-        author: 'Thomas H. Cormen',
-        description: 'Comprehensive coverage of algorithm design and analysis',
-        item_type: 'video',
-        cover_image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        publication_year: '2021',
-        availability_status: 'available'
-    },
-    {
-        id: '4',
-        title: 'Climate Science Documentary',
-        author: 'Michael E. Mann',
-        description: 'An in-depth analysis of climate science and global warming',
-        item_type: 'video',
-        cover_image: 'https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        video_url: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
-        publication_year: '2023',
-        availability_status: 'available'
-    },
-    {
-        id: '5',
-        title: 'Database Systems Manual',
-        author: 'Ramez Elmasri',
-        description: 'Complete introduction to database design and implementation',
-        item_type: 'pdf',
-        cover_image: 'https://images.unsplash.com/photo-1456428746267-a1756408f782?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        isbn: '9780133970777',
-        publication_year: '2022',
-        availability_status: 'available',
-        pages: 450
-    },
-    {
-        id: '6',
-        title: 'Machine Learning Fundamentals',
-        author: 'Andrew Ng',
-        description: 'Learn the basics of machine learning and AI',
-        item_type: 'video',
-        cover_image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-        video_url: 'https://www.youtube.com/watch?v=PPLop4L2eGk',
-        publication_year: '2023',
-        availability_status: 'available'
-    }
-]);
+// Data from API
+const newArrivalsData = ref([]);
 
 // Responsive options for the carousel
 const responsiveOptions = ref([
@@ -345,6 +266,26 @@ const responsiveOptions = ref([
 ]);
 
 // Fetch new arrivals when component is mounted
+onMounted(() => {
+    fetchNewArrivals();
+});
+
+// Fetch learning recommendations from API
+const fetchNewArrivals = async () => {
+    loading.value = true;
+    try {
+        const response = await axiosInstance.get('/learning-recommendations');
+        if (response.data && response.data.recommendations) {
+            newArrivalsData.value = response.data.recommendations;
+        }
+    } catch (error) {
+        console.error('Error fetching learning recommendations:', error);
+        // Keep empty array if API fails
+        newArrivalsData.value = [];
+    } finally {
+        loading.value = false;
+    }
+};
 
 // Show resource preview
 const showResourcePreview = (resource) => {
@@ -373,46 +314,72 @@ const showResourcePreview = (resource) => {
 };
 
 // Helper methods
-const isVideoResource = computed(() => {
-    if (!selectedResource.value) return false;
-    // Check for video resources from API data structure
-    return (
-        selectedResource.value.item_type === 'video' ||
-        (selectedResource.value.item_type === 'other' && selectedResource.value.other_asset && selectedResource.value.other_asset.asset_type && selectedResource.value.other_asset.asset_type.file_type_category === 'video')
-    );
-});
+const isYoutubeVideo = (item) => {
+    if (!item) return false;
+    const type = item.e_book_type?.name?.toLowerCase() || '';
+    return type.includes('video') || type.includes('youtube');
+};
 
-const isPdfResource = computed(() => {
-    if (!selectedResource.value) return false;
-    // Check for PDF/eBook resources from API data structure
-    return (
-        selectedResource.value.item_type === 'pdf' ||
-        selectedResource.value.item_type === 'ebook' ||
-        (selectedResource.value.ebook && selectedResource.value.ebook.file_format === 'AZW') ||
-        (selectedResource.value.ebook && selectedResource.value.ebook.file_path && selectedResource.value.ebook.file_path.endsWith('.pdf'))
-    );
-});
+const isPdfFile = (item) => {
+    if (!item) return false;
+    const type = item.e_book_type?.name?.toLowerCase() || '';
+    return type.includes('pdf');
+};
 
-const isPhysicalBook = computed(() => {
-    if (!selectedResource.value) return false;
-    // Check for physical book resources from API data structure
-    return selectedResource.value.item_type === 'physical_book' || selectedResource.value.item_type === 'physical' || (selectedResource.value.book && !selectedResource.value.ebook);
-});
-
-const youtubeEmbedUrl = computed(() => {
-    if (!selectedResource.value) return '';
-    if (selectedResource.value.video_url) return selectedResource.value.video_url;
-    if (selectedResource.value.other_asset && selectedResource.value.other_asset.embed_url) return selectedResource.value.other_asset.embed_url;
-    return '';
-});
-const extractYoutubeId = (url) => {
+const getYoutubeVideoId = (url) => {
+    if (!url) return null;
     const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
 };
-const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
-const goToDetailsPage = (resource) => {
-    // Logic to navigate to the resource details page
+
+const formatFileSize = (bytes) => {
+    if (!bytes || isNaN(bytes)) return 'Unknown size';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+    }
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+};
+
+const openInReader = (item) => {
+    if (!item.book_item_id) {
+        console.error('No book_item_id found for item:', item);
+        return;
+    }
+
+    // Get the video ID for YouTube videos
+    if (isYoutubeVideo(item)) {
+        const videoId = getYoutubeVideoId(item.file_path);
+        if (videoId) {
+            // Navigate to the reader with the videoId parameter
+            router.push({
+                path: `/reader/${item.book_item_id}`,
+                query: {
+                    type: 'video',
+                    ebookId: item.id,
+                    videoId: videoId
+                }
+            });
+        } else {
+            // Fallback to opening in a new tab if we can't extract a video ID
+            window.open(item.file_path, '_blank');
+        }
+        return;
+    }
+
+    // Navigate to reader view for PDFs
+    router.push({
+        path: `/reader/${item.book_item_id}`,
+        query: {
+            type: 'pdf',
+            ebookId: item.id,
+            source: encodeURIComponent(item.file_path.replace(/\\\//g, '/'))
+        }
+    });
 };
 
 // Helper methods for masonry layout

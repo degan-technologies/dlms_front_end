@@ -164,12 +164,6 @@
                                 allowfullscreen
                                 class="rounded-t-xl"
                             ></iframe>
-                            <!-- Video play overlay -->
-                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
-                                <div class="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
-                                    <i class="pi pi-play text-gray-800 text-xl ml-1"></i>
-                                </div>
-                            </div>
                         </div>
 
                         <div v-else-if="isPdfFile(ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
@@ -184,17 +178,44 @@
                                 <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
                             </div>
                         </div>
-
                         <!-- Content section below the media -->
                         <div class="p-4">
-                            <!-- Type badge and downloadable badge -->
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
-                                    <i :class="getEbookTypeIcon(ebook)" class="text-gray-600"></i>
-                                    {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
-                                </span>
-                                <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
-                                <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                            <!-- Header with type badge and action buttons -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+                                        <i :class="getEbookTypeIcon(ebook)" class="text-gray-600"></i>
+                                        {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
+                                    </span>
+                                    <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
+                                    <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                                </div>
+
+                                <!-- Collection Action Buttons -->
+                                <div class="flex items-center gap-1 ml-2">
+                                    <!-- Bookmark Button -->
+                                    <button
+                                        @click="bookmarkEbook(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookBookmarked(ebook) ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-yellow-600'
+                                        ]"
+                                        :title="isEbookBookmarked(ebook) ? 'Remove bookmark' : 'Add bookmark'"
+                                    >
+                                        <i :class="['text-sm', isEbookBookmarked(ebook) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark']"></i>
+                                    </button>
+                                    <!-- Collection Button -->
+                                    <button
+                                        @click="openCollectionModal(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookInCollection(ebook) ? 'bg-purple-100 hover:bg-purple-200 text-purple-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-purple-600'
+                                        ]"
+                                        :title="isEbookInCollection(ebook) ? 'In collection' : 'Add to collection'"
+                                    >
+                                        <i :class="['text-sm', isEbookInCollection(ebook) ? 'pi pi-folder-open' : 'pi pi-folder']"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Title - larger and truncated -->
@@ -241,7 +262,6 @@
                         :rowsPerPageOptions="[9, 15, 24, 30]"
                         @page="onPageChange($event)"
                         class="border-none"
-                        :loading="loading"
                         :template="{
                             '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown',
                             '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown',
@@ -262,10 +282,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modals -->
+        <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />
     </div>
 </template>
 
 <script setup>
+import CollectionModal from '@/components/modals/CollectionModal.vue';
 import axiosInstance from '@/util/axios-config';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
@@ -290,6 +314,14 @@ const filters = ref({
     type: 'all', // 'all', 'pdf', 'video', or 'audio'
     downloadable: 'all' // 'all', 'yes', 'no'
 });
+
+// Collection modal state
+const collectionModalVisible = ref(false);
+const selectedEbook = ref(null);
+
+// User bookmarks and collections
+const userBookmarks = ref([]);
+const userCollections = ref([]);
 
 // Get the book item ID from the route params
 const bookItemId = computed(() => route.params.id);
@@ -452,11 +484,7 @@ const downloadFile = (ebook) => {
     // Create a file name for download
     const fileName = ebook.file_name || ebook.title || `file-${ebook.id}`;
 
-    // Create a temporary anchor element to trigger download
-    const a = document.createElement('a');
-    a.href = ebook.file_path;
-    a.download = fileName;
-    a.target = '_blank';
+    // Create a temporary anchor
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -586,6 +614,71 @@ const resetFilters = () => {
 const applyFilters = () => {
     first.value = 0; // Reset to first page when filtering
     fetchEbooks();
+};
+
+// Inline bookmark logic
+const bookmarkEbook = async (ebook) => {
+    if (!ebook || !ebook.id) return;
+    // If already bookmarked, remove bookmark
+    if (isEbookBookmarked(ebook)) {
+        try {
+            await axiosInstance.delete(`/bookmarks/by-ebook/${ebook.id}`);
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmark Removed',
+                detail: 'Bookmark removed successfully',
+                life: 3000
+            });
+            ebook.bookmarks = null;
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to remove bookmark',
+                life: 4000
+            });
+        }
+    } else {
+        // Not bookmarked, so add bookmark
+        try {
+            const response = await axiosInstance.post('/bookmarks', { e_book_id: ebook.id });
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmarked',
+                detail: 'Ebook bookmarked successfully',
+                life: 3000
+            });
+            // Set bookmark on ebook object (use response if available)
+            if (response.data && response.data.bookmark && response.data.bookmark.id) {
+                ebook.bookmarks = response.data.bookmark;
+            } else {
+                ebook.bookmarks = null;
+            }
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to bookmark',
+                life: 4000
+            });
+        }
+    }
+};
+
+// Check if an ebook is bookmarked by the user
+const isEbookBookmarked = (ebook) => {
+    return !!ebook.bookmarks;
+};
+
+// Check if an ebook is in any collection for the user
+const isEbookInCollection = (ebook) => {
+    return Array.isArray(ebook.collections) && ebook.collections.length > 0;
+};
+
+// Open collection modal for the selected ebook
+const openCollectionModal = (ebook) => {
+    selectedEbook.value = ebook;
+    collectionModalVisible.value = true;
 };
 </script>
 

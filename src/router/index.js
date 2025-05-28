@@ -170,6 +170,31 @@ const router = createRouter({
             ]
         },
 
+        {
+            path: '/teacher',
+            name: 'teacher',
+            children: [
+                {
+                    path: 'dashboard',
+                    name: 'teacher-dashboard',
+                    component: () => import('@/views/pages/teacher/TeacherDashboard.vue'),
+                    meta: {
+                        requiresAuth: true,
+                        roles: ['teacher', 'admin']
+                    }
+                },
+                {
+                    path: 'ebooks/:id',
+                    name: 'teacher-resource-details',
+                    component: () => import('@/views/pages/teacher/TeacherEbookDetails.vue'),
+                    meta: {
+                        requiresAuth: true,
+                        roles: ['teacher', 'admin']
+                    }
+                }
+            ]
+        },
+
         // Public Routes
         // {
         //     path: '/bookmarks',
@@ -203,7 +228,7 @@ const router = createRouter({
         },
 
         {
-            path: '/reading-list/:id',
+            path: '/reading-list-details/:id',
             name: 'reading-list-details',
             component: () => import('@/views/pages/user/ReadingListDetail.vue'),
             meta: { requiresAuth: true }

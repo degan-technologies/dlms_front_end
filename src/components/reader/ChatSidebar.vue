@@ -42,7 +42,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="font-medium">{{ msg.user?.username || 'You' }}</span>
                                 <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full font-mono font-medium cursor-pointer" @click="onJumpTo(msg)">
-                                    {{ msg.timerDisplay || (msg.timestamp ? formatTime(msg.timestamp) : msg.page_number ? `Page ${msg.page_number}` : '') }}
+                                    {{ msg.timerDisplay || (msg.timestamp ? formatTime(msg.timestamp) : msg.page_number ? 'Page ' + msg.page_number : '') }}
                                 </span>
                             </div>
                             <span>{{ msg.created_at ? new Date(msg.created_at).toLocaleString() : 'Just now' }}</span>
@@ -108,26 +108,27 @@ const modelValue = computed({
 
 const chatContent = ref('');
 
+// Show highlighted text in the input area if present
+const highlightedText = computed(() => props.selectedText || '');
+
+// Pre-fill chatContent with selectedText when sidebar opens
+watch(
+    () => props.visible,
+    (val) => {
+        if (val) {
+            chatContent.value = props.selectedText;
+        } else {
+            chatContent.value = '';
+        }
+    }
+);
+
 function onSend() {
     const chatData = {
-        question: chatContent.value
+        question: chatContent.value,
+        highlight_text: highlightedText.value || null,
+        page_number: props.pageNumber || null
     };
-
-    // Add timestamp for video content
-    if (props.currentTime !== undefined && props.currentTime !== null) {
-        chatData.timestamp = props.currentTime;
-    }
-
-    // Add page number for PDF content
-    if (props.pageNumber !== undefined && props.pageNumber !== null) {
-        chatData.page_number = props.pageNumber;
-    }
-
-    // Add selected text if available
-    if (props.selectedText) {
-        chatData.highlight_text = props.selectedText;
-    }
-
     emit('save-chat', chatData);
     chatContent.value = '';
 }
@@ -154,9 +155,15 @@ function formatTime(seconds) {
     return `${mins}:${secs}`;
 }
 
-// Use filtered messages if provided, otherwise use all messages
+const chatMessagesArray = computed(() => {
+    if (Array.isArray(props.chatMessages)) return props.chatMessages;
+    if (props.chatMessages && Array.isArray(props.chatMessages.data)) return props.chatMessages.data;
+    return [];
+});
+
 const filteredMessages = computed(() => {
-    return props.filteredMessages || props.chatMessages;
+    // Sort by created_at ascending (oldest first)
+    return chatMessagesArray.value.slice().sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 });
 
 // Clear content when sidebar closes

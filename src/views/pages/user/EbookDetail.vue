@@ -35,18 +35,9 @@
                 <div class="relative">
                     <button v-if="ebooksFirst > 0" @click="prevPage" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full p-2 shadow transition-all"><i class="pi pi-chevron-left"></i></button>
                     <div class="flex overflow-x-auto gap-8 px-12 py-4 scrollbar-hide">
-                        <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="min-w-[320px] max-w-xs bg-white rounded-xl shadow-lg border border-blue-100 flex flex-col hover:shadow-2xl transition-all relative">
-                            <div class="h-44 bg-gradient-to-t from-blue-100 to-white flex items-center justify-center rounded-t-xl overflow-hidden">
-                                <img :src="ebook.cover_image_url" :alt="ebook.title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            </div>
-                            <div class="absolute top-3 left-4 z-10 flex items-center gap-2">
-                                <span class="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded shadow">EBOOK</span>
-                                <span class="px-2 py-1 bg-white/80 text-blue-700 text-xs font-semibold rounded shadow border border-blue-100">{{ ebook.file_format }}</span>
-                            </div>
-                            <div class="absolute top-3 right-4 z-10">
-                                <span class="px-2 py-1 bg-black/70 text-xs font-medium rounded shadow text-white">ISBN: {{ ebook.isbn }}</span>
-                            </div>
-                            <div class="p-5 flex flex-col gap-2">
+                        <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 flex flex-col md:flex-row mb-6">
+                            <img :src="ebook.cover_image_url" alt="Ebook cover" class="w-full md:w-40 h-48 object-cover rounded-t-xl md:rounded-l-xl md:rounded-t-none" />
+                            <div class="p-5 flex flex-col gap-2 flex-1">
                                 <h3 class="font-bold text-lg text-gray-900 line-clamp-2 mb-1">{{ ebook.title }}</h3>
                                 <p class="text-gray-500 text-sm mb-1 flex items-center gap-2"><i class="pi pi-user text-blue-400"></i> {{ ebook.author }}</p>
                                 <p class="text-gray-600 text-xs italic mb-2 line-clamp-2">{{ ebook.description }}</p>
@@ -54,7 +45,12 @@
                                     <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">Pages: {{ ebook.pages }}</span>
                                     <span class="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">Added: {{ formatDate(ebook.created_at) }}</span>
                                 </div>
-                                <button class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all font-semibold shadow"><i class="pi pi-eye"></i> View Details</button>
+                                <div class="flex gap-2 mt-4">
+                                    <button class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-yellow-50 transition-all shadow group" @click="bookmarkEbook(ebook)" :title="'Bookmark'">
+                                        <i class="pi pi-bookmark text-xl group-hover:text-yellow-500 text-gray-400"></i>
+                                    </button>
+                                    <button class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all font-semibold shadow"><i class="pi pi-eye"></i> View Details</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -85,10 +81,13 @@
 </template>
 
 <script setup>
+import axiosInstance from '@/util/axios-config';
+import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+const toast = useToast();
 const loading = ref(false);
 const ebooksFirst = ref(0);
 const ebooksPerPage = ref(6);
@@ -139,6 +138,26 @@ const prevPage = () => {
 const nextPage = () => {
     if (ebooksFirst.value + ebooksPerPage.value < collection.value.ebooks.length) {
         ebooksFirst.value = Math.min(collection.value.ebooks.length - ebooksPerPage.value, ebooksFirst.value + ebooksPerPage.value);
+    }
+};
+
+const bookmarkEbook = async (ebook) => {
+    if (!ebook || !ebook.id) return;
+    try {
+        await axiosInstance.post('/bookmarks', { e_book_id: ebook.id });
+        toast.add({
+            severity: 'success',
+            summary: 'Bookmarked',
+            detail: 'Ebook bookmarked successfully',
+            life: 3000
+        });
+    } catch (err) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.response?.data?.message || 'Failed to bookmark',
+            life: 4000
+        });
     }
 };
 </script>

@@ -101,26 +101,27 @@ const modelValue = computed({
 
 const noteContent = ref('');
 
+// Show highlighted text in the input area if present
+const highlightedText = computed(() => props.selectedText || '');
+
+// Pre-fill note content and highlight when sidebar opens
+watch(
+    () => props.visible,
+    (val) => {
+        if (val) {
+            noteContent.value = props.selectedText;
+        } else {
+            noteContent.value = '';
+        }
+    }
+);
+
 function onSave() {
     const noteData = {
-        content: noteContent.value
+        content: noteContent.value,
+        highlight_text: highlightedText.value || null,
+        page_number: props.pageNumber || null
     };
-
-    // Add timestamp for video content
-    if (props.currentTime !== undefined && props.currentTime !== null) {
-        noteData.timestamp = props.currentTime;
-    }
-
-    // Add page number for PDF content
-    if (props.pageNumber !== undefined && props.pageNumber !== null) {
-        noteData.page_number = props.pageNumber;
-    }
-
-    // Add selected text if available
-    if (props.selectedText) {
-        noteData.highlight_text = props.selectedText;
-    }
-
     emit('save-note', noteData);
     noteContent.value = '';
 }
@@ -147,9 +148,16 @@ function formatTime(seconds) {
     return `${mins}:${secs}`;
 }
 
-// Use filtered notes if provided, otherwise use all notes
+// Defensive computed to always get the notes array
+const notesArray = computed(() => {
+    if (Array.isArray(props.notes)) return props.notes;
+    if (props.notes && Array.isArray(props.notes.data)) return props.notes.data;
+    return [];
+});
+
+// Always display all notes in chronological order
 const filteredNotes = computed(() => {
-    return props.filteredNotes || props.notes;
+    return notesArray.value.slice().sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 });
 
 // Clear content when sidebar closes

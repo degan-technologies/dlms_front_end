@@ -38,41 +38,164 @@ const emit = defineEmits(['add-note', 'delete-note', 'add-chat-message', 'delete
 
 // Core refs
 const toast = useToast();
-const pdfRef = ref();
-const componentKey = ref(0); // Force re-render when needed
+const pdfEmbedRef = ref();
+const pdfContainerRef = ref();
+const componentKey = ref(0);
+
+// Vue PDF Embed composable for all pages view
+const { doc } = useVuePdfEmbed({
+    source: computed(() => props.pdfSource)
+});
+
+// Page visibility tracking for performance
+const pageRefs = ref([]);
+const pageVisibility = ref({});
+let pageIntersectionObserver;
 
 // PDF state
-const page = ref(1);
-const scale = ref(1.2);
-const rotation = ref(0);
-const annotationLayer = ref(true);
-const textLayer = ref(true);
-const numPages = ref(0);
-const pdfLoading = ref(true); // Internal PDF loading state
+const currentPage = ref(1);
+const pdfLoading = ref(true);
 const error = ref(null);
+const pdfLoaded = ref(false);
 const progress = reactive({ loaded: 0, total: 0 });
 const isRendering = ref(false);
 
-// View mode and display
-const viewMode = ref('single'); // 'single' or 'continuous'
-const pageLoading = ref(new Set()); // Track which pages are loading
-const visiblePages = ref(new Set()); // Track visible pages for optimization
+// PDF document properties
+const totalPages = ref(0);
+const currentScale = ref(1.2);
+const pdfDocument = ref(null);
 
-// Optimized PDF loading with composable
-const { doc } = useVuePdfEmbed({
-    source: {
-        url: props.pdfSource,
-        cMapUrl: 'https://unpkg.com/pdfjs-dist/cmaps/',
-        imageResourcesPath: 'https://unpkg.com/pdfjs-dist/web/images/'
+// View mode - single page or all pages
+const viewMode = ref('all'); // Start with 'all' pages view
+
+// Performance tracking
+const renderedPagesCount = computed(() => Object.keys(pageVisibility.value).filter((key) => pageVisibility.value[key]).length);
+
+// Computed page numbers for all pages view
+const pageNums = computed(() => (doc.value ? [...Array(doc.value.numPages + 1).keys()].slice(1) : []));
+
+// Vue PDF Embed event handlers
+function onPdfLoaded(pdfProxy) {
+    pdfDocument.value = pdfProxy;
+    totalPages.value = pdfProxy.numPages;
+    pdfLoaded.value = true;
+    pdfLoading.value = false;
+    error.value = null;
+
+    // Initialize virtual scrolling
+    if (viewMode.value === 'all') {
+        nextTick(() => {
+            updateVisibleRange();
+        });
+    }
+
+    console.log('PDF loaded successfully:', totalPages.value, 'pages');
+}
+
+// Intersection Observer setup for performance optimization
+const resetPageIntersectionObserver = () => {
+    pageIntersectionObserver?.disconnect();
+    pageIntersectionObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const index = pageRefs.value.indexOf(entry.target);
+                    const pageNum = pageNums.value[index];
+                    if (pageNum) {
+                        pageVisibility.value[pageNum] = true;
+                        currentPage.value = pageNum; // Update current page based on visibility
+                        console.log(`Page ${pageNum} became visible and will be rendered`);
+                    }
+                }
+            });
+        },
+        {
+            root: null,
+            rootMargin: '100px', // Start loading 100px before page becomes visible
+            threshold: 0.1 // Page is considered visible when 10% is in view
+        }
+    );
+
+    // Observe all page wrapper elements
+    pageRefs.value.forEach((element) => {
+        if (element) {
+            pageIntersectionObserver.observe(element);
+        }
+    });
+};
+
+// Watch for the doc changes from useVuePdfEmbed to get totalPages
+watch(doc, (newDoc) => {
+    if (newDoc && newDoc.numPages) {
+        // This handles the all pages view totalPages
+        totalPages.value = newDoc.numPages;
+        pdfLoaded.value = true;
+        pdfLoading.value = false;
+        error.value = null;
+
+        console.log('PDF document loaded for all pages view:', totalPages.value, 'pages');
+
+        // Initialize intersection observer for all pages view
+        if (viewMode.value === 'all') {
+            nextTick(() => {
+                const firstPageNums = Array.from({ length: Math.min(3, totalPages.value) }, (_, i) => i + 1);
+                pageVisibility.value = Object.fromEntries(firstPageNums.map((num) => [num, true]));
+                nextTick(resetPageIntersectionObserver);
+            });
+        }
     }
 });
 
-// Search functionality
-const searchQuery = ref('');
-const searchResults = ref([]);
-const currentSearchIndex = ref(0);
-const showSearch = ref(false);
-const searchCache = ref(new Map()); // Cache search results
+// Watch for page numbers changes to reset observer
+watch(pageNums, (newPageNums) => {
+    if (newPageNums.length > 0) {
+        // Initialize with first 3 pages visible for immediate loading
+        pageVisibility.value = {
+            [newPageNums[0]]: true,
+            [newPageNums[1]]: newPageNums[1] ? true : false,
+            [newPageNums[2]]: newPageNums[2] ? true : false
+        };
+        nextTick(resetPageIntersectionObserver);
+    }
+});
+
+// Toggle between single page and all pages view
+function toggleViewMode() {
+    viewMode.value = viewMode.value === 'single' ? 'all' : 'single';
+}
+
+function onPdfLoadingFailed(err) {
+    console.error('Error loading PDF:', err);
+    pdfLoaded.value = false;
+    pdfDocument.value = null;
+    pdfLoading.value = false;
+
+    if (props.pdfSource && (props.pdfSource.includes('youtube.com') || props.pdfSource.includes('youtu.be'))) {
+        error.value = 'Invalid PDF source: YouTube URL detected. This URL cannot be loaded as a PDF.';
+    } else {
+        error.value = `Failed to load PDF: ${err.message}`;
+    }
+}
+
+function onPdfProgress(progressData) {
+    if (progressData.loaded && progressData.total) {
+        progress.loaded = progressData.loaded;
+        progress.total = progressData.total;
+    }
+}
+
+function onPdfRendered() {
+    isRendering.value = false;
+    console.log(`Page ${currentPage.value} rendered successfully`);
+}
+
+function onPdfRenderingFailed(err) {
+    console.error('Error rendering page:', err);
+    isRendering.value = false;
+    error.value = `Failed to render page: ${err.message}`;
+}
+
+// Search functionality - simplified for browser PDF
 
 // Text selection
 const selectedText = ref('');
@@ -84,116 +207,140 @@ const selectedPageNumber = ref(1);
 const noteSidebar = ref(false);
 const chatSidebar = ref(false);
 
+// Always pass selectedText to sidebars, no conditionals
+watch(noteSidebar, (val) => {
+    if (val) {
+        // Always set selectedText as is, do not clear
+        // No conditional logic needed
+    }
+});
+watch(chatSidebar, (val) => {
+    if (val) {
+        // Always set selectedText as is, do not clear
+        // No conditional logic needed
+    }
+});
+
 // Add mobile menu state
 const showMobileMenu = ref(false);
 
-// Filters
-const filterByCurrentPage = ref(true);
-const filterChatsByCurrentPage = ref(true);
+// Search functionality with PDF.js
+const searchQuery = ref('');
+const showSearch = ref(false);
+const searchResults = ref([]);
+const currentSearchIndex = ref(-1);
 
-// Optimized search with caching
 async function startSearch() {
-    if (!searchQuery.value.trim()) {
+    if (!searchQuery.value.trim() || !pdfDocument.value) {
         searchResults.value = [];
         return;
     }
 
-    // Check cache first
-    const cacheKey = searchQuery.value.toLowerCase();
-    if (searchCache.value.has(cacheKey)) {
-        searchResults.value = searchCache.value.get(cacheKey);
-        currentSearchIndex.value = 0;
-        if (searchResults.value.length > 0) {
-            page.value = searchResults.value[0];
-        }
-        return;
-    }
+    try {
+        searchResults.value = [];
 
-    if (!pdfRef.value) return;
-
-    const pdfDoc = pdfRef.value.getDocument && pdfRef.value.getDocument();
-    if (!pdfDoc) return;
-
-    const matches = [];
-    for (let i = 1; i <= numPages.value; i++) {
-        try {
-            const pageObj = await pdfDoc.getPage(i);
+        // Search through all pages
+        for (let pageNum = 1; pageNum <= totalPages.value; pageNum++) {
+            const pageObj = await pdfDocument.value.getPage(pageNum);
             const textContent = await pageObj.getTextContent();
+
+            // Build text string from text items
             const pageText = textContent.items.map((item) => item.str).join(' ');
-            if (pageText.toLowerCase().includes(cacheKey)) {
-                matches.push(i);
+            const searchTerm = searchQuery.value.toLowerCase();
+
+            if (pageText.toLowerCase().includes(searchTerm)) {
+                searchResults.value.push({
+                    pageNumber: pageNum,
+                    text: pageText
+                });
             }
-        } catch (err) {
-            console.warn(`Failed to search page ${i}:`, err);
         }
-    }
 
-    // Cache the results
-    searchCache.value.set(cacheKey, matches);
+        if (searchResults.value.length > 0) {
+            currentSearchIndex.value = 0;
+            const firstResult = searchResults.value[0];
+            currentPage.value = firstResult.pageNumber;
 
-    searchResults.value = matches;
-    currentSearchIndex.value = 0;
-    if (searchResults.value.length > 0) {
-        page.value = searchResults.value[0];
+            toast.add({
+                severity: 'success',
+                summary: 'Search Results',
+                detail: `Found ${searchResults.value.length} result(s)`,
+                life: 3000
+            });
+        } else {
+            toast.add({
+                severity: 'warn',
+                summary: 'No Results',
+                detail: 'No matches found for your search',
+                life: 3000
+            });
+        }
+    } catch (err) {
+        console.error('Search error:', err);
+        toast.add({
+            severity: 'error',
+            summary: 'Search Error',
+            detail: 'Failed to search the PDF',
+            life: 3000
+        });
     }
 }
 
 function nextSearchResult() {
     if (searchResults.value.length === 0) return;
+
     currentSearchIndex.value = (currentSearchIndex.value + 1) % searchResults.value.length;
-    page.value = searchResults.value[currentSearchIndex.value];
+    const result = searchResults.value[currentSearchIndex.value];
+    currentPage.value = result.pageNumber;
 }
 
 function prevSearchResult() {
     if (searchResults.value.length === 0) return;
-    currentSearchIndex.value = (currentSearchIndex.value - 1 + searchResults.value.length) % searchResults.value.length;
-    page.value = searchResults.value[currentSearchIndex.value];
-}
 
-function clearSearch() {
-    searchQuery.value = '';
-    searchResults.value = [];
-    currentSearchIndex.value = 0;
+    currentSearchIndex.value = currentSearchIndex.value - 1;
+    if (currentSearchIndex.value < 0) {
+        currentSearchIndex.value = searchResults.value.length - 1;
+    }
+    const result = searchResults.value[currentSearchIndex.value];
+    currentPage.value = result.pageNumber;
 }
 
 // Mouse tracking for text selection
 let isMouseOverActions = false;
 
-// Text selection handling
-function handleTextSelection() {
-    const selection = window.getSelection();
+// Text selection handling with vue-pdf-embed
+async function handleTextSelection() {
+    try {
+        const selection = window.getSelection();
 
-    if (selection && selection.toString().trim().length > 0) {
-        const selectedTextValue = selection.toString().trim();
+        if (selection && selection.toString().trim().length > 0) {
+            const selectedTextValue = selection.toString().trim();
+            selectedText.value = selectedTextValue;
+            selectedPageNumber.value = currentPage.value;
 
-        // Only process if text is actually selected and it's from the PDF viewer
-        const selectionContainer = selection.getRangeAt(0).commonAncestorContainer;
-        const pdfContainer = document.querySelector('.pdf-viewer-content');
+            // Get selection position for popup
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
 
-        if (!pdfContainer || !pdfContainer.contains(selectionContainer)) {
-            return; // Ignore selections outside PDF
+            // Position popup above the selection, centered
+            selectionPosition.value = {
+                x: Math.max(10, Math.min(window.innerWidth - 200, rect.left + rect.width / 2 - 100)),
+                y: Math.max(10, rect.top - 50)
+            };
+
+            showTextActions.value = true;
+            console.log('Text selected:', selectedTextValue, 'on page:', currentPage.value);
+        } else {
+            // Clear selection after a delay if mouse is not over actions
+            setTimeout(() => {
+                if (!isMouseOverActions) {
+                    clearTextSelection();
+                }
+            }, 200);
         }
-
-        selectedText.value = selectedTextValue;
-        selectedPageNumber.value = page.value;
-
-        // Get selection position for popup
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-
-        // Position popup above the selection, centered
-        selectionPosition.value = {
-            x: Math.max(10, Math.min(window.innerWidth - 200, rect.left + rect.width / 2 - 100)),
-            y: Math.max(10, rect.top - 50)
-        };
-
-        // Add visual highlight to selected text
-        addHighlightToSelection(range);
-        showTextActions.value = true;
-
-        console.log('Text selected:', selectedTextValue, 'on page:', page.value);
-    } else {
-        // Clear selection after a delay if mouse is not over actions
+    } catch (error) {
+        console.warn('Text selection error:', error);
+        // Clear selection in case of error
         setTimeout(() => {
             if (!isMouseOverActions) {
                 clearTextSelection();
@@ -202,51 +349,10 @@ function handleTextSelection() {
     }
 }
 
-// Add visual highlight to selected text
-function addHighlightToSelection(range) {
-    try {
-        // Remove existing highlights first
-        removeExistingHighlights();
-
-        // Create highlight span
-        const highlight = document.createElement('span');
-        highlight.className = 'pdf-text-highlight';
-        highlight.style.backgroundColor = 'rgba(255, 235, 59, 0.4)';
-        highlight.style.borderRadius = '2px';
-        highlight.style.padding = '1px 2px';
-        highlight.style.transition = 'all 0.2s ease';
-
-        // Wrap the selected content
-        try {
-            range.surroundContents(highlight);
-        } catch (e) {
-            // If surroundContents fails, use a different approach
-            const contents = range.extractContents();
-            highlight.appendChild(contents);
-            range.insertNode(highlight);
-        }
-    } catch (error) {
-        console.warn('Could not add highlight:', error);
-    }
-}
-
-// Remove existing highlights
-function removeExistingHighlights() {
-    const highlights = document.querySelectorAll('.pdf-text-highlight');
-    highlights.forEach((highlight) => {
-        const parent = highlight.parentNode;
-        if (parent) {
-            parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
-            parent.normalize(); // Merge adjacent text nodes
-        }
-    });
-}
-
 // Clear text selection and highlights
 function clearTextSelection() {
     showTextActions.value = false;
     selectedText.value = '';
-    removeExistingHighlights();
 
     // Clear browser selection
     if (window.getSelection) {
@@ -270,14 +376,20 @@ function onMouseLeaveActions() {
 // Dialog management
 function openNoteDialog() {
     noteSidebar.value = true;
+    // Ensure selectedText is passed to the note input field
+    if (selectedText.value) {
+        console.log('Opening Note Sidebar with selected text:', selectedText.value);
+    }
     showTextActions.value = false;
-    clearTextSelection();
 }
 
 function openChatDialog() {
     chatSidebar.value = true;
+    // Ensure selectedText is passed to the chat input field
+    if (selectedText.value) {
+        console.log('Opening Chat Sidebar with selected text:', selectedText.value);
+    }
     showTextActions.value = false;
-    clearTextSelection();
 }
 
 // Copy text functionality
@@ -289,9 +401,8 @@ function copySelectedText() {
                 toast.add({ severity: 'success', summary: 'Copied', detail: 'Text copied to clipboard', life: 2000 });
                 clearTextSelection();
             })
-            .catch((err) => {
-                console.error('Could not copy text: ', err);
-                toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to copy text', life: 3000 });
+            .catch(() => {
+                toast.add({ severity: 'error', summary: 'Copy Failed', detail: 'Failed to copy text to clipboard', life: 3000 });
             });
     }
 }
@@ -302,13 +413,11 @@ function saveNote(noteData) {
         toast.add({ severity: 'warn', summary: 'Empty Note', detail: 'Please enter some text for your note', life: 3000 });
         return;
     }
-
     emit('add-note', {
         content: noteData.content,
-        highlight_text: noteData.highlight_text || selectedText.value,
-        page_number: noteData.page_number || page.value
+        highlight_text: noteData.highlight_text !== undefined ? noteData.highlight_text : selectedText.value || null,
+        page_number: noteData.page_number !== undefined ? noteData.page_number : currentPage.value
     });
-
     selectedText.value = '';
     toast.add({ severity: 'success', summary: 'Note Saved', detail: 'Your note has been saved successfully', life: 3000 });
 }
@@ -318,14 +427,12 @@ function saveChatMessage(chatData) {
         toast.add({ severity: 'warn', summary: 'Empty Message', detail: 'Please enter your question', life: 3000 });
         return;
     }
-
     emit('add-chat-message', {
         question: chatData.question,
-        highlight_text: chatData.highlight_text || selectedText.value,
-        page_number: chatData.page_number || page.value,
+        highlight_text: chatData.highlight_text !== undefined ? chatData.highlight_text : selectedText.value || null,
+        page_number: chatData.page_number !== undefined ? chatData.page_number : currentPage.value,
         is_anonymous: false
     });
-
     selectedText.value = '';
     toast.add({ severity: 'success', summary: 'Question Sent', detail: 'Your question has been sent successfully', life: 3000 });
 }
@@ -342,37 +449,93 @@ function deleteChatMessage(messageId) {
 // Jump operations for clicking on notes/chats
 function jumpToNote(note) {
     if (note && note.page_number) {
-        page.value = note.page_number;
+        currentPage.value = note.page_number;
     }
 }
 
 function jumpToChat(chat) {
     if (chat && chat.page_number) {
-        page.value = chat.page_number;
+        currentPage.value = chat.page_number;
     }
 }
 
-// Watch for mouse events to detect text selection
+// Navigation functions with vue-pdf-embed
+function prevPage() {
+    if (currentPage.value > 1) {
+        currentPage.value--;
+    }
+}
+
+function nextPage() {
+    if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+    }
+}
+
+// Zoom functions
+function zoomIn() {
+    currentScale.value = Math.min(currentScale.value + 0.2, 3);
+}
+
+function zoomOut() {
+    currentScale.value = Math.max(currentScale.value - 0.2, 0.5);
+}
+
+function resetZoom() {
+    currentScale.value = 1.2;
+}
+
+// Utility functions
+function downloadPdf() {
+    if (props.pdfSource) {
+        const link = document.createElement('a');
+        link.href = props.pdfSource;
+        link.download = 'document.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+function printPdf() {
+    if (pdfEmbedRef.value) {
+        pdfEmbedRef.value.print();
+    }
+}
+
+// Handle window resize to re-render PDF
+function handleResize() {
+    // Vue PDF Embed handles resizing automatically
+}
+
+// Watch for prop changes
+watch(
+    () => props.pdfSource,
+    (newSource) => {
+        if (newSource) {
+            // Reset state when source changes
+            pdfLoaded.value = false;
+            pdfLoading.value = true;
+            error.value = null;
+            currentPage.value = 1;
+            componentKey.value++;
+        }
+    }
+);
+
+// Lifecycle hooks
 onMounted(() => {
     document.addEventListener('mouseup', handleTextSelection);
+    window.addEventListener('resize', handleResize);
     console.log('PDFReader mounted with source:', props.pdfSource);
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener('mouseup', handleTextSelection);
+    window.removeEventListener('resize', handleResize);
 
-    // Safely destroy the PDF document if it exists
-    if (doc.value && typeof doc.value.destroy === 'function') {
-        try {
-            doc.value.destroy();
-        } catch (err) {
-            console.error('Error destroying PDF document:', err);
-        }
-    }
-
-    // Clear all references that might cause memory leaks
-    searchResults.value = [];
-    searchCache.value.clear();
+    // Disconnect intersection observer
+    pageIntersectionObserver?.disconnect();
 
     // Reset component state
     showTextActions.value = false;
@@ -382,272 +545,157 @@ onBeforeUnmount(() => {
     console.log('PDFReader component unmounted and cleaned up');
 });
 
-// Computed properties - optimized with memoization
-const canPrev = computed(() => page.value > 1);
-const canNext = computed(() => page.value < numPages.value);
+// Computed properties
+const canPrev = computed(() => currentPage.value > 1);
+const canNext = computed(() => currentPage.value < totalPages.value);
+const pageInfo = computed(() => `${currentPage.value} / ${totalPages.value}`);
 
-// Optimized filtered notes and chats - prevent unnecessary recalculations
+// Show all notes and chats, no filtering by page
 const filteredNotes = computed(() => {
-    if (!props.notes.length) return [];
-    return filterByCurrentPage.value ? props.notes.filter((note) => note.page_number === page.value) : props.notes;
+    return props.notes.slice().sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 });
 
 const filteredChats = computed(() => {
-    if (!props.chatMessages.length) return [];
-    let result = filterChatsByCurrentPage.value ? props.chatMessages.filter((chat) => chat.page_number === page.value) : props.chatMessages;
-
-    // Sort by creation date, newest messages at the bottom
-    return result.slice().sort((a, b) => {
-        const dateA = new Date(a.created_at || 0);
-        const dateB = new Date(b.created_at || 0);
-        return dateA - dateB;
-    });
-});
-
-// PDF event handlers
-function onLoaded(pdf) {
-    numPages.value = pdf.numPages;
-    pdfLoading.value = false;
-    error.value = null;
-    isRendering.value = false;
-    console.log('PDF loaded successfully with', pdf.numPages, 'pages');
-}
-
-function onLoadingFailed(e) {
-    console.error('PDF loading failed:', e);
-    if (props.pdfSource && (props.pdfSource.includes('youtube.com') || props.pdfSource.includes('youtu.be'))) {
-        error.value = 'Invalid PDF source: YouTube URL detected. This URL cannot be loaded as a PDF.';
-    } else {
-        error.value = e.message || 'Failed to load PDF. Check the URL format.';
-    }
-    pdfLoading.value = false;
-    isRendering.value = false;
-}
-
-function onProgress(evt) {
-    progress.loaded = evt.loaded;
-    progress.total = evt.total;
-}
-
-function onRendered() {
-    isRendering.value = false;
-    console.log('Page rendered successfully');
-}
-
-function onRenderingFailed(e) {
-    console.error('PDF rendering failed:', e);
-    error.value = e.message || 'Failed to render PDF.';
-    isRendering.value = false;
-    // Force component re-render to clear canvas issues
-    componentKey.value++;
-}
-
-function onInternalLink(pageNum) {
-    page.value = pageNum;
-}
-
-// Navigation functions
-function prevPage() {
-    if (canPrev.value) page.value--;
-}
-
-function nextPage() {
-    if (canNext.value) page.value++;
-}
-
-// Zoom functions with canvas refresh
-function zoomIn() {
-    scale.value = Math.min(scale.value + 0.1, 3);
-    // Force re-render to prevent canvas issues
-    nextTick(() => {
-        componentKey.value++;
-    });
-}
-
-function zoomOut() {
-    scale.value = Math.max(scale.value - 0.1, 0.5);
-    // Force re-render to prevent canvas issues
-    nextTick(() => {
-        componentKey.value++;
-    });
-}
-
-// Rotation functions with canvas refresh
-function rotateLeft() {
-    rotation.value = (rotation.value + 270) % 360;
-    // Force re-render to prevent canvas issues
-    nextTick(() => {
-        componentKey.value++;
-    });
-}
-
-function rotateRight() {
-    rotation.value = (rotation.value + 90) % 360;
-    // Force re-render to prevent canvas issues
-    nextTick(() => {
-        componentKey.value++;
-    });
-}
-
-// Layer toggles
-function toggleAnnotationLayer() {
-    annotationLayer.value = !annotationLayer.value;
-}
-
-function toggleTextLayer() {
-    textLayer.value = !textLayer.value;
-}
-
-// Utility functions
-function downloadPdf() {
-    pdfRef.value?.download('document.pdf');
-}
-
-function printPdf() {
-    pdfRef.value?.print(1.5, 'document.pdf', true);
-}
-
-function toggleViewMode() {
-    viewMode.value = viewMode.value === 'single' ? 'continuous' : 'single';
-    // Force component re-render to prevent canvas conflicts
-    componentKey.value++;
-}
-
-// Watch for source changes and force re-render
-watch(
-    () => props.pdfSource,
-    () => {
-        componentKey.value++;
-        pdfLoading.value = true;
-        error.value = null;
-    },
-    { immediate: false }
-);
-
-// Watch for scale/rotation changes that might cause canvas issues
-watch([scale, rotation], () => {
-    if (isRendering.value) {
-        // If currently rendering, force a re-render after a short delay
-        setTimeout(() => {
-            componentKey.value++;
-        }, 100);
-    }
-});
-
-// Handle page changes smoothly
-watch(page, (newPage) => {
-    if (newPage < 1) {
-        page.value = 1;
-    } else if (newPage > numPages.value && numPages.value > 0) {
-        page.value = numPages.value;
-    }
+    return props.chatMessages.slice().sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 });
 </script>
 
 <template>
     <div class="relative w-full h-full bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <!-- Unified Minimal Toolbar -->
-        <div class="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-            <!-- Main Toolbar -->
-            <div class="flex flex-wrap items-center justify-between gap-1 px-2 py-1.5 md:px-4 md:py-2">
-                <!-- Left controls - Navigation -->
-                <div class="flex items-center gap-1">
-                    <button @click="prevPage" :disabled="!canPrev" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50" title="Previous Page">
-                        <i class="pi pi-chevron-left text-gray-700 dark:text-gray-300"></i>
-                    </button>
-                    <div class="flex items-center gap-1 px-2">
-                        <input v-model.number="page" type="number" :min="1" :max="numPages" class="w-12 text-center text-sm border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                        <span class="text-sm text-gray-600 dark:text-gray-400">/ {{ numPages }}</span>
-                    </div>
-                    <button @click="nextPage" :disabled="!canNext" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50" title="Next Page">
-                        <i class="pi pi-chevron-right text-gray-700 dark:text-gray-300"></i>
-                    </button>
-                </div>
-
-                <!-- Center controls - Zoom and view -->
-                <div class="flex items-center gap-1">
-                    <button @click="zoomOut" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Zoom Out">
-                        <i class="pi pi-minus text-gray-700 dark:text-gray-300"></i>
-                    </button>
-                    <span class="text-sm text-gray-600 dark:text-gray-400 px-2 min-w-16 text-center">{{ Math.round(scale * 100) }}%</span>
-                    <button @click="zoomIn" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Zoom In">
-                        <i class="pi pi-plus text-gray-700 dark:text-gray-300"></i>
-                    </button>
-
-                    <button @click="toggleViewMode" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 hidden sm:block" title="Toggle View Mode">
-                        <i class="pi" :class="viewMode === 'single' ? 'pi-th-large' : 'pi-stop'"></i>
-                    </button>
-                </div>
-
-                <!-- Right controls - Tools and actions -->
-                <div class="flex items-center gap-1">
-                    <button @click="showSearch = !showSearch" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" :class="showSearch ? 'bg-indigo-100 dark:bg-indigo-900' : ''" title="Search">
-                        <i class="pi pi-search text-gray-700 dark:text-gray-300"></i>
-                    </button>
-
-                    <button @click="downloadPdf" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 hidden lg:block" title="Download">
-                        <i class="pi pi-download text-gray-700 dark:text-gray-300"></i>
-                    </button>
-
-                    <!-- Mobile menu -->
-                    <div class="relative md:hidden">
-                        <button @click="showMobileMenu = !showMobileMenu" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <i class="pi pi-ellipsis-v text-gray-700 dark:text-gray-300"></i>
-                        </button>
-                        <div v-if="showMobileMenu" class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-32 z-30">
-                            <button @click="toggleViewMode" class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <i class="pi mr-2 text-gray-600 dark:text-gray-400" :class="viewMode === 'single' ? 'pi-th-large' : 'pi-stop'"></i> View Mode
-                            </button>
-                            <button @click="rotateLeft" class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"><i class="pi pi-undo mr-2 text-gray-600 dark:text-gray-400"></i> Rotate Left</button>
-                            <button @click="rotateRight" class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"><i class="pi pi-redo mr-2 text-gray-600 dark:text-gray-400"></i> Rotate Right</button>
-                            <button @click="downloadPdf" class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"><i class="pi pi-download mr-2 text-gray-600 dark:text-gray-400"></i> Download</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Search Bar (Conditional) -->
-            <div v-if="showSearch" class="flex items-center gap-1 px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-                <div class="relative flex-1">
-                    <input v-model="searchQuery" type="text" placeholder="Search..." class="w-full pl-2 pr-8 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-600 dark:text-white" @keyup.enter="startSearch" />
-                    <button @click="startSearch" class="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400">
-                        <i class="pi pi-search text-xs"></i>
-                    </button>
-                </div>
-
-                <div class="flex items-center">
-                    <button @click="prevSearchResult" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 rounded-l border border-gray-300 dark:border-gray-500" :disabled="!searchResults.length" title="Previous Result">
-                        <i class="pi pi-chevron-up text-xs"></i>
-                    </button>
-                    <button @click="nextSearchResult" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 rounded-r border border-l-0 border-gray-300 dark:border-gray-500" :disabled="!searchResults.length" title="Next Result">
-                        <i class="pi pi-chevron-down text-xs"></i>
-                    </button>
-                </div>
-
-                <span v-if="searchResults.length" class="text-xs text-gray-500 dark:text-gray-300 hidden sm:inline-block whitespace-nowrap"> {{ currentSearchIndex + 1 }} / {{ searchResults.length }} </span>
-                <button @click="clearSearch" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600" title="Clear Search">
-                    <i class="pi pi-times text-xs"></i>
-                </button>
-            </div>
-        </div>
-
         <!-- Main Content Area -->
         <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
             <!-- PDF viewer container with auto-adjusting width -->
-            <div class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
-                <!-- Loading indicator - only show PDF specific loading when parent is not loading -->
-                <div v-if="!props.loading && pdfLoading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
-                    <div class="text-center">
-                        <div class="w-12 h-12 border-4 border-t-red-500 border-gray-200 rounded-full animate-spin mb-4 mx-auto"></div>
-                        <p class="text-gray-700 dark:text-gray-300">Loading PDF...</p>
-                        <p v-if="progress.total" class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            {{ Math.round((progress.loaded / progress.total) * 100) }}% ({{ Math.round(progress.loaded / 1024) }} KB / {{ Math.round(progress.total / 1024) }} KB)
-                        </p>
+            <div ref="pdfContainerRef" class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
+                <!-- Toolbar -->
+                <div class="toolbar bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 mb-4 flex items-center justify-between gap-4 flex-wrap relative z-30">
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center gap-2 order-1">
+                        <button
+                            @click="prevPage"
+                            :disabled="!canPrev || isRendering"
+                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
+                        >
+                            <i class="pi pi-chevron-left text-xs"></i>
+                            <span>Previous</span>
+                        </button>
+                        <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px] text-center">
+                            {{ pageInfo }}
+                        </div>
+
+                        <!-- Performance Indicator for All Pages View -->
+                        <div v-if="viewMode === 'all' && pdfLoaded" class="px-2 py-1 bg-green-50 dark:bg-green-900 rounded text-xs font-medium text-green-700 dark:text-green-300">{{ renderedPagesCount }}/{{ totalPages }} loaded</div>
+
+                        <button
+                            @click="nextPage"
+                            :disabled="!canNext || isRendering"
+                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
+                        >
+                            <span>Next</span>
+                            <i class="pi pi-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Search Controls -->
+                    <div class="flex items-center gap-2 order-2">
+                        <div class="relative z-40">
+                            <input
+                                v-model="searchQuery"
+                                @keyup.enter="startSearch"
+                                placeholder="Search in PDF..."
+                                class="pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent relative z-40"
+                            />
+                            <i class="pi pi-search absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                        </div>
+                        <button
+                            @click="startSearch"
+                            :disabled="!searchQuery.trim() || !pdfLoaded"
+                            class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium relative z-40"
+                        >
+                            Search
+                        </button>
+                        <div v-if="searchResults.length > 0" class="flex items-center gap-1">
+                            <button @click="prevSearchResult" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded relative z-40" title="Previous Result">
+                                <i class="pi pi-chevron-up text-xs"></i>
+                            </button>
+                            <span class="text-xs text-gray-600 dark:text-gray-400 px-2">{{ currentSearchIndex + 1 }}/{{ searchResults.length }}</span>
+                            <button @click="nextSearchResult" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded relative z-40" title="Next Result">
+                                <i class="pi pi-chevron-down text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Zoom Controls -->
+                    <div class="flex items-center gap-2 order-last sm:order-3">
+                        <button
+                            @click="zoomOut"
+                            :disabled="currentScale <= 0.5 || isRendering"
+                            class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40"
+                            title="Zoom Out"
+                        >
+                            <i class="pi pi-minus text-xs"></i>
+                        </button>
+
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center"> {{ Math.round(currentScale * 100) }}% </span>
+
+                        <button
+                            @click="zoomIn"
+                            :disabled="currentScale >= 3 || isRendering"
+                            class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40"
+                            title="Zoom In"
+                        >
+                            <i class="pi pi-plus text-xs"></i>
+                        </button>
+                        <button
+                            @click="resetZoom"
+                            :disabled="isRendering"
+                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
+                            title="Reset Zoom"
+                        >
+                            Reset
+                        </button>
+
+                        <!-- View Mode Toggle -->
+                        <button
+                            @click="toggleViewMode"
+                            :disabled="!pdfLoaded"
+                            class="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium relative z-40"
+                            :title="viewMode === 'single' ? 'Show All Pages' : 'Show Single Page'"
+                        >
+                            <i :class="viewMode === 'single' ? 'pi pi-list' : 'pi pi-file'" class="text-xs mr-1"></i>
+                            {{ viewMode === 'single' ? 'All Pages' : 'Single' }}
+                        </button>
+
+                        <!-- Utility Actions -->
+                        <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
+
+                        <button @click="downloadPdf" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded relative z-40" title="Download PDF">
+                            <i class="pi pi-download text-xs"></i>
+                        </button>
+
+                        <button @click="printPdf" :disabled="!pdfLoaded" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40" title="Print PDF">
+                            <i class="pi pi-print text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Loading indicator -->
+                <div v-if="pdfLoading && !pdfLoaded" class="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-10">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 border-2 border-t-red-500 border-gray-200 rounded-full animate-spin"></div>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Loading PDF...</span>
+                        <span v-if="progress.total" class="text-xs text-gray-500 dark:text-gray-400"> {{ Math.round((progress.loaded / progress.total) * 100) }}% </span>
+                    </div>
+                </div>
+
+                <!-- Rendering indicator -->
+                <div v-if="isRendering && pdfLoaded" class="absolute top-20 right-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-15">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 border-2 border-t-indigo-500 border-gray-200 rounded-full animate-spin"></div>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Rendering...</span>
                     </div>
                 </div>
 
                 <!-- Error message -->
-                <div v-if="error" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
+                <!-- <div v-if="error" class="absolute inset-0 flex items-center justify-center z-10">
                     <div class="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
                         <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
@@ -657,27 +705,45 @@ watch(page, (newPage) => {
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Source: {{ props.pdfSource }}</p>
                         <button @click="$emit('retry')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Try Again</button>
                     </div>
-                </div>
-
+                </div> -->
                 <!-- PDF Content -->
-                <VuePdfEmbed
-                    :key="componentKey"
-                    ref="pdfRef"
-                    :source="doc || props.pdfSource"
-                    v-bind="viewMode === 'single' ? { page } : {}"
-                    :scale="scale"
-                    :rotation="rotation"
-                    :annotation-layer="annotationLayer"
-                    :text-layer="textLayer"
-                    :image-resources-path="'https://unpkg.com/pdfjs-dist/web/images/'"
-                    class="pdf-viewer-content"
-                    @loaded="onLoaded"
-                    @loading-failed="onLoadingFailed"
-                    @progress="onProgress"
-                    @rendered="onRendered"
-                    @rendering-failed="onRenderingFailed"
-                    @internal-link-clicked="onInternalLink"
-                />
+                <div class="pdf-viewer-wrapper bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 sm:p-4">
+                    <!-- Single Page View -->
+                    <VuePdfEmbed
+                        v-if="viewMode === 'single'"
+                        ref="pdfEmbedRef"
+                        :key="`single-${componentKey}`"
+                        :source="props.pdfSource"
+                        :page="currentPage"
+                        :scale="currentScale"
+                        :text-layer="true"
+                        :annotation-layer="true"
+                        image-resources-path="https://unpkg.com/pdfjs-dist/web/images/"
+                        class="vue-pdf-embed w-full max-w-none"
+                        @loaded="onPdfLoaded"
+                        @loading-failed="onPdfLoadingFailed"
+                        @progress="onPdfProgress"
+                        @rendered="onPdfRendered"
+                        @rendering-failed="onPdfRenderingFailed"
+                    />
+                    <!-- All Pages View with Lazy Loading -->
+                    <div v-else-if="viewMode === 'all'" class="all-pages-container w-full">
+                        <div v-for="pageNum in pageNums" :key="pageNum" ref="pageRefs" class="page-wrapper">
+                            <VuePdfEmbed
+                                v-if="pageVisibility[pageNum]"
+                                :source="doc"
+                                :page="pageNum"
+                                :scale="currentScale"
+                                :text-layer="true"
+                                :annotation-layer="true"
+                                image-resources-path="https://unpkg.com/pdfjs-dist/web/images/"
+                                class="vue-pdf-embed__page mb-4 w-full shadow-lg rounded-lg"
+                                @rendered="onPdfRendered"
+                                @rendering-failed="onPdfRenderingFailed"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Floating Action Buttons - Right Side Panel -->
@@ -736,6 +802,7 @@ watch(page, (newPage) => {
                     </div>
                 </div>
             </div>
+
             <!-- Text selection popup -->
             <div
                 v-if="showTextActions"
@@ -768,16 +835,26 @@ watch(page, (newPage) => {
             </div>
         </div>
         <!-- Note Sidebar -->
-        <NoteSidebar v-model:visible="noteSidebar" :notes="filteredNotes" :selected-text="selectedText" :page-number="page" timer-label="Page" :timer-value="`${page} of ${numPages}`" @save-note="saveNote" @delete="deleteNote" @jump-to="jumpToNote" />
+        <NoteSidebar
+            v-model:visible="noteSidebar"
+            :notes="filteredNotes"
+            :selected-text="selectedText"
+            :page-number="currentPage"
+            timer-label="Page"
+            :timer-value="`Page ${currentPage}`"
+            @save-note="saveNote"
+            @delete="deleteNote"
+            @jump-to="jumpToNote"
+        />
 
         <!-- Chat Sidebar -->
         <ChatSidebar
             v-model:visible="chatSidebar"
             :chat-messages="filteredChats"
             :selected-text="selectedText"
-            :page-number="page"
+            :page-number="currentPage"
             timer-label="Page"
-            :timer-value="`${page} of ${numPages}`"
+            :timer-value="`Page ${currentPage}`"
             @save-chat="saveChatMessage"
             @delete="deleteChatMessage"
             @jump-to="jumpToChat"
@@ -786,114 +863,204 @@ watch(page, (newPage) => {
 </template>
 
 <style scoped>
-/* PDF Viewer styles - Optimized for performance and canvas stability */
+/* Vue PDF Embed styling - Optimized for all devices */
+.vue-pdf-embed {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+
+.vue-pdf-embed:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* All Pages View Styling */
+.vue-pdf-embed__page {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    display: block;
+}
+
+.vue-pdf-embed__page:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode PDF styling */
+.dark .vue-pdf-embed {
+    border-color: #374151;
+    background-color: white;
+}
+
+.dark .vue-pdf-embed:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .vue-pdf-embed__page {
+    border-color: #374151;
+    background-color: white;
+}
+
+.dark .vue-pdf-embed__page:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced text selection styling */
+:deep(.textLayer ::selection) {
+    background: rgba(255, 215, 0, 0.8) !important; /* Bright gold highlight */
+    color: rgba(30, 30, 30, 0.9) !important; /* Dark text for visibility */
+}
+
+:deep(.textLayer ::-moz-selection) {
+    background: rgba(255, 215, 0, 0.8) !important; /* Bright gold highlight */
+    color: rgba(30, 30, 30, 0.9) !important; /* Dark text for visibility */
+}
+
+/* Ensure text layer works with vue-pdf-embed */
+:deep(.textLayer) {
+    user-select: text !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+
+:deep(.textLayer > span),
+:deep(.textLayer > div) {
+    user-select: text !important;
+    pointer-events: auto !important;
+}
+
 .pdf-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 1600px;
+    max-width: none; /* No max-width restrictions for full utilization */
     margin: 0 auto;
     contain: layout style;
 }
 
-:deep(.vue-pdf-embed) {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background-color: white;
+.pdf-viewer-wrapper {
+    min-height: 400px;
     width: 100%;
-    height: auto;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    contain: layout style;
-    /* Prevent canvas rendering conflicts */
-    isolation: isolate;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: auto;
 }
 
-/* Single page mode - optimized display */
-:deep(.vue-pdf-embed__page) {
-    box-shadow: 0 2px 8px 4px rgba(0, 0, 0, 0.1);
-    margin: 0 auto 16px;
-    max-width: 100%;
-    height: auto;
-    transition: all 0.3s ease;
+/* Page wrapper and placeholder styling for lazy loading */
+.page-wrapper {
+    margin-bottom: 16px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.page-placeholder {
+    width: 100%;
+    min-height: 400px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
     border-radius: 8px;
-    overflow: hidden;
-    contain: layout style paint;
-    will-change: transform;
-    /* Ensure canvas doesn't interfere with other elements */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.page-placeholder:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.page-placeholder-content {
+    text-align: center;
+    color: #6c757d;
+}
+
+.page-label {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.loading-text {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.dark .page-placeholder {
+    background-color: #374151;
+    border-color: #4b5563;
+}
+
+.dark .page-placeholder:hover {
+    background-color: #4b5563;
+    border-color: #6b7280;
+}
+
+.dark .page-placeholder-content {
+    color: #9ca3af;
+}
+
+/* Perfect responsive wrapper for all screen sizes */
+@media (max-width: 640px) {
+    .pdf-viewer-wrapper {
+        min-height: 300px;
+        padding: 8px !important;
+    }
+
+    .pdf-container {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    .vue-pdf-embed__page {
+        margin-bottom: 12px;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .pdf-viewer-wrapper {
+        min-height: 500px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .pdf-viewer-wrapper {
+        min-height: 600px;
+    }
+}
+
+/* Toolbar styling */
+.toolbar {
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(229, 231, 235, 0.8);
     position: relative;
-    z-index: 1;
+    z-index: 20;
+    pointer-events: auto;
 }
 
-/* Canvas specific fixes */
-:deep(.vue-pdf-embed canvas) {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    /* Prevent canvas scaling issues */
-    image-rendering: auto;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
+.toolbar button {
+    pointer-events: auto;
+    z-index: 21;
+    position: relative;
 }
 
-/* Continuous mode - all pages visible */
-:deep(.vue-pdf-embed[data-view-mode='continuous'] .vue-pdf-embed__page) {
-    margin-bottom: 24px;
-    opacity: 1;
-    transform: none;
-}
-
-/* Progressive loading optimization */
-:deep(.vue-pdf-embed__page:not(.loaded)) {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    min-height: 400px; /* Prevent layout shift */
-}
-
-@keyframes loading {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
-}
-
-/* Responsive page width optimization */
-@media (min-width: 768px) {
-    :deep(.vue-pdf-embed__page) {
-        max-width: 90%;
-    }
-}
-
-@media (min-width: 1024px) {
-    :deep(.vue-pdf-embed__page) {
-        max-width: 85%;
-    }
-}
-
-@media (min-width: 1280px) {
-    :deep(.vue-pdf-embed__page) {
-        max-width: 80%;
-    }
-}
-
-/* Enhance text selection in the PDF viewer */
-:deep(.textLayer) {
-    opacity: 1;
-    z-index: 2;
-    mix-blend-mode: multiply;
-}
-
-:deep(.textLayer ::selection) {
-    background-color: #b4d5fe;
-}
-
-:deep(.dark .textLayer ::selection) {
-    background-color: #3366cc;
+.dark .toolbar {
+    border-color: rgba(55, 65, 81, 0.8);
+    backdrop-filter: blur(8px);
 }
 
 /* Floating action buttons mobile responsiveness */
@@ -994,58 +1161,5 @@ watch(page, (newPage) => {
 
 .animate-spin {
     animation: spin 1s linear infinite;
-}
-
-/* Enhanced PDF page shadows and hover effects */
-:deep(.vue-pdf-embed__page) {
-    transition: all 0.3s ease;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-:deep(.vue-pdf-embed__page:hover) {
-    box-shadow: 0 4px 12px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-}
-
-/* Perfect text highlighting */
-:deep(.pdf-text-highlight) {
-    background-color: rgba(255, 235, 59, 0.4) !important;
-    border-radius: 2px !important;
-    padding: 1px 2px !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-:deep(.pdf-text-highlight:hover) {
-    background-color: rgba(255, 235, 59, 0.6) !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Dark mode enhancements */
-.dark :deep(.vue-pdf-embed) {
-    background-color: #1f2937;
-}
-
-.dark :deep(.vue-pdf-embed__page) {
-    box-shadow: 0 2px 8px 4px rgba(0, 0, 0, 0.3);
-}
-
-.dark :deep(.vue-pdf-embed__page:hover) {
-    box-shadow: 0 4px 12px 8px rgba(0, 0, 0, 0.4);
-}
-
-/* ChatGPT-like styling */
-.chat-messages .chat-message {
-    position: relative;
-}
-
-.chat-messages .chat-message:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    bottom: -1.5rem;
-    left: 1.25rem;
-    height: 1rem;
-    border-left: 2px dashed rgba(156, 163, 175, 0.2);
 }
 </style>
