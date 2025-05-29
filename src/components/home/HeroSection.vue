@@ -274,7 +274,7 @@ onMounted(() => {
                                     </div>
                                     <div>
                                         <div class="font-bold text-gray-900">Videos</div>
-                                        <div class="text-sm text-gray-600">{{totalVideos + totalAudeos}}+ hours</div>
+                                        <div class="text-sm text-gray-600">{{totalVideos + totalAudeos +totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos}}+ hours</div>
                                     </div>
                                 </div>
                             </div>

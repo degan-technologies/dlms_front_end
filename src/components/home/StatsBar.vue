@@ -19,7 +19,6 @@ const fetchCounts = async () => {
                 Authorization: `Bearer ${token}`
             }
         })
-
         totalBooks.value = response.data.total_books
         totalEbooks.value = response.data.total_ebooks
         totalStudents.value = response.data.total_students
