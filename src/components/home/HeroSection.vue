@@ -1,4 +1,41 @@
-<script setup></script>
+<script setup>
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+import Cookies from 'js-cookie'
+
+const totalResources = ref(0)
+const totalUsers = ref(0)
+const totalSubjects = ref(0)
+const totalStudents = ref(0)
+const totalAudeos = ref(0)
+const totalVideos = ref(0)
+// const totalLanguages = ref(0)
+
+const fetchCounts = async () => {
+    const token = Cookies.get('access_token') || localStorage.getItem('access_token')
+
+    try {
+        const response = await axios.get('http://localhost:8000/api/counts', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+
+        totalResources.value = response.data.total_books + response.data.total_ebooks
+        totalUsers.value = response.data.total_users
+        totalSubjects.value = response.data.total_subjects
+        totalStudents.value = response.data.total_students
+        totalVideos.value = response.data.total_videos
+        totalAudeos.value = response.data.total_audios
+    } catch (error) {
+        console.error('Error fetching counts:', error)
+    }
+}
+
+onMounted(() => {
+    fetchCounts()
+})
+</script>
 
 <template>
     <!-- Ocean-themed Hero Section for Flipper's International School -->
@@ -192,15 +229,15 @@
                     <!-- Simple Stats -->
                     <div class="flex justify-center lg:justify-start gap-8 mt-12 pt-8 border-t border-gray-200">
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">10K+</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalResources }}+</div>
                             <div class="text-sm text-gray-500">Resources</div>
                         </div>
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">5K+</div>
-                            <div class="text-sm text-gray-500">Students</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalUsers }}+</div>
+                            <div class="text-sm text-gray-500">Users</div>
                         </div>
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">50+</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalSubjects }}+</div>
                             <div class="text-sm text-gray-500">Subjects</div>
                         </div>
                     </div>
@@ -225,7 +262,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-gray-900">E-Books</div>
-                                        <div class="text-sm text-gray-600">5,000+ titles</div>
+                                        <div class="text-sm text-gray-600">{{totalResources}}+ titles</div>
                                     </div>
                                 </div>
                             </div>
@@ -237,7 +274,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-gray-900">Videos</div>
-                                        <div class="text-sm text-gray-600">2,000+ hours</div>
+                                        <div class="text-sm text-gray-600">{{totalVideos + totalAudeos +totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos+totalVideos}}+ hours</div>
                                     </div>
                                 </div>
                             </div>
@@ -249,7 +286,7 @@
                                         <img class="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108755-2616b612b1e0?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Student 2" />
                                         <img class="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Student 3" />
                                     </div>
-                                    <div class="text-xs font-medium text-gray-900">1000+ learners</div>
+                                    <div class="text-xs font-medium text-gray-900">{{totalStudents}}+ learners</div>
                                 </div>
                             </div>
                         </div>

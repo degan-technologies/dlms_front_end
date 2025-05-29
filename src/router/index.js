@@ -145,8 +145,38 @@ const router = createRouter({
                     component: () => import('@/views/pages/book/AssetsList.vue'),
                     meta: { requiresAuth: true }
                 },
+                // {
+                //     path: '/books/assets/create',
+                //     name: 'asset-create',
+                //     component: () => import('@/views/pages/book/AssetCreate.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/books/assets/edit/:id',
+                //     name: 'asset-edit',
+                //     component: () => import('@/views/pages/book/AssetEdit.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/books/assets/:id',
+                //     name: 'asset-details',
+                //     component: () => import('@/views/pages/book/AssetDetails.vue'),
+                //     meta: { requiresAuth: true }
+                // },
 
                 // Category and Publisher Routes
+                // {
+                //     path: '/books/categories',
+                //     name: 'categories-list',
+                //     component: () => import('@/views/pages/book/CategoriesList.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
+                // {
+                //     path: '/books/publishers',
+                //     name: 'publishers-list',
+                //     component: () => import('@/views/pages/book/PublishersList.vue'),
+                //     meta: { requiresAuth: true, isLibrarian: true }
+                // },
 
                 // User borrowing and history routes
                 {
@@ -258,6 +288,18 @@ const router = createRouter({
             component: () => import('@/views/pages/user/MyNotes.vue'),
             meta: { requiresAuth: true }
         },
+        {
+            path: '/my-collection',
+            name: 'my-collection',
+            component: () => import('@/views/pages/user/MyCollection.vue'),
+            meta: { requiresAuth: true }
+        },
+        // {
+        //     path: '/reader/:id',
+        //     name: 'universal-reader',
+        //     component: () => import('@/views/pages/reader/Reader.vue'),
+        //     meta: { requiresAuth: true }
+        // },
         {
             path: '/my-profile',
             name: 'my-profile',
