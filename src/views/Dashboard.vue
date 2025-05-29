@@ -1,8 +1,7 @@
 <script setup>
 import Loan from '@/components/dashboard/Loan.vue';
 import NotificationsWidget from '@/components/dashboard/NotificationsWidget.vue';
-import RecentSalesWidget from '@/components/dashboard/RecentSalesWidget.vue';
-import RevenueStreamWidget from '@/components/dashboard/RevenueStreamWidget.vue';
+
 import StatsWidget from '@/components/dashboard/StatsWidget.vue';
 import TotalBook from '@/components/dashboard/TotalBook.vue';
 import ReadingPerformanceWidget from '../components/dashboard/ReadingPerformanceWidget.vue';
