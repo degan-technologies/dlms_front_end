@@ -10,9 +10,9 @@ import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
 const user = computed(() => authStore.getUser); // Fix: don't use .value here
-console.log('User:', user.value.user);
-console.log('User ID:', user.value.user?.id);
-const userId = computed(() => user.value.user?.id);
+console.log('User:', user?.value?.user);
+console.log('User ID:', user.value?.user?.id);
+const userId = computed(() => user.value?.user?.id);
 const authLoading = ref(true);
 
 const props = defineProps({

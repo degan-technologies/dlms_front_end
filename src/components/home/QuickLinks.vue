@@ -75,13 +75,13 @@ const quickLinks = ref([
 // Navigation function
 const navigateToLink = (link) => {
     console.log('Navigating to:', link.title);
-    
+
     // Special handling for "Ask a Librarian"
     if (link.title === 'Ask a Librarian') {
         chatStore.openChat();
         return;
     }
-    
+
     // Regular navigation for other links
     router.push(link.url);
 };

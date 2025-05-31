@@ -51,7 +51,7 @@
                         </div>
                     </button>
 
-                    <button @click="showBulkUploadModal = true" class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 border border-gray-200 group">
+                    <!-- <button @click="showBulkUploadModal = true" class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 border border-gray-200 group">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
                                 <i class="pi pi-upload text-green-600 text-xl"></i>
@@ -61,7 +61,7 @@
                                 <p class="text-sm text-gray-600">Upload multiple files</p>
                             </div>
                         </div>
-                    </button>
+                    </button> -->
                 </div>
             </div>
 
@@ -235,7 +235,7 @@
 
         <CollectionModal :visible="showCollectionModal" @update:visible="showCollectionModal = $event" :book-item="selectedBookItemForCollection" />
 
-        <BulkUploadModal :visible="showBulkUploadModal" @update:visible="showBulkUploadModal = $event" @bulk-upload-complete="onBulkUploadComplete" />
+        <!-- <BulkUploadModal :visible="showBulkUploadModal" @update:visible="showBulkUploadModal = $event" @bulk-upload-complete="onBulkUploadComplete" /> -->
 
         <!-- Delete Confirmation Dialog -->
         <Dialog :visible="showDeleteDialog" @update:visible="showDeleteDialog = $event" header="Confirm Delete" :modal="true" :style="{ width: '400px' }">
@@ -255,18 +255,18 @@
 
 <script setup>
 import axiosInstance from '@/util/axios-config';
+import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import Paginator from 'primevue/paginator';
 
 // Import components
-import AddBookItemDialog from '@/views/pages/book/components/AddBookItemDialog.vue';
-import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
-import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
-import CreateCollectionModal from '@/components/modals/CreateCollectionModal.vue';
 import CollectionModal from '@/components/modals/CollectionModal.vue';
-import BulkUploadModal from '@/components/modals/BulkUploadModal.vue';
+import CreateCollectionModal from '@/components/modals/CreateCollectionModal.vue';
+import AddBookItemDialog from '@/views/pages/book/components/AddBookItemDialog.vue';
+import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
+import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
+// import BulkUploadModal from '@/components/modals/BulkUploadModal.vue';
 
 const router = useRouter();
 const toast = useToast();

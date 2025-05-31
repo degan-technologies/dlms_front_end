@@ -149,7 +149,7 @@ let tawkScriptInjected = false;
 
 const initializeTawk = () => {
     if (tawkScriptInjected) return;
-    
+
     const script = document.createElement('script');
     script.src = 'https://embed.tawk.to/6830a9ba12ae50190a96f480/1irv1e0vk';
     script.async = true;
@@ -157,7 +157,7 @@ const initializeTawk = () => {
     script.setAttribute('crossorigin', '*');
     document.body.appendChild(script);
     tawkScriptInjected = true;
-    
+
     // Initially hide Tawk widget
     setTimeout(() => {
         if (window.Tawk_API?.hideWidget) {

@@ -1,5 +1,5 @@
 <template>
-    <Sidebar v-model:visible="modelValue" position="right" class="w-full md:w-[650px] lg:w-[800px]">
+    <Drawer v-model:visible="modelValue" position="right" class="!w-[90%] lg:!w-[50%]">
         <template #header>
             <div class="flex items-center py-3 px-4 border-b border-gray-200 dark:border-gray-700 w-full">
                 <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white mr-3">
@@ -8,13 +8,13 @@
                 <h3 class="m-0 text-xl font-bold text-gray-800 dark:text-gray-100">AI Assistant ({{ chatMessages.length }})</h3>
             </div>
         </template>
-        <div class="p-4 h-full flex flex-col">
+        <div class="p-4 h-full flex flex-col w-full">
             <div class="flex items-center gap-2 mb-3">
                 <label v-if="timerLabel" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ timerLabel }}:</label>
                 <span v-if="timerValue" class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full font-mono font-medium">{{ timerValue }}</span>
                 <slot name="extra-controls"></slot>
             </div>
-            <Textarea v-model="chatContent" autoResize rows="3" class="w-full mb-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 p-3 text-base" placeholder="Ask about this..." />
+            <Textarea v-model="chatContent" autoResize rows="3" class="w-full mb-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 p-3 text-base" placeholder="Ask about this..." :disabled="false" autofocus />
             <div class="flex justify-between mt-2">
                 <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="onCancel" />
                 <Button label="Send" icon="pi pi-send" class="p-button-primary p-button-rounded px-5" @click="onSend" :disabled="!chatContent.trim()" />
@@ -64,12 +64,12 @@
                 </div>
             </div>
         </div>
-    </Sidebar>
+    </Drawer>
 </template>
 
 <script setup>
 import Button from 'primevue/button';
-import Sidebar from 'primevue/sidebar';
+import Drawer from 'primevue/drawer';
 import Textarea from 'primevue/textarea';
 import { computed, ref, watch } from 'vue';
 
@@ -111,13 +111,18 @@ const chatContent = ref('');
 // Show highlighted text in the input area if present
 const highlightedText = computed(() => props.selectedText || '');
 
-// Pre-fill chatContent with selectedText when sidebar opens
+// Only pre-fill chat content when sidebar opens, don't clear if user is typing
 watch(
     () => props.visible,
-    (val) => {
-        if (val) {
-            chatContent.value = props.selectedText;
-        } else {
+    (val, oldVal) => {
+        if (val && !oldVal) {
+            // Only set if there's selected text, otherwise leave empty for user input
+            if (props.selectedText) {
+                chatContent.value = props.selectedText;
+            }
+            // Don't set to empty string if no selected text - let user type freely
+        }
+        if (!val) {
             chatContent.value = '';
         }
     }
@@ -127,7 +132,9 @@ function onSend() {
     const chatData = {
         question: chatContent.value,
         highlight_text: highlightedText.value || null,
-        page_number: props.pageNumber || null
+        page_number: props.pageNumber || null,
+        timestamp: props.currentTime || null,
+        is_anonymous: false
     };
     emit('save-chat', chatData);
     chatContent.value = '';

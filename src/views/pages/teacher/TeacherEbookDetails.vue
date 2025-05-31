@@ -268,16 +268,16 @@
 <script setup>
 // ... existing code... (same as EbookDetails.vue but with additional teacher functionality)
 import axiosInstance from '@/util/axios-config';
+import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import Paginator from 'primevue/paginator';
 
 // Import components
-import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
-import EditEbookDialog from '@/views/pages/book/components/EditEbookDialog.vue';
-import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
 import CollectionModal from '@/components/modals/CollectionModal.vue';
+import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
+import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
+import EditEbookDialog from '@/views/pages/book/components/EditEbookDialog.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -469,11 +469,10 @@ const openInReader = (ebook) => {
         const videoId = getYoutubeVideoId(ebook.file_path);
         if (videoId) {
             router.push({
-                path: `/reader/${bookItemId.value}`,
+                path: `/reader/${ebook.id}`,
                 query: {
                     type: 'video',
-                    ebookId: ebook.id,
-                    videoId: videoId
+                    videoId
                 }
             });
         } else {
@@ -482,10 +481,9 @@ const openInReader = (ebook) => {
         return;
     }
     router.push({
-        path: `/reader/${bookItemId.value}`,
+        path: `/reader/${ebook.id}`,
         query: {
             type: 'pdf',
-            ebookId: ebook.id,
             source: encodeURIComponent(ebook.file_path.replace(/\\\//g, '/'))
         }
     });

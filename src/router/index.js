@@ -24,7 +24,6 @@ const router = createRouter({
                     meta: { requiresAuth: true }
                 },
 
-
                 // User Management Routes
 
                 {
@@ -143,7 +142,7 @@ const router = createRouter({
                     path: '/books/assets',
                     name: 'assets-list',
                     component: () => import('@/views/pages/book/AssetsList.vue'),
-                    meta: { requiresAuth: true }
+                    meta: { requiresAuth: true, isLibrarian: true }
                 },
 
                 // Category and Publisher Routes
@@ -169,27 +168,27 @@ const router = createRouter({
                 }
             ]
         },
-
         {
             path: '/teacher',
             name: 'teacher',
+
             children: [
                 {
-                    path: 'dashboard',
+                    path: '/teacher/dashboard',
                     name: 'teacher-dashboard',
                     component: () => import('@/views/pages/teacher/TeacherDashboard.vue'),
                     meta: {
                         requiresAuth: true,
-                        roles: ['teacher', 'admin']
+                        isTeacher: true
                     }
                 },
                 {
-                    path: 'ebooks/:id',
+                    path: '/ebooks/:id',
                     name: 'teacher-resource-details',
                     component: () => import('@/views/pages/teacher/TeacherEbookDetails.vue'),
                     meta: {
                         requiresAuth: true,
-                        roles: ['teacher', 'admin']
+                        isTeacher: true
                     }
                 }
             ]
@@ -277,7 +276,6 @@ const router = createRouter({
             meta: { public: true }
         },
 
-
         {
             path: '/auth/forgot-password',
             name: 'forgot-password',
@@ -349,16 +347,33 @@ const ROLE = {
 // Variable to track if we've done the initial auth check
 let hasCheckedAuth = false;
 
+// Function to determine redirect path based on user role
+const getRedirectPathForRole = (userRoles) => {
+    const roleIds = userRoles.map((role) => role.id);
+
+    // Priority order: Super Admin -> Admin -> Librarian -> Teacher -> Student
+    if (roleIds.includes(ROLE.SUPER_ADMIN) || roleIds.includes(ROLE.ADMIN) || roleIds.includes(ROLE.LIBRARIAN)) {
+        return '/dashboard';
+    } else if (roleIds.includes(ROLE.TEACHER)) {
+        return '/teacher/dashboard';
+    } else if (roleIds.includes(ROLE.STUDENT)) {
+        return '/dashboard'; // or '/student/dashboard' if you have a specific student dashboard
+    }
+
+    // Default fallback
+    return '/dashboard';
+};
+
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
-    const accessToken = Cookies.get('access_token');
-
-    // Skip authentication checks for public routes
+    const accessToken = Cookies.get('access_token'); // Skip authentication checks for public routes
     if (to.path === '/' || to.path.startsWith('/auth/') || to.path === '/pdf') {
         if (to.path !== '/auth/access-denied' && accessToken && authStore.getAuth.isAuthenticated) {
-            // If user is already authenticated and tries to access login page, redirect to dashboard
+            // If user is already authenticated and tries to access login page, redirect based on role
             if (to.path === '/auth/login') {
-                return next('/dashboard');
+                const userRoles = authStore.getAuth.user?.user?.roles || [];
+                const redirectPath = getRedirectPathForRole(userRoles);
+                return next(redirectPath);
             }
         }
         return next();
@@ -440,11 +455,11 @@ router.beforeEach(async (to, from, next) => {
                 return next(redirect);
             }
         }
-    }
-
-    // Redirect authenticated users away from auth pages
+    } // Redirect authenticated users away from auth pages
     if (to.path.startsWith('/auth/') && isAuthenticated && to.path !== '/auth/access-denied' && to.path !== '/auth/verify-email') {
-        return next('/dashboard');
+        const userRoles = user?.user?.roles || [];
+        const redirectPath = getRedirectPathForRole(userRoles);
+        return next(redirectPath);
     }
 
     next();
