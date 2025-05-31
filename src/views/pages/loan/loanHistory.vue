@@ -175,9 +175,9 @@ function getDueStatus(loan) {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white py-6 flex flex-col items-center">
+    <div class="min-h-screen py-6 flex flex-col items-center">
         <div class="w-full px-2 sm:px-4 md:px-6 mx-auto">
-            <div class="card shadow-5 p-4 sm:p-6 md:p-8 bg-white rounded-3xl border border-blue-100">
+            <div class="card shadow-5 p-4 sm:p-6 md:p-8 rounded-3xl border border-blue-100">
                 <div class="flex flex-col gap-10 mb-6">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-blue-800 flex items-center gap-2 mb-4">

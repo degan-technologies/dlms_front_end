@@ -1,8 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/authStore';
-import { useToast } from 'primevue/usetoast';
 import { nextTick, onMounted, ref } from 'vue';
-const toast = useToast();
 
 const login = ref(''); // Changed from email to login to match backend
 const password = ref('');
