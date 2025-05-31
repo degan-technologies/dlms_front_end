@@ -24,7 +24,6 @@ const router = createRouter({
                     meta: { requiresAuth: true }
                 },
 
-
                 // User Management Routes
 
                 {
@@ -131,13 +130,6 @@ const router = createRouter({
 
                 // Routes for bookmarks, notes, and collections
 
-                // {
-                //     path: '/history',
-                //     name: 'user-history',
-                //     component: () => import('@/views/pages/user/History.vue'),
-                //     meta: { requiresAuth: true }
-                // },
-
                 // Other Assets Management Routes
                 {
                     path: '/books/assets',
@@ -240,6 +232,12 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/notifications',
+            name: 'notifications',
+            component: () => import('@/views/pages/user/Notifications.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
             path: '/my-reading-list-detail/:id',
             name: 'my-reading-list-detail',
             component: () => import('@/views/pages/user/MyReadingListDetail.vue'),
@@ -276,7 +274,6 @@ const router = createRouter({
             component: () => import('@/views/pages/home/Home.vue'),
             meta: { public: true }
         },
-
 
         {
             path: '/auth/forgot-password',

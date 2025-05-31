@@ -1,6 +1,6 @@
 <script setup>
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch, computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
 import HeroSection from '@/components/home/HeroSection.vue';
@@ -31,7 +31,6 @@ const searchQuery = ref('');
 const searchResults = ref([]);
 const searchLoading = ref(false);
 const searchError = ref(null);
-const showSearchResults = ref(false);
 const searchMeta = ref({});
 const searchFilters = ref({
     category_id: '',
@@ -66,7 +65,6 @@ const specialNotice = ref(null);
 const currentFilters = ref({});
 const searchCurrentPage = ref(1);
 const searchPerPage = ref(15);
-const mobileMenuOpen = ref(false);
 const logout = authStore.logout;
 
 import axiosInstance from '@/util/axios-config';
@@ -84,15 +82,88 @@ function handleSignOut() {
     showMobileMenu.value = false;
 }
 let announcementInterval;
+const unreadNotifications = ref(0);
+
+
+function listenForNewNotifications() {
+    if (window.Echo && userId.value) {
+        const channelName = `App.Models.User.${userId.value}`;
+        console.log(`[Echo] Subscribing to private channel: ${channelName}`);
+
+        const channel = window.Echo.private(channelName);
+
+        channel.notification((notification) => {
+            console.log('[Echo] Received notification:', notification);
+            if (notification && notification.message) {
+                toast.add({
+                    severity: 'info',
+                    summary: notification.title || 'New Notification',
+                    detail: notification.message,
+                    life: 5000
+                });
+            }
+            console.log('[Echo] Calling fetchUnreadNotifications after broadcast');
+            fetchUnreadNotifications(); // Update unread count after receiving broadcast
+        });
+
+        // Optional: confirm subscription
+        channel.subscribed(() => {
+            console.log(`[Echo] Successfully subscribed to ${channelName}`);
+        });
+
+        channel.error((err) => {
+            console.error(`[Echo] Subscription error on ${channelName}:`, err);
+        });
+    } else {
+        console.error('window.Echo is not initialized or userId is missing.');
+    }
+}
+let echoInterval = null;
+
+function trySubscribeToNotifications() {
+    if (window.Echo && userId.value) {
+        listenForNewNotifications();
+        if (echoInterval) clearInterval(echoInterval);
+    } else {
+        // Retry every 1s until Echo and userId are ready
+        if (!echoInterval) {
+            echoInterval = setInterval(() => {
+                if (window.Echo && userId.value) {
+                    listenForNewNotifications();
+                    clearInterval(echoInterval);
+                    echoInterval = null;
+                }
+            }, 1000);
+        }
+    }
+}
+const fetchUnreadNotifications = async () => {
+    try {
+        const response = await axiosInstance.get('/notifications/unread');
+        unreadNotifications.value = response.data?.data?.meta?.unread_count || 0;
+        console.log('[Echo] fetchUnreadNotifications result:', unreadNotifications.value, response.data);
+    } catch (error) {
+        unreadNotifications.value = 0;
+        console.error('[Echo] fetchUnreadNotifications error:', error);
+    }
+};
+// ...existing code...
+const userId = computed(() => (auth.value && auth.value.user && auth.value.user.id) || window.userId);
 onMounted(() => {
     authStore.authCheck();
-
+    // Debug: show userId and Echo status
+    setTimeout(() => {
+        console.log('[Echo] onMounted userId:', userId.value, 'window.Echo:', !!window.Echo);
+    }, 1000);
     // Start announcement rotation
     announcementInterval = setInterval(() => {
         nextAnnouncement();
     }, 5000);
+   trySubscribeToNotifications();
 });
-
+watch(userId, () => {
+    trySubscribeToNotifications();
+});
 // Clean up on component unmount
 onUnmounted(() => {
     if (announcementInterval) {
@@ -112,22 +183,9 @@ const dismissAnnouncement = () => {
     showAnnouncements.value = false;
 };
 
-const learnMoreAboutAnnouncement = (announcement) => {
-    console.log('Learn more about announcement:', announcement);
-    // Here you would navigate to detailed announcement page or show a modal
-    // For example: router.push({ name: 'announcement-details', params: { id: announcement.id } });
-};
-
 // Function to navigate to a specific announcement
-const setCurrentAnnouncement = (index) => {
-    currentAnnouncementIndex.value = index;
-};
 
 // Compute the current visible announcement with improved transition handling
-const visibleAnnouncement = computed(() => {
-    const announcement = announcements.value[currentAnnouncementIndex.value];
-    return announcement ? [{ ...announcement, key: `announcement-${announcement.id}-${currentAnnouncementIndex.value}` }] : [];
-});
 // Functions for announcement navigation with smoother transitions
 const nextAnnouncement = () => {
     // Small timeout to ensure Vue has completed any ongoing transitions
@@ -136,14 +194,7 @@ const nextAnnouncement = () => {
     }, 50);
 };
 
-const prevAnnouncement = () => {
-    setTimeout(() => {
-        currentAnnouncementIndex.value = (currentAnnouncementIndex.value - 1 + announcements.value.length) % announcements.value.length;
-    }, 50);
-};
-
 // Chatbot modal state and toggle function
-const chatbotVisible = ref(false);
 const showChatbot = ref(false);
 const toggleChatbot = () => {
     showChatbot.value = !showChatbot.value;
@@ -178,9 +229,6 @@ const reservePhysicalBook = async () => {
             return;
         }
 
-        // Here you would make the actual reservation API call
-        // await axiosInstance.post('/book-reservations', { book_id: availableBook.id });
-
         toast.add({
             severity: 'success',
             summary: 'Reservation Successful',
@@ -212,29 +260,6 @@ const getAvailableCount = (books) => {
     return books.filter((book) => book.is_borrowable && !book.is_reserved).length;
 };
 
-const getEbookTypeBreakdown = (ebooks) => {
-    const breakdown = { pdf: 0, video: 0, audio: 0 };
-    ebooks.forEach((ebook) => {
-        const type = ebook.ebook_type?.name?.toLowerCase() || ebook.type?.toLowerCase() || '';
-        if (type.includes('pdf')) breakdown.pdf++;
-        else if (type.includes('video')) breakdown.video++;
-        else if (type.includes('audio')) breakdown.audio++;
-    });
-    return breakdown;
-};
-
-const formatFileSize = (bytes) => {
-    if (!bytes || isNaN(bytes)) return 'Unknown size';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex++;
-    }
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
-};
-
 // Handle filter changes from ResourceFilters component
 const handleFiltersChanged = (filters) => {
     currentFilters.value = filters;
@@ -248,36 +273,8 @@ const onSearchPageChange = (event) => {
 };
 
 // Helper function to check if a resource should display an ebook badge
-const getResourceTypeDisplay = (result) => {
-    if (result.format === 'digital') {
-        return {
-            badge: '🎓 Digital Course',
-            color: 'text-purple-700'
-        };
-    } else {
-        return {
-            badge: '📚 Physical Book',
-            color: 'text-green-700'
-        };
-    }
-};
 
 // Helper function to get ebook breakdown counts for display
-const getEbookBreakdownDisplay = (ebooks) => {
-    const breakdown = getEbookTypeBreakdown(ebooks);
-    const types = [];
-
-    if (breakdown.pdf > 0) types.push(`${breakdown.pdf} PDF${breakdown.pdf > 1 ? 's' : ''}`);
-    if (breakdown.video > 0) types.push(`${breakdown.video} Video${breakdown.video > 1 ? 's' : ''}`);
-    if (breakdown.audio > 0) types.push(`${breakdown.audio} Audio${breakdown.audio > 1 ? 's' : ''}`);
-
-    return types.join(' • ');
-}; // Helper function to get available books display
-const getAvailableBooksDisplay = (books) => {
-    const available = getAvailableCount(books);
-    const total = books.length;
-    return `${available} of ${total} available`;
-};
 
 const showSearchDialog = ref(false);
 
@@ -356,14 +353,6 @@ const performSearch = async () => {
     } finally {
         searchLoading.value = false;
     }
-};
-
-const clearSearch = () => {
-    showSearchResults.value = false;
-    searchQuery.value = '';
-    searchResults.value = [];
-    searchError.value = null;
-    searchLoading.value = false;
 };
 
 // Fetch filter options from backend
@@ -479,10 +468,13 @@ const toggleFilterSection = (section) => {
                             <i class="pi pi-heart text-xs"></i>
                             My Collection
                         </RouterLink>
-                        <button class="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
+                        <RouterLink to="/notifications" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1 relative">
                             <i class="pi pi-bell text-lg"></i>
-                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
+                            Notifications
+                            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-2 min-w-[1.2em] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                                {{ unreadNotifications }}
+                            </span>
+                        </RouterLink>
                         <div v-if="auth.isAuthenticated" class="relative">
                             <button @click="toggleProfileMenu" class="text-gray-700 hover:text-sky-600 font-medium flex items-center gap-1.5 relative group">
                                 <i class="pi pi-user"></i>
@@ -563,12 +555,14 @@ const toggleFilterSection = (section) => {
                         <i class="pi pi-heart text-lg"></i>
                         <span class="font-medium">My Collection</span>
                     </RouterLink>
-                    <div class="border-t border-gray-200 my-4"></div>
-                    <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
+                    <RouterLink to="/notifications" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
                         <i class="pi pi-bell text-lg"></i>
                         <span class="font-medium">Notifications</span>
-                        <span class="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
-                    </a>
+                        <span v-if="unreadNotifications > 0" class="ml-auto w-2 h-2 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                            {{ unreadNotifications }}
+                        </span>
+                    </RouterLink>
+                    <div class="border-t border-gray-200 my-4"></div>
                     <!-- My Account Dropdown (add here, before Settings) -->
                     <template v-if="auth.isAuthenticated">
                         <div>
@@ -878,8 +872,8 @@ const toggleFilterSection = (section) => {
         <!-- <ResourceModal /> -->
         <!-- Search Dialog -->
         <Dialog v-model:visible="showSearchDialog" modal :style="{ width: '95vw', maxWidth: '1400px', height: '90vh' }" header="Search Resources" :closable="true" @hide="closeSearchDialog">
-            <template #header class="mb-3">
-                <div class="flex items-center justify-between w-full pr-8">
+            <template #header>
+                <div class="flex items-center justify-between w-full pr-8 mb-3">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900">Search Resources</h2>
                         <p v-if="searchResults.length > 0" class="text-sm text-gray-600">Found {{ searchMeta.total || 0 }} results for "{{ searchQuery }}"</p>

@@ -1,11 +1,9 @@
 <script setup>
-import Loan from '@/components/dashboard/Loan.vue';
 import NotificationsWidget from '@/components/dashboard/NotificationsWidget.vue';
-import TotalBook from '@/components/dashboard/TotalBook.vue';
-import RevenueStreamWidget from '@/components/dashboard/RevenueStreamWidget.vue';
 import StatsWidget from '@/components/dashboard/StatsWidget.vue';
-import TotalBook from '@/components/dashboard/TotalBook.vue';
 import ReadingPerformanceWidget from '../components/dashboard/ReadingPerformanceWidget.vue';
+import BorrowingHistory from '@/components/dashboard/BorrowingHistory.vue';
+import DashboardCategories from '@/components/dashboard/DashboaredCategories.vue';
 </script>
 <template>
     <div class="grid grid-cols-12 gap-8">
@@ -13,10 +11,10 @@ import ReadingPerformanceWidget from '../components/dashboard/ReadingPerformance
 
         <div class="col-span-12 xl:col-span-6">
             <ReadingPerformanceWidget />
-            <TotalBook />
+            <BorrowingHistory />
         </div>
         <div class="col-span-12 xl:col-span-6">
-            <Loan />
+            <DashboardCategories />
             <NotificationsWidget />
         </div>
     </div>
