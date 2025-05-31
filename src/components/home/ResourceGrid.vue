@@ -9,10 +9,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
-const user = computed(() => authStore.getUser); // Fix: don't use .value here
-console.log('User:', user?.value?.user);
-console.log('User ID:', user.value?.user?.id);
-const userId = computed(() => user.value?.user?.id);
+const user = computed(() => authStore.getUser || {});
+const userId = computed(() => (user.value && user.value.user ? user.value.user.id : null));
 const authLoading = ref(true);
 
 const props = defineProps({
@@ -32,7 +30,6 @@ const first = ref(0);
 const resourcesPerPage = ref(6); // Initial fetch limit of 6
 const totalRecords = ref(0);
 // We'll keep local bookmarks for non-authenticated users or fallback
-const bookmarkedResources = ref(JSON.parse(localStorage.getItem('bookmarkedResources') || '[]'));
 const userBookmarks = ref([]); // For bookmarks from the API
 
 // Initialize with empty resources array
