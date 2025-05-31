@@ -9,10 +9,10 @@
                     </button>
                     <div class="flex flex-col">
                         <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate max-w-lg leading-tight">
-                            {{ bookItem ? bookItem.title : 'Digital Resource Reader' }}
+                            {{ ebook ? ebook.file_name : 'Digital Resource Reader' }}
                         </h1>
-                        <span v-if="bookItem && bookItem.author" class="text-sm text-gray-600 dark:text-gray-400">
-                            {{ bookItem.author }}
+                        <span v-if="ebook && ebook.author" class="text-sm text-gray-600 dark:text-gray-400">
+                            {{ ebook.author }}
                         </span>
                     </div>
                 </div>
@@ -32,8 +32,8 @@
                 v-if="loading"
                 :type="isPdf ? 'pdf' : isYouTube ? 'youtube' : 'default'"
                 :title="loading ? 'Loading Resource' : ''"
-                :description="bookItem ? `Preparing ${bookItem.title}...` : 'Loading digital content...'"
-                :subtitle="bookItem?.author"
+                :description="ebook ? `Preparing ${ebook.file_name}...` : 'Loading digital content...'"
+                :subtitle="ebook?.author"
             />
 
             <!-- Global error state -->
@@ -53,7 +53,6 @@
                 <PDFReader
                     v-if="isPdf"
                     :pdfSource="isPdf && route.query.source ? decodeURIComponent(decodeURIComponent(route.query.source)) : resourceUrl"
-                    :bookItemId="bookItemId"
                     :ebookId="ebookId"
                     :notes="notes"
                     :chatMessages="chatMessages"
@@ -67,7 +66,6 @@
                 <YouTubePlayer
                     v-else-if="isYouTube && (youtubeVideoId || route.query.videoId)"
                     :videoId="youtubeVideoId || route.query.videoId"
-                    :bookItemId="bookItemId"
                     :ebookId="ebookId"
                     :notes="notes"
                     :chatMessages="chatMessages"
@@ -76,7 +74,7 @@
                     @add-note="addNote"
                     @delete-note="deleteNote"
                     @go-back="goBack"
-                    @ask-ai-about-timestamp="askAiAboutTimestamp"
+                    @ask-ai-about-timestamp="addChatMessage"
                     @add-chat-message="addChatMessage"
                     @delete-chat-message="deleteChatMessage"
                 />
@@ -96,9 +94,10 @@
 </template>
 
 <script setup>
+import { useReaderStore } from '@/stores/readerStore';
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import LoadingState from './LoadingState.vue';
 import PDFReader from './PDFReader.vue';
@@ -107,21 +106,24 @@ import YouTubePlayer from './YouTubePlayer.vue';
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const readerStore = useReaderStore();
 
 // State
 const loading = ref(true);
 const error = ref(null);
-const bookItem = ref(null);
 const ebook = ref(null);
-const notes = ref([]);
-const chatMessages = ref([]);
 
-// Get book item ID from route params
-const bookItemId = computed(() => route.params.id);
-const ebookId = computed(() => ebook.value?.id);
+// Get ebook id from route params
+const ebookId = computed(() => route.params.id);
+
+// Get notes and chat messages from store
+const notes = computed(() => readerStore.sortedNotes);
+const chatMessages = computed(() => readerStore.sortedChatMessages);
 
 // Determine if the resource is a PDF, AUDIO, or VIDEO (YouTube)
 const isPdf = computed(() => {
+    if (route.query.type === 'pdf') return true;
+    if (route.query.type === 'video') return false;
     if (!ebook.value) return false;
 
     // Check URL query parameters first (most reliable)
@@ -135,18 +137,17 @@ const isPdf = computed(() => {
 
     // Fallback to content detection
     const format = ebook.value.file_format?.toLowerCase();
-    const type = ebook.value.ebook_type?.name?.toLowerCase();
+    const type = ebook.value.e_book_type?.name?.toLowerCase();
 
     return (format && format === 'pdf') || (type && type === 'pdf') || (url && (url.endsWith('.pdf') || url.includes('.pdf')));
 });
 
 const isYouTube = computed(() => {
+    if (route.query.type === 'video') return true;
+    if (route.query.type === 'pdf') return false;
     if (!ebook.value) return false;
 
     // First check for explicit video type in URL parameters
-    if (route.query.type === 'video') return true;
-
-    // Then check for video ID in URL parameters
     if (route.query.videoId) return true;
 
     // Then check if it's a YouTube URL
@@ -157,7 +158,7 @@ const isYouTube = computed(() => {
 
     // Fallback to content detection from metadata
     const format = ebook.value.file_format?.toLowerCase();
-    const type = ebook.value.ebook_type?.name?.toLowerCase();
+    const type = ebook.value.e_book_type?.name?.toLowerCase();
 
     return (format && (format === 'audio' || format === 'video')) || (type && (type === 'audio' || type === 'video'));
 });
@@ -210,220 +211,81 @@ const youtubeVideoId = computed(() => {
     }
 });
 
-// Track recently viewed item
-const trackRecentlyViewed = async (ebookId) => {
-    try {
-        await axiosInstance.post('/recently-viewed', {
-            e_book_id: ebookId
-        });
-        console.log('Successfully tracked recently viewed item');
-    } catch (err) {
-        console.error('Failed to track recently viewed item:', err);
-        // Don't show error to user as this is background functionality
-    }
-};
-
-// Fetch book item data by ID
-const fetchBookItem = async () => {
-    loading.value = true;
-    error.value = null;
-    try {
-        // Use the book items endpoint with the format=ebook parameter which includes notes, chat messages, and bookmarks
-        const response = await axiosInstance.get(`/book-items/${bookItemId.value}`, {
-            params: { format: 'ebook' }
-        });
-        bookItem.value = response.data.data;
-        if (bookItem.value?.ebooks?.length > 0) {
-            ebook.value = bookItem.value.ebooks[0]; // Initialize with data from the response
-            const initialNotes = ebook.value.notes || [];
-            const initialChatMessages = ebook.value.chatMessages || [];
-
-            // Set the initial values
-            notes.value = initialNotes;
-            chatMessages.value = initialChatMessages;
-
-            // Track this as a recently viewed item
-            await trackRecentlyViewed(ebook.value.id);
-
-            // Then fetch complete data separately to ensure we have all items
-            await Promise.all([fetchNotes(), fetchChatMessages()]);
-
-            console.log('Loaded data from book item and separate fetches:', {
-                notes: notes.value.length,
-                chatMessages: chatMessages.value.length
-            });
-        } else {
-            throw new Error('No e-book found for this resource');
-        }
-    } catch (err) {
-        console.error('Failed to fetch book item:', err);
-        error.value = err.response?.data?.message || 'Failed to load resource. Please try again later.';
-    } finally {
-        loading.value = false;
-    }
-};
-
-const fetchNotes = async () => {
-    if (!ebook.value) return;
-    try {
-        // Use larger per_page value to ensure we get all notes
-        const res = await axiosInstance.get('/notes', {
-            params: {
-                e_book_id: ebook.value.id,
-                per_page: 500,
-                sort: 'created_at',
-                direction: 'asc' // Ensure consistent sorting from API
-            }
-        });
-
-        if (res.data.data && res.data.data.length > 0) {
-            // Only replace the current notes if we got a non-empty response
-            notes.value = res.data.data;
-            console.log(`Fetched ${notes.value.length} notes`);
-        }
-    } catch (err) {
-        console.error('Error fetching notes:', err);
-        // Don't clear existing notes on error
-    }
-};
-const fetchChatMessages = async () => {
-    if (!ebook.value) return;
-    try {
-        // Use larger per_page value to ensure we get all messages
-        const res = await axiosInstance.get('/chat-messages', {
-            params: {
-                e_book_id: ebook.value.id,
-                per_page: 500,
-                sort: 'created_at',
-                direction: 'asc' // Ensure consistent sorting from API
-            }
-        });
-
-        if (res.data.data && res.data.data.length > 0) {
-            // Only replace the current messages if we got a non-empty response
-            chatMessages.value = res.data.data;
-            console.log(`Fetched ${chatMessages.value.length} chat messages`);
-        }
-    } catch (err) {
-        console.error('Error fetching chat messages:', err);
-        // Don't clear existing messages on error
-    }
-};
-
-// Note functions (PDF: allow highlight, YouTube: timestamp only)
+// Note and chat message handlers using the store
 const addNote = async (noteData) => {
     try {
-        let payload;
-        if (isPdf.value) {
-            payload = {
-                e_book_id: ebook.value.id,
-                content: noteData.content,
-                page_number: noteData.page_number,
-                highlight_text: noteData.highlight_text || null
-            };
-        } else if (isYouTube.value) {
-            payload = {
-                e_book_id: ebook.value.id,
-                content: noteData.content,
-                timestamp: noteData.timestamp,
-                sent_at: noteData.sent_at || new Date().toISOString().slice(0, 19).replace('T', ' ')
-            };
-        }
-
-        const response = await axiosInstance.post('/notes', payload);
-
-        // Add the new note to local state for live display
-        if (response.data.data) {
-            notes.value.push(response.data.data);
-            notes.value.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-        }
-
-        toast.add({ severity: 'success', summary: 'Note Added', detail: 'Your note has been saved successfully', life: 3000 });
+        await readerStore.addNote(noteData);
+        toast.add({
+            severity: 'success',
+            summary: 'Note Added',
+            detail: 'Your note has been saved successfully',
+            life: 3000
+        });
     } catch (err) {
-        console.error('Failed to add note:', err);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save note. Please try again.', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: readerStore.notesError || 'Failed to save note. Please try again.',
+            life: 3000
+        });
     }
 };
+
 const deleteNote = async (noteId) => {
     try {
-        await axiosInstance.delete(`/notes/${noteId}`);
-
-        // Remove the deleted note from local state
-        const index = notes.value.findIndex((note) => note.id === noteId);
-        if (index !== -1) {
-            notes.value.splice(index, 1);
-            console.log('Note removed from local state');
-        }
-
-        toast.add({ severity: 'success', summary: 'Note Deleted', detail: 'Note deleted successfully', life: 3000 });
+        await readerStore.deleteNote(noteId);
+        toast.add({
+            severity: 'success',
+            summary: 'Note Deleted',
+            detail: 'Note deleted successfully',
+            life: 3000
+        });
     } catch (err) {
-        console.error('Failed to delete note:', err);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete note.', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: readerStore.notesError || 'Failed to delete note.',
+            life: 3000
+        });
     }
 };
 
-// Chat message functions
 const addChatMessage = async (chatData) => {
     try {
-        let payload;
-        if (isPdf.value) {
-            payload = {
-                e_book_id: ebook.value.id,
-                question: chatData.question,
-                is_anonymous: false,
-                page_number: chatData.page_number,
-                highlight_text: chatData.highlight_text || null
-            };
-        } else if (isYouTube.value) {
-            payload = {
-                e_book_id: ebook.value.id,
-                question: chatData.question,
-                is_anonymous: false,
-                timestamp: chatData.timestamp,
-                sent_at: chatData.sent_at || new Date().toISOString().slice(0, 19).replace('T', ' ')
-            };
-        }
-
-        const response = await axiosInstance.post('/chat-messages', payload);
-
-        // Add the new chat message to local state for live display
-        if (response.data.data) {
-            chatMessages.value.push(response.data.data);
-            chatMessages.value.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-        }
-
-        toast.add({ severity: 'success', summary: 'Message Sent', detail: 'Your question has been sent successfully', life: 3000 });
+        await readerStore.addChatMessage(chatData);
+        toast.add({
+            severity: 'success',
+            summary: 'Message Sent',
+            detail: 'Your question has been sent successfully',
+            life: 3000
+        });
     } catch (err) {
-        console.error('Failed to send chat message:', err);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to send message. Please try again.', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: readerStore.chatsError || 'Failed to send message. Please try again.',
+            life: 3000
+        });
     }
 };
+
 const deleteChatMessage = async (messageId) => {
     try {
-        await axiosInstance.delete(`/chat-messages/${messageId}`);
-
-        // Remove the deleted message from local state
-        const index = chatMessages.value.findIndex((message) => message.id === messageId);
-        if (index !== -1) {
-            chatMessages.value.splice(index, 1);
-            console.log('Chat message removed from local state');
-        }
-
-        toast.add({ severity: 'success', summary: 'Message Deleted', detail: 'Message deleted successfully', life: 3000 });
+        await readerStore.deleteChatMessage(messageId);
+        toast.add({
+            severity: 'success',
+            summary: 'Message Deleted',
+            detail: 'Message deleted successfully',
+            life: 3000
+        });
     } catch (err) {
-        console.error('Failed to delete message:', err);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete message.', life: 3000 });
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: readerStore.chatsError || 'Failed to delete message.',
+            life: 3000
+        });
     }
-};
-
-// AI chat for YouTube timestamps
-const askAiAboutTimestamp = async (data) => {
-    // Ensure consistent format between PDF and YouTube interfaces
-    return await addChatMessage({
-        question: data.question,
-        timestamp: data.timestamp,
-        is_anonymous: false
-    });
 };
 
 // Navigation
@@ -454,33 +316,44 @@ const reloadPdf = () => {
     }, 500);
 };
 
+// Fetch ebook by id (with notes and chatMessages)
+const fetchEbook = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+        const response = await axiosInstance.get(`/read/${ebookId.value}`, {
+            params: { with: 'notes,chatMessages,ebookType' }
+        });
+        ebook.value = response.data.data; // Initialize the store with the ebook data
+        const resourceType = isPdf.value ? 'pdf' : 'video';
+        await readerStore.initializeReader(ebook.value, resourceType);
+
+        // Set initial context for PDF
+        if (isPdf.value) {
+            readerStore.updateContext({ page: 1, selectedText: '' });
+        } else if (isYouTube.value) {
+            readerStore.updateContext({ timestamp: 0 });
+        }
+    } catch (err) {
+        error.value = err.response?.data?.message || 'Failed to load resource. Please try again later.';
+    } finally {
+        loading.value = false;
+    }
+};
+
 // Watch for route param changes to reload content
 watch(
     () => route.params.id,
     (newId, oldId) => {
         if (newId && newId !== oldId) {
-            fetchBookItem();
+            fetchEbook();
         }
     }
 );
 
-// Function to refresh all chat messages
-const refreshChatMessages = async () => {
-    console.log('Refreshing chat messages');
-    await fetchChatMessages();
-};
-
 // Fetch data on component mount
 onMounted(() => {
-    fetchBookItem();
-
-    // Set up a periodic refresh for chat messages (every 30 seconds)
-    const refreshInterval = setInterval(refreshChatMessages, 30000);
-
-    // Clean up interval on unmount
-    onBeforeUnmount(() => {
-        clearInterval(refreshInterval);
-    });
+    fetchEbook();
 });
 </script>
 

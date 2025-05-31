@@ -56,7 +56,7 @@ export const useChatStore = defineStore('chat', () => {
         // States
         isChatOpen,
         isTawkOpen,
-        
+
         // Actions
         openChat,
         closeChat,

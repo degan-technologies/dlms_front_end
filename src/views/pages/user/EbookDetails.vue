@@ -563,12 +563,11 @@ const openInReader = (ebook) => {
     if (isYoutubeVideo(ebook)) {
         const videoId = getYoutubeVideoId(ebook.file_path);
         if (videoId) {
-            // Navigate to the reader with the videoId parameter
+            // Navigate to the reader with the ebook ID as the main path parameter
             router.push({
-                path: `/reader/${bookItemId.value}`,
+                path: `/reader/${ebook.id}`,
                 query: {
                     type: 'video',
-                    ebookId: ebook.id,
                     videoId: videoId
                 }
             });
@@ -583,12 +582,12 @@ const openInReader = (ebook) => {
             });
         }
         return;
-    } // Navigate to reader view for PDFs
+    }
+    // Navigate to reader view for PDFs
     router.push({
-        path: `/reader/${bookItemId.value}`,
+        path: `/reader/${ebook.id}`,
         query: {
             type: 'pdf',
-            ebookId: ebook.id,
             source: encodeURIComponent(ebook.file_path.replace(/\\\//g, '/'))
         }
     });

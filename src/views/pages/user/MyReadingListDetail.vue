@@ -1,14 +1,13 @@
-<template>
-    <div class="bg-white">
-        <!-- Improved Page header for consistency -->
-        <div class="fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 shadow-sm z-50 border-b border-gray-200">
+<template>    <div class="bg-white">
+        <!-- Fixed Page header with Udemy-style navigation -->
+        <div class="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 border-b border-gray-200">
             <div class="container mx-auto py-4 px-6 flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <button @click="goBack" class="p-2 rounded-full hover:bg-blue-100 transition-colors">
-                        <i class="pi pi-arrow-left text-blue-700 text-lg"></i>
+                    <button @click="goBack" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <i class="pi pi-arrow-left text-gray-700 text-lg"></i>
                     </button>
                     <div class="flex items-center gap-3">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 truncate max-w-lg">{{ collection ? collection.name : 'Collection Details' }}</h1>
+                        <h1 class="text-xl font-bold text-gray-900 truncate max-w-lg">{{ collection ? collection.name : 'Collection Details' }}</h1>
                         <span v-if="collection && collection.ebooks_count" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium"> {{ collection.ebooks_count.total || collection.ebooks?.length || 0 }} resources </span>
                     </div>
                 </div>
@@ -24,9 +23,8 @@
                     <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-4"></i>
                     <span class="text-gray-600">Loading collection details...</span>
                 </div>
-            </div>
-            <!-- Error state -->
-            <div v-else-if="!collection" class="flex justify-center items-center py-16">
+            </div>            <!-- Error state -->
+            <div v-else-if="!collection && !loading" class="flex justify-center items-center py-16">
                 <div class="flex flex-col items-center">
                     <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-4"></i>
                     <span class="text-gray-700 font-medium">Collection not found</span>
@@ -168,21 +166,17 @@
                 </div>
                 <!-- Resources Grid - Enhanced Udemy-style -->
                 <div v-if="filteredEbooks.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">
-                        <!-- Media content (Video or PDF) at the top with no padding -->
+                    <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">                        <!-- Media content (Video or PDF) at the top with no padding -->
                         <div v-if="isVideoType(ebook)" class="aspect-video bg-gray-100 video-thumbnail relative">
-                            <div class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                                <div class="text-center">
-                                    <i class="pi pi-video text-blue-500 text-4xl mb-2"></i>
-                                    <p class="text-blue-600 font-medium text-sm">Video Content</p>
-                                </div>
-                            </div>
-                            <!-- Video play overlay -->
-                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
-                                <div class="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
-                                    <i class="pi pi-play text-gray-800 text-xl ml-1"></i>
-                                </div>
-                            </div>
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                :src="getYoutubeEmbedUrl(ebook) || 'https://www.youtube.com/embed/dQw4w9WgXcQ'"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                class="rounded-t-xl"
+                            ></iframe>
                         </div>
                         <div v-else-if="isPdfType(ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
                             <div class="flex items-center justify-center h-full">
@@ -195,17 +189,44 @@
                             <div class="absolute top-3 left-3">
                                 <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
                             </div>
-                        </div>
-                        <!-- Content section below the media -->
+                        </div>                        <!-- Content section below the media -->
                         <div class="p-4">
-                            <!-- Type badge and downloadable badge -->
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
-                                    <i :class="getResourceTypeIcon(ebook)" class="text-gray-600"></i>
-                                    {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
-                                </span>
-                                <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
-                                <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                            <!-- Header with type badge and action buttons -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+                                        <i :class="getResourceTypeIcon(ebook)" class="text-gray-600"></i>
+                                        {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
+                                    </span>
+                                    <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
+                                    <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                                </div>
+
+                                <!-- Collection Action Buttons -->
+                                <div class="flex items-center gap-1 ml-2">
+                                    <!-- Bookmark Button -->
+                                    <button
+                                        @click="bookmarkEbook(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookBookmarked(ebook) ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-yellow-600'
+                                        ]"
+                                        :title="isEbookBookmarked(ebook) ? 'Remove bookmark' : 'Add bookmark'"
+                                    >
+                                        <i :class="['text-sm', isEbookBookmarked(ebook) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark']"></i>
+                                    </button>
+                                    <!-- Collection Button -->
+                                    <button
+                                        @click="openCollectionModal(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookInCollection(ebook) ? 'bg-purple-100 hover:bg-purple-200 text-purple-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-purple-600'
+                                        ]"
+                                        :title="isEbookInCollection(ebook) ? 'In collection' : 'Add to collection'"
+                                    >
+                                        <i :class="['text-sm', isEbookInCollection(ebook) ? 'pi pi-folder-open' : 'pi pi-folder']"></i>
+                                    </button>
+                                </div>
                             </div>
                             <!-- Title - larger and truncated -->
                             <h4 class="font-semibold text-gray-900 text-base mb-2 line-clamp-2 leading-tight">{{ getResourceTitle(ebook) }}</h4>
@@ -269,25 +290,57 @@
                     <span class="text-gray-700 font-medium">No resources found in this collection</span>
                     <p class="text-gray-600 text-sm mt-2">This collection is currently empty.</p>
                 </div>
-            </div>
-        </div>
+            </div>        </div>
+
+        <!-- Modals -->
+        <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />
     </div>
 </template>
 
 <script setup>
+import CollectionModal from '@/components/modals/CollectionModal.vue';
 import axiosInstance from '@/util/axios-config';
+import Paginator from 'primevue/paginator';
+import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const loading = ref(true);
 const collection = ref(null);
 const ebooksFirst = ref(0);
 const ebooksPerPage = ref(9);
+
+// Filtering options to match ReadingListDetail.vue
 const filters = ref({
-    type: 'all',
-    downloadable: 'all'
+    type: 'all', // 'all', 'pdf', 'video', or 'audio'
+    downloadable: 'all' // 'all', 'yes', 'no'
+});
+
+// Filtered ebooks
+const filteredEbooks = computed(() => {
+    if (!collection.value || !collection.value.ebooks) return [];
+
+    let result = [...collection.value.ebooks];
+
+    // Filter by type
+    if (filters.value.type !== 'all') {
+        result = result.filter((ebook) => ebook.e_book_type?.name?.toLowerCase() === filters.value.type.toLowerCase());
+    }
+
+    // Filter by downloadable status
+    if (filters.value.downloadable !== 'all') {
+        const isDownloadable = filters.value.downloadable === 'yes';
+        result = result.filter((ebook) => ebook.is_downloadable === isDownloadable);
+    }
+
+    return result;
+});
+
+const paginatedEbooks = computed(() => {
+    return filteredEbooks.value.slice(ebooksFirst.value, ebooksFirst.value + ebooksPerPage.value);
 });
 
 const fetchCollection = async () => {
@@ -295,23 +348,18 @@ const fetchCollection = async () => {
     try {
         const response = await axiosInstance.get(`/my-collections/${route.params.id}`, {
             params: {
-                with: 'ebooks,ebooks.bookItem,user'
+                with: 'user,ebooks,ebooks.e_book_type'
             }
         });
-        // Defensive: check if response.data.data exists and is an object
-        if (response.data && response.data.data && typeof response.data.data === 'object') {
-            collection.value = response.data.data;
-        } else {
-            collection.value = { ebooks: [] }; // fallback to empty collection
-        }
+        collection.value = response.data.data;
     } catch (error) {
+        console.error('Error fetching collection:', error);
         collection.value = null;
     } finally {
         loading.value = false;
     }
 };
 
-// Only call fetchCollection once on mount
 onMounted(() => {
     fetchCollection();
 });
@@ -319,136 +367,351 @@ onMounted(() => {
 const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-const goToEbookDetail = (ebook) => {
-    if (ebook && ebook.book_item_id) {
-        router.push(`/reader/${ebook.book_item_id}`);
-    }
+    return date.toLocaleDateString();
 };
 
 const goBack = () => {
     router.back();
 };
 
-const paginatedEbooks = computed(() => {
-    if (!collection.value || !collection.value.ebooks) return [];
-    return collection.value.ebooks.slice(ebooksFirst.value, ebooksFirst.value + ebooksPerPage.value);
-});
-
 const onEbooksPageChange = (event) => {
     ebooksFirst.value = event.first;
     ebooksPerPage.value = event.rows;
 };
 
-const applyFilters = () => {
-    ebooksFirst.value = 0;
-    // Additional logic for applying filters can be added here if needed
+// Helper functions to match ReadingListDetail.vue pattern
+const isVideoType = (ebook) => {
+    const type = ebook.e_book_type?.name?.toLowerCase() || '';
+    return type.includes('video');
 };
 
+const isPdfType = (ebook) => {
+    const type = ebook.e_book_type?.name?.toLowerCase() || '';
+    return type.includes('pdf');
+};
+
+const getResourceTypeIcon = (ebook) => {
+    const type = ebook.e_book_type?.name?.toLowerCase() || '';
+    if (type.includes('pdf')) {
+        return 'pi pi-file-pdf';
+    } else if (type.includes('video')) {
+        return 'pi pi-video';
+    } else if (type.includes('audio')) {
+        return 'pi pi-volume-up';
+    } else {
+        return 'pi pi-file';
+    }
+};
+
+const getResourceTitle = (ebook) => {
+    return ebook.file_name || ebook.title || 'Untitled Resource';
+};
+
+const formatFileSize = (bytes) => {
+    if (!bytes || isNaN(bytes)) return 'Unknown size';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+    }
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+};
+
+// Get collection gradient based on content types (from ReadingLists.vue)
+const getCollectionGradient = (collection) => {
+    const hasPdf = collection.ebooks_count?.by_type?.pdf > 0;
+    const hasVideo = collection.ebooks_count?.by_type?.video > 0;
+
+    if (hasPdf && hasVideo) {
+        return 'bg-gradient-to-br from-red-100 via-purple-100 to-blue-100';
+    } else if (hasPdf) {
+        return 'bg-gradient-to-br from-red-100 to-orange-100';
+    } else if (hasVideo) {
+        return 'bg-gradient-to-br from-blue-100 to-indigo-100';
+    } else {
+        return 'bg-gradient-to-br from-purple-100 to-blue-100';
+    }
+};
+
+// Get category icon (from ReadingLists.vue)
+const getCategoryIcon = (listName) => {
+    const name = listName.toLowerCase();
+    if (name.includes('science')) return 'pi pi-star';
+    if (name.includes('math')) return 'pi pi-calculator';
+    if (name.includes('literature') || name.includes('english')) return 'pi pi-book';
+    if (name.includes('history')) return 'pi pi-clock';
+    if (name.includes('programming') || name.includes('code')) return 'pi pi-code';
+    if (name.includes('art')) return 'pi pi-palette';
+    if (name.includes('music')) return 'pi pi-volume-up';
+    return 'pi pi-bookmark';
+};
+
+// Get collection description (from ReadingLists.vue)
+const getCollectionDescription = (collection) => {
+    if (collection.description) {
+        return collection.description;
+    }
+
+    const itemCount = collection.ebooks?.length || collection.ebooks_count?.total || 0;
+    const descriptions = [
+        `A curated collection of ${itemCount} educational resources designed to enhance your learning experience.`,
+        `Discover ${itemCount} carefully selected learning materials organized for optimal educational outcomes.`,
+        `Explore ${itemCount} handpicked educational content tailored to provide comprehensive learning.`,
+        `Access ${itemCount} premium learning resources compiled to support your academic journey.`
+    ];
+    return descriptions[Math.floor(Math.random() * descriptions.length)];
+};
+
+// Get YouTube embed URL from file_path
+const getYoutubeEmbedUrl = (ebook) => {
+    if (!ebook || !ebook.file_path) return null;
+
+    const videoId = getYoutubeVideoId(ebook.file_path);
+    if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    // If we couldn't extract a video ID but it's still a video type,
+    // try to use the URL directly as it might be an embed URL already
+    if (isVideoType(ebook)) {
+        return ebook.file_path;
+    }
+
+    return null;
+};
+
+// Extract YouTube video ID from a URL
+const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+};
+
+// Open in Reader function - exactly like ReadingListDetail.vue
+const openInReader = (ebook) => {
+    // Get the video ID for YouTube videos
+    if (isVideoType(ebook)) {
+        const videoId = getYoutubeVideoId(ebook.file_path);
+        if (videoId) {
+            // Navigate to the reader with the ebook ID as the main path parameter
+            router.push({
+                path: `/reader/${ebook.id}`,
+                query: {
+                    type: 'video',
+                    videoId: videoId
+                }
+            });
+        } else {
+            // Fallback to opening in a new tab if we can't extract a video ID
+            window.open(ebook.file_path, '_blank');
+            toast.add({
+                severity: 'info',
+                summary: 'External Link',
+                detail: 'Opening video in a new tab',
+                life: 3000
+            });
+        }
+        return;
+    }
+    // Navigate to reader view for PDFs
+    router.push({
+        path: `/reader/${ebook.id}`,
+        query: {
+            type: 'pdf',
+            source: encodeURIComponent(ebook.file_path.replace(/\\\//g, '/'))
+        }
+    });
+};
+
+// Download file function - similar to ReadingListDetail.vue
+const downloadFile = (ebook) => {
+    if (!ebook.file_path || !ebook.is_downloadable) {
+        toast.add({
+            severity: 'error',
+            summary: 'Download Failed',
+            detail: 'This file is not available for download',
+            life: 3000
+        });
+        return;
+    }
+
+    // Create a file name for download
+    const fileName = ebook.file_name || ebook.title || `file-${ebook.id}`;
+
+    // Create a temporary anchor element to trigger download
+    const a = document.createElement('a');
+    a.href = ebook.file_path;
+    a.download = fileName;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.add({
+        severity: 'success',
+        summary: 'Download Started',
+        detail: 'Your file download has started',
+        life: 3000
+    });
+};
+
+// Reset filters
 const resetFilters = () => {
     filters.value = {
         type: 'all',
         downloadable: 'all'
     };
-    ebooksFirst.value = 0;
+    ebooksFirst.value = 0; // Reset to first page when filtering
 };
 
-const filteredEbooks = computed(() => {
-    if (!collection.value || !collection.value.ebooks) return [];
-    return collection.value.ebooks.filter((ebook) => {
-        const matchesType = filters.value.type === 'all' || (ebook.e_book_type && ebook.e_book_type.name.toLowerCase() === filters.value.type);
-        const matchesDownloadable = filters.value.downloadable === 'all' || (filters.value.downloadable === 'yes' && ebook.is_downloadable) || (filters.value.downloadable === 'no' && !ebook.is_downloadable);
-        return matchesType && matchesDownloadable;
-    });
-});
-
-const isVideoType = (ebook) => {
-    return ebook.e_book_type && ebook.e_book_type.name.toLowerCase() === 'video';
+// Apply filter changes
+const applyFilters = () => {
+    ebooksFirst.value = 0; // Reset to first page when filtering
 };
 
-const isPdfType = (ebook) => {
-    return ebook.e_book_type && ebook.e_book_type.name.toLowerCase() === 'pdf';
+// Inline bookmark logic
+const bookmarkEbook = async (ebook) => {
+    if (!ebook || !ebook.id) return;
+    // If already bookmarked, remove bookmark
+    if (isEbookBookmarked(ebook)) {
+        try {
+            await axiosInstance.delete(`/bookmarks/by-ebook/${ebook.id}`);
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmark Removed',
+                detail: 'Bookmark removed successfully',
+                life: 3000
+            });
+            ebook.bookmarks = null;
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to remove bookmark',
+                life: 4000
+            });
+        }
+    } else {
+        // Not bookmarked, so add bookmark
+        try {
+            const response = await axiosInstance.post('/bookmarks', { e_book_id: ebook.id });
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmarked',
+                detail: 'Ebook bookmarked successfully',
+                life: 3000
+            });
+            // Set bookmark on ebook object (use response if available)
+            if (response.data && response.data.bookmark && response.data.bookmark.id) {
+                ebook.bookmarks = response.data.bookmark;
+            } else {
+                ebook.bookmarks = null;
+            }
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to bookmark',
+                life: 4000
+            });
+        }
+    }
 };
 
-const getResourceTypeIcon = (ebook) => {
-    if (isVideoType(ebook)) return 'pi pi-video';
-    if (isPdfType(ebook)) return 'pi pi-file-pdf';
-    return 'pi pi-file';
+// Check if an ebook is bookmarked by the user
+const isEbookBookmarked = (ebook) => {
+    return !!ebook.bookmarks;
 };
 
-const getCollectionGradient = (collection) => {
-    // Define your gradient logic based on collection properties
-    return 'from-blue-500 to-purple-500';
+// Check if an ebook is in any collection for the user
+const isEbookInCollection = (ebook) => {
+    return Array.isArray(ebook.collections) && ebook.collections.length > 0;
 };
 
-const getCategoryIcon = (categoryName) => {
-    // Map category names to icons
-    const icons = {
-        Programming: 'pi pi-code',
-        Design: 'pi pi-paint-bucket',
-        Marketing: 'pi pi-bullhorn',
-        Business: 'pi pi-briefcase',
-        Finance: 'pi pi-money-bill',
-        Health: 'pi pi-heart',
-        Music: 'pi pi-music',
-        Photography: 'pi pi-camera',
-        Videography: 'pi pi-video',
-        Writing: 'pi pi-pencil',
-        Reading: 'pi pi-book',
-        Learning: 'pi pi-graduation-cap'
-    };
-    return icons[categoryName] || 'pi pi-folder';
-};
+// Collection modal state
+const collectionModalVisible = ref(false);
+const selectedEbook = ref(null);
 
-const getCollectionDescription = (collection) => {
-    // Generate a dynamic description for the collection
-    const types = [];
-    if (collection.ebooks_count?.by_type?.pdf) types.push(`${collection.ebooks_count.by_type.pdf} PDF`);
-    if (collection.ebooks_count?.by_type?.video) types.push(`${collection.ebooks_count.by_type.video} Video`);
-    if (collection.ebooks_count?.downloadable) types.push(`${collection.ebooks_count.downloadable} Downloadable`);
-    return `This collection includes ${types.join(', ')} resources.`;
-};
-
-// Add stubs if missing to avoid template errors
-const getResourceTitle = (ebook) => {
-    return ebook.file_name || ebook.title || 'Untitled';
-};
-
-const formatFileSize = (bytes) => {
-    if (!bytes) return '0 MB';
-    const mb = bytes / (1024 * 1024);
-    return mb.toFixed(2) + ' MB';
+// Open collection modal for the selected ebook
+const openCollectionModal = (ebook) => {
+    selectedEbook.value = ebook;
+    collectionModalVisible.value = true;
 };
 </script>
 
 <style scoped>
+.text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* YouTube-inspired styling */
+.ebook-card {
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ebook-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ebook-card h4 {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    color: #0f0f0f;
+}
+
+.video-thumbnail {
+    position: relative;
+    background-color: #0f0f0f;
+    display: block;
+    cursor: pointer;
+}
+
+.video-thumbnail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+}
+
+.paginator-container :deep(.p-paginator) {
+    background-color: transparent;
+    border: none;
+}
+
+.paginator-container :deep(.p-paginator-page.p-highlight) {
+    background-color: #f3f4f6;
+    color: #4f46e5;
+}
+
+.paginator-container :deep(.p-paginator-page) {
+    min-width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* YouTube-specific header and details styling */
+.fixed {
+    backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.98);
+}
+
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.video-thumbnail {
-    /* Aspect ratio 16:9 */
-    position: relative;
-    padding-top: 56.25%;
-}
-
-.video-thumbnail video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.paginator-container {
-    /* Center the paginator and add some margin */
-    margin: 0 auto;
-    padding: 0 1rem;
+    line-clamp: 2;
 }
 </style>

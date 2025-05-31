@@ -25,9 +25,8 @@
                     <span class="text-gray-600">Loading collection details...</span>
                 </div>
             </div>
-
             <!-- Error state -->
-            <div v-else-if="!collection" class="flex justify-center items-center py-16">
+            <div v-else-if="!collection && !loading" class="flex justify-center items-center py-16">
                 <div class="flex flex-col items-center">
                     <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-4"></i>
                     <span class="text-gray-700 font-medium">Collection not found</span>
@@ -184,18 +183,15 @@
                     <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">
                         <!-- Media content (Video or PDF) at the top with no padding -->
                         <div v-if="isVideoType(ebook)" class="aspect-video bg-gray-100 video-thumbnail relative">
-                            <div class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                                <div class="text-center">
-                                    <i class="pi pi-video text-blue-500 text-4xl mb-2"></i>
-                                    <p class="text-blue-600 font-medium text-sm">Video Content</p>
-                                </div>
-                            </div>
-                            <!-- Video play overlay -->
-                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
-                                <div class="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
-                                    <i class="pi pi-play text-gray-800 text-xl ml-1"></i>
-                                </div>
-                            </div>
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                :src="getYoutubeEmbedUrl(ebook) || 'https://www.youtube.com/embed/dQw4w9WgXcQ'"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                class="rounded-t-xl"
+                            ></iframe>
                         </div>
 
                         <div v-else-if="isPdfType(ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
@@ -213,14 +209,42 @@
 
                         <!-- Content section below the media -->
                         <div class="p-4">
-                            <!-- Type badge and downloadable badge -->
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
-                                    <i :class="getResourceTypeIcon(ebook)" class="text-gray-600"></i>
-                                    {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
-                                </span>
-                                <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
-                                <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                            <!-- Header with type badge and action buttons -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+                                        <i :class="getResourceTypeIcon(ebook)" class="text-gray-600"></i>
+                                        {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
+                                    </span>
+                                    <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
+                                    <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                                </div>
+
+                                <!-- Collection Action Buttons -->
+                                <div class="flex items-center gap-1 ml-2">
+                                    <!-- Bookmark Button -->
+                                    <button
+                                        @click="bookmarkEbook(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookBookmarked(ebook) ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-yellow-600'
+                                        ]"
+                                        :title="isEbookBookmarked(ebook) ? 'Remove bookmark' : 'Add bookmark'"
+                                    >
+                                        <i :class="['text-sm', isEbookBookmarked(ebook) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark']"></i>
+                                    </button>
+                                    <!-- Collection Button -->
+                                    <button
+                                        @click="openCollectionModal(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookInCollection(ebook) ? 'bg-purple-100 hover:bg-purple-200 text-purple-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-purple-600'
+                                        ]"
+                                        :title="isEbookInCollection(ebook) ? 'In collection' : 'Add to collection'"
+                                    >
+                                        <i :class="['text-sm', isEbookInCollection(ebook) ? 'pi pi-folder-open' : 'pi pi-folder']"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Title - larger and truncated -->
@@ -293,10 +317,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modals -->
+        <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />
     </div>
 </template>
 
 <script setup>
+import CollectionModal from '@/components/modals/CollectionModal.vue';
 import axiosInstance from '@/util/axios-config';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
@@ -462,6 +490,24 @@ const getCollectionDescription = (collection) => {
     return descriptions[Math.floor(Math.random() * descriptions.length)];
 };
 
+// Get YouTube embed URL from file_path
+const getYoutubeEmbedUrl = (ebook) => {
+    if (!ebook || !ebook.file_path) return null;
+
+    const videoId = getYoutubeVideoId(ebook.file_path);
+    if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    // If we couldn't extract a video ID but it's still a video type,
+    // try to use the URL directly as it might be an embed URL already
+    if (isVideoType(ebook)) {
+        return ebook.file_path;
+    }
+
+    return null;
+};
+
 // Extract YouTube video ID from a URL
 const getYoutubeVideoId = (url) => {
     if (!url) return null;
@@ -470,29 +516,17 @@ const getYoutubeVideoId = (url) => {
     return match && match[2].length === 11 ? match[2] : null;
 };
 
-// Open in Reader function - similar to EbookDetails.vue
+// Open in Reader function - exactly like EbookDetails.vue
 const openInReader = (ebook) => {
-    if (!ebook || !ebook.book_item_id) {
-        console.error('No book_item_id found for ebook:', ebook);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Unable to open this resource',
-            life: 3000
-        });
-        return;
-    }
-
     // Get the video ID for YouTube videos
     if (isVideoType(ebook)) {
         const videoId = getYoutubeVideoId(ebook.file_path);
         if (videoId) {
-            // Navigate to the reader with the videoId parameter
+            // Navigate to the reader with the ebook ID as the main path parameter
             router.push({
-                path: `/reader/${ebook.book_item_id}`,
+                path: `/reader/${ebook.id}`,
                 query: {
                     type: 'video',
-                    ebookId: ebook.id,
                     videoId: videoId
                 }
             });
@@ -508,13 +542,11 @@ const openInReader = (ebook) => {
         }
         return;
     }
-
     // Navigate to reader view for PDFs
     router.push({
-        path: `/reader/${ebook.book_item_id}`,
+        path: `/reader/${ebook.id}`,
         query: {
             type: 'pdf',
-            ebookId: ebook.id,
             source: encodeURIComponent(ebook.file_path.replace(/\\\//g, '/'))
         }
     });
@@ -543,7 +575,6 @@ const downloadFile = (ebook) => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
     toast.add({
         severity: 'success',
         summary: 'Download Started',
@@ -552,7 +583,7 @@ const downloadFile = (ebook) => {
     });
 };
 
-// Reset filters and fetch all ebooks
+// Reset filters
 const resetFilters = () => {
     filters.value = {
         type: 'all',
@@ -565,14 +596,148 @@ const resetFilters = () => {
 const applyFilters = () => {
     ebooksFirst.value = 0; // Reset to first page when filtering
 };
+
+// Inline bookmark logic
+const bookmarkEbook = async (ebook) => {
+    if (!ebook || !ebook.id) return;
+    // If already bookmarked, remove bookmark
+    if (isEbookBookmarked(ebook)) {
+        try {
+            await axiosInstance.delete(`/bookmarks/by-ebook/${ebook.id}`);
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmark Removed',
+                detail: 'Bookmark removed successfully',
+                life: 3000
+            });
+            ebook.bookmarks = null;
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to remove bookmark',
+                life: 4000
+            });
+        }
+    } else {
+        // Not bookmarked, so add bookmark
+        try {
+            const response = await axiosInstance.post('/bookmarks', { e_book_id: ebook.id });
+            toast.add({
+                severity: 'success',
+                summary: 'Bookmarked',
+                detail: 'Ebook bookmarked successfully',
+                life: 3000
+            });
+            // Set bookmark on ebook object (use response if available)
+            if (response.data && response.data.bookmark && response.data.bookmark.id) {
+                ebook.bookmarks = response.data.bookmark;
+            } else {
+                ebook.bookmarks = null;
+            }
+        } catch (err) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.response?.data?.message || 'Failed to bookmark',
+                life: 4000
+            });
+        }
+    }
+};
+
+// Check if an ebook is bookmarked by the user
+const isEbookBookmarked = (ebook) => {
+    return !!ebook.bookmarks;
+};
+
+// Check if an ebook is in any collection for the user
+const isEbookInCollection = (ebook) => {
+    return Array.isArray(ebook.collections) && ebook.collections.length > 0;
+};
+
+// Collection modal state
+const collectionModalVisible = ref(false);
+const selectedEbook = ref(null);
+
+// Open collection modal for the selected ebook
+const openCollectionModal = (ebook) => {
+    selectedEbook.value = ebook;
+    collectionModalVisible.value = true;
+};
 </script>
 
 <style scoped>
+.text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* YouTube-inspired styling */
+.ebook-card {
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ebook-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ebook-card h4 {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    color: #0f0f0f;
+}
+
+.video-thumbnail {
+    position: relative;
+    background-color: #0f0f0f;
+    display: block;
+    cursor: pointer;
+}
+
+.video-thumbnail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+}
+
+.paginator-container :deep(.p-paginator) {
+    background-color: transparent;
+    border: none;
+}
+
+.paginator-container :deep(.p-paginator-page.p-highlight) {
+    background-color: #f3f4f6;
+    color: #4f46e5;
+}
+
+.paginator-container :deep(.p-paginator-page) {
+    min-width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* YouTube-specific header and details styling */
+.fixed {
+    backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.98);
+}
+
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-clamp: 2;
 }
 </style>
