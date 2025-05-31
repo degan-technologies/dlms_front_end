@@ -11,15 +11,15 @@ import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
 import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
-import SchoolBranch from '@/components/home/SchoolBranch.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 // Note: AskLibrarian component would need to be created separately
-// import AskLibrarian from '@/components/home/AskLibrarian.vue';
+import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
+// import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
 const router = useRouter();
 const toast = useToast();
@@ -65,8 +65,10 @@ const specialNotice = ref(null);
 const currentFilters = ref({});
 const searchCurrentPage = ref(1);
 const searchPerPage = ref(15);
+
 const logout = authStore.logout;
 
+import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
 import Toast from 'primevue/toast';
 
@@ -275,6 +277,9 @@ const onSearchPageChange = (event) => {
 // Helper function to check if a resource should display an ebook badge
 
 // Helper function to get ebook breakdown counts for display
+
+// Missing functions for chatbot (referenced in template)
+// Functions removed as they're now handled by the chatStore
 
 const showSearchDialog = ref(false);
 
@@ -592,27 +597,11 @@ const toggleFilterSection = (section) => {
                     </a>
                 </nav>
 
-                <!-- Mobile Auth Buttons (replace this section) -->
-                <!-- <div class="p-4 border-t border-gray-200 space-y-3">
-                  <template v-if="auth.isAuthenticated">
-                    <button @click="toggleProfileMenu" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 focus:outline-none">
-                      <span>My Account</span>
-                      <i class="pi pi-chevron-down ml-2" :class="{'rotate-180': showProfileMenu}" style="transition: transform 0.2s ease"></i>
-                    </button>
-                    <div v-if="showProfileMenu" class="pl-4 pb-2">
-                      <RouterLink to="/my-profile" @click="showMobileMenu = false; showProfileMenu = false" class="block px-4 py-2 text-gray-700 hover:bg-sky-50 hover:text-sky-600 flex items-center gap-2">
-                        <i class="pi pi-user-edit text-sky-600"></i> My Profile
-                      </RouterLink>
-                      <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2">
-                        <i class="pi pi-sign-out text-red-500"></i> Sign Out
-                      </button>
-                    </div>
-                  </template>
-                  <template v-else>
+                <!-- Mobile Auth Buttons -->
+                <div class="p-4 border-t border-gray-200 space-y-3">
                     <RouterLink to="/auth/login" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center text-purple-600 border border-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"> Log in </RouterLink>
                     <RouterLink to="/auth/register" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"> Sign up </RouterLink>
-                  </template>
-                </div> -->
+                </div>
             </div>
         </div>
         <!-- Udemy-style Announcement Banner -->
@@ -681,7 +670,7 @@ const toggleFilterSection = (section) => {
         <ReadingLists />
         <QuickLinks />
         <ResourceRequestForm />
-        <SchoolBranch />
+
         <!-- Enhanced Footer -->
         <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
             <div class="max-w-7xl mx-auto px-5">
@@ -758,17 +747,13 @@ const toggleFilterSection = (section) => {
         </footer>
         <!-- Chatbot Floating Button -->
         <div class="fixed bottom-6 right-6 z-50">
-            <button @click="toggleChatbot" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Ask a Librarian">
+            <button @click="chatStore.openTawk" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Live Support">
                 <i class="pi pi-comments text-xl"></i>
             </button>
         </div>
-        <!-- Chatbot Modal -->
-        <!-- Note: AskLibrarian component needs to be created -->
-        <!--
-        <div v-if="showChatbot" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center" @click.self="toggleChatbot">
-            <AskLibrarian @some-event="toggleChatbot" />
-        </div>
-        -->
+
+        <!-- Custom Chat Component (Handles both custom chat and Tawk initialization) -->
+        <AskLibrarian />
 
         <!-- Physical Book Reservation Modal -->
         <Dialog v-model:visible="showReservationModal" modal :style="{ width: '500px' }" header="Reserve Physical Book" :closable="true" @hide="closeReservationModal">
