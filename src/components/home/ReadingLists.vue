@@ -1,5 +1,5 @@
 <template>
-    <section class="bg-white py-16 px-5">
+    <section id="collection" class="bg-white py-16 px-5">
         <div class="max-w-7xl mx-auto">
             <!-- Header Section -->
             <div class="flex justify-between items-center mb-8">
@@ -7,10 +7,6 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Reading Collections</h2>
                     <p class="text-gray-600">Curated collections to accelerate your learning</p>
                 </div>
-                <button @click="viewAllReadingLists" class="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-2 transition-colors">
-                    <span>View all</span>
-                    <i class="pi pi-arrow-right text-sm"></i>
-                </button>
             </div>
 
             <!-- Loading state -->

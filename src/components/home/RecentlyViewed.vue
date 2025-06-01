@@ -7,10 +7,6 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Recently Viewed</h2>
                     <p class="text-gray-600">Pick up where you left off</p>
                 </div>
-                <button @click="viewAllRecentlyViewed" class="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-2 transition-colors">
-                    <span>View all</span>
-                    <i class="pi pi-arrow-right text-sm"></i>
-                </button>
             </div>
             <!-- Loading indicator -->
             <div v-if="loading" class="flex justify-center items-center py-12">
@@ -40,10 +36,20 @@
                     <span class="text-sm text-gray-500 font-medium">{{ recentlyViewedResources.length }} Recent Items</span>
                 </div>
                 <!-- PrimeVue Carousel -->
-                <Carousel :value="recentlyViewedResources" :numVisible="3" :numScroll="1" :responsiveOptions="carouselResponsiveOptions" :circular="true" :autoplayInterval="0" :showNavigators="true" :showIndicators="false" class="custom-carousel">
+                <Carousel
+                    :value="recentlyViewedResources"
+                    :numVisible="3"
+                    :numScroll="1"
+                    :responsiveOptions="carouselResponsiveOptions"
+                    :circular="true"
+                    :autoplayInterval="0"
+                    :showNavigators="true"
+                    :showIndicators="false"
+                    class="custom-carousel mobile-full-width"
+                >
                     <template #item="{ data: item, index }">
-                        <div class="px-3">
-                            <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col border border-gray-200" @click="openInReader(item.ebook)">
+                        <div class="px-0 md:px-3">
+                            <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col border border-gray-200 mx-2 md:mx-0" @click="openInReader(item.ebook)">
                                 <!-- Media content (Video or PDF) at the top with no padding -->
                                 <div v-if="isVideoType(item.ebook)" class="aspect-video bg-gray-100 relative">
                                     <div class="w-full h-full bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
@@ -294,7 +300,7 @@ const carouselResponsiveOptions = ref([
         numScroll: 1
     },
     {
-        breakpoint: '560px',
+        breakpoint: '640px',
         numVisible: 1,
         numScroll: 1
     }
@@ -792,5 +798,30 @@ const downloadFile = (ebook) => {
 
 .custom-carousel {
     padding: 0 30px; /* Add padding to accommodate navigation buttons */
+}
+
+/* Mobile full-width carousel styling */
+.mobile-full-width {
+    margin: 0 -1rem; /* Negative margin to extend beyond container padding */
+}
+
+@media (max-width: 640px) {
+    .mobile-full-width {
+        padding: 0 !important;
+        margin: 0 -1.25rem; /* Extend beyond the section padding */
+    }
+
+    .mobile-full-width :deep(.p-carousel-next),
+    .mobile-full-width :deep(.p-carousel-prev) {
+        display: none; /* Hide navigation buttons on mobile for full-width effect */
+    }
+
+    .mobile-full-width :deep(.p-carousel-items-content) {
+        padding: 0;
+    }
+
+    .mobile-full-width :deep(.p-carousel-item) {
+        padding: 0 0.5rem; /* Small padding between items */
+    }
 }
 </style>

@@ -58,8 +58,8 @@
 </template>
 
 <script setup>
-import axiosInstance from '@/util/axios-config';
 import { useChatStore } from '@/stores/chatStore';
+import axiosInstance from '@/util/axios-config';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 // Get chat store

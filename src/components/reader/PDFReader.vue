@@ -681,27 +681,6 @@ const filteredChats = computed(() => {
                 </div>
 
                 <!-- Center Section: Search Controls -->
-                <div class="flex items-center gap-2 order-2">
-                    <div class="relative">
-                        <input
-                            v-model="searchQuery"
-                            @keyup.enter="startSearch"
-                            placeholder="Search..."
-                            class="pl-6 pr-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-indigo-500 focus:border-transparent w-32"
-                        />
-                        <i class="pi pi-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
-                    </div>
-                    <button @click="startSearch" :disabled="!searchQuery.trim() || !pdfLoaded" class="px-2 py-1 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-xs font-medium">Search</button>
-                    <div v-if="searchResults.length > 0" class="flex items-center gap-1">
-                        <button @click="prevSearchResult" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Previous Result">
-                            <i class="pi pi-chevron-up text-xs"></i>
-                        </button>
-                        <span class="text-xs text-gray-600 dark:text-gray-400 px-1">{{ currentSearchIndex + 1 }}/{{ searchResults.length }}</span>
-                        <button @click="nextSearchResult" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Next Result">
-                            <i class="pi pi-chevron-down text-xs"></i>
-                        </button>
-                    </div>
-                </div>
 
                 <!-- Right Section: Zoom, View Mode, and Actions -->
                 <div class="flex items-center gap-2 order-last sm:order-3">

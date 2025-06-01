@@ -1,4 +1,5 @@
-<template>    <div class="bg-white">
+<template>
+    <div class="bg-white">
         <!-- Fixed Page header with Udemy-style navigation -->
         <div class="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 border-b border-gray-200">
             <div class="container mx-auto py-4 px-6 flex items-center justify-between">
@@ -23,7 +24,8 @@
                     <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-4"></i>
                     <span class="text-gray-600">Loading collection details...</span>
                 </div>
-            </div>            <!-- Error state -->
+            </div>
+            <!-- Error state -->
             <div v-else-if="!collection && !loading" class="flex justify-center items-center py-16">
                 <div class="flex flex-col items-center">
                     <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-4"></i>
@@ -117,14 +119,6 @@
                                     <span class="font-semibold text-gray-800">{{ collection.ebooks_count?.downloadable || 0 }}</span>
                                     <span class="text-gray-600">downloadable</span>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-clock text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Self-paced</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-infinity text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Lifetime access</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -166,7 +160,8 @@
                 </div>
                 <!-- Resources Grid - Enhanced Udemy-style -->
                 <div v-if="filteredEbooks.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">                        <!-- Media content (Video or PDF) at the top with no padding -->
+                    <div v-for="ebook in paginatedEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">
+                        <!-- Media content (Video or PDF) at the top with no padding -->
                         <div v-if="isVideoType(ebook)" class="aspect-video bg-gray-100 video-thumbnail relative">
                             <iframe
                                 width="100%"
@@ -189,7 +184,8 @@
                             <div class="absolute top-3 left-3">
                                 <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
                             </div>
-                        </div>                        <!-- Content section below the media -->
+                        </div>
+                        <!-- Content section below the media -->
                         <div class="p-4">
                             <!-- Header with type badge and action buttons -->
                             <div class="flex justify-between items-start mb-3">
@@ -290,7 +286,8 @@
                     <span class="text-gray-700 font-medium">No resources found in this collection</span>
                     <p class="text-gray-600 text-sm mt-2">This collection is currently empty.</p>
                 </div>
-            </div>        </div>
+            </div>
+        </div>
 
         <!-- Modals -->
         <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />

@@ -1,6 +1,6 @@
 <script setup>
 import { storeToRefs } from 'pinia';
-import { onMounted, onUnmounted, ref, watch, computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
 import HeroSection from '@/components/home/HeroSection.vue';
@@ -10,20 +10,24 @@ import ReadingLists from '@/components/home/ReadingLists.vue';
 import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
-import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
+// import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 // Note: AskLibrarian component would need to be created separately
 import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useFilterStore } from '@/stores/filterStore';
 
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 // import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
+const filterStore = useFilterStore();
 const router = useRouter();
 const toast = useToast();
-
+const user = computed(() => authStore.getUser || {});
+const userId = computed(() => user.value?.user?.id || null);
+const authLoading = ref(true);
 const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
 
 // Search functionality
@@ -68,7 +72,6 @@ const searchPerPage = ref(15);
 
 const logout = authStore.logout;
 
-import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
 import Toast from 'primevue/toast';
 
@@ -85,7 +88,6 @@ function handleSignOut() {
 }
 let announcementInterval;
 const unreadNotifications = ref(0);
-
 
 function listenForNewNotifications() {
     if (window.Echo && userId.value) {
@@ -150,7 +152,7 @@ const fetchUnreadNotifications = async () => {
     }
 };
 // ...existing code...
-const userId = computed(() => (auth.value && auth.value.user && auth.value.user.id) || window.userId);
+
 onMounted(() => {
     authStore.authCheck();
     // Debug: show userId and Echo status
@@ -161,7 +163,7 @@ onMounted(() => {
     announcementInterval = setInterval(() => {
         nextAnnouncement();
     }, 5000);
-   trySubscribeToNotifications();
+    trySubscribeToNotifications();
 });
 watch(userId, () => {
     trySubscribeToNotifications();
@@ -213,6 +215,40 @@ const showPhysicalBookReservation = (result) => {
     showReservationModal.value = true;
 };
 
+const requestBook = async (resource) => {
+    // Find an available book from the books array
+    const availableBook = resource.books?.find((book) => book.is_borrowable && !book.is_reserved);
+
+    if (availableBook) {
+        try {
+            await axiosInstance.post('/reservations', {
+                book_item_id: resource.id
+            });
+
+            toast.add({
+                severity: 'info',
+                summary: 'Book Reservation',
+                detail: `Your request for "${resource.title}" has been submitted.`,
+                life: 3000
+            });
+        } catch (error) {
+            toast.add({
+                severity: 'error',
+                summary: 'Reservation Failed',
+                detail: error.response?.data?.message || 'Failed to submit reservation request.',
+                life: 3000
+            });
+            return;
+        }
+    } else {
+        toast.add({
+            severity: 'error',
+            summary: 'Unavailable',
+            detail: 'This book is currently unavailable for reservation.',
+            life: 3000
+        });
+    }
+};
 // Reserve physical book
 const reservePhysicalBook = async () => {
     if (!selectedPhysicalBook.value) return;
@@ -419,6 +455,15 @@ const getActiveFilterCount = () => {
 const toggleFilterSection = (section) => {
     openFilterSection.value = openFilterSection.value === section ? '' : section;
 };
+
+onMounted(async () => {
+    const token = Cookies.get('access_token');
+    if (token && !user.value) {
+        await authStore.authCheck();
+    }
+    authLoading.value = false;
+    fetchResources();
+});
 </script>
 
 <template>
@@ -530,22 +575,7 @@ const toggleFilterSection = (section) => {
                         <i class="pi pi-times text-gray-600"></i>
                     </button>
                 </div>
-                <!-- Mobile Search -->
-                <div class="p-4 border-b border-gray-200">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="pi pi-search text-gray-400"></i>
-                        </div>
-                        <input
-                            v-model="searchQuery"
-                            @input="handleSearchInput"
-                            @keydown="handleSearchKeydown"
-                            type="text"
-                            placeholder="What do you want to learn? (Press Enter to search)"
-                            class="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                    </div>
-                </div>
+
                 <!-- Mobile Navigation Links -->
                 <nav class="flex-1 p-4 space-y-2">
                     <RouterLink to="/my-notes" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
@@ -556,7 +586,7 @@ const toggleFilterSection = (section) => {
                         <i class="pi pi-bookmark text-lg"></i>
                         <span class="font-medium">Bookmarks</span>
                     </RouterLink>
-                    <RouterLink to="/my-collection" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
+                    <RouterLink to="/my-reading-list" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
                         <i class="pi pi-heart text-lg"></i>
                         <span class="font-medium">My Collection</span>
                     </RouterLink>
@@ -591,17 +621,9 @@ const toggleFilterSection = (section) => {
                             </div>
                         </div>
                     </template>
-                    <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors">
-                        <i class="pi pi-cog text-lg"></i>
-                        <span class="font-medium">Settings</span>
-                    </a>
                 </nav>
 
                 <!-- Mobile Auth Buttons -->
-                <div class="p-4 border-t border-gray-200 space-y-3">
-                    <RouterLink to="/auth/login" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center text-purple-600 border border-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"> Log in </RouterLink>
-                    <RouterLink to="/auth/register" @click="showMobileMenu = false" class="block w-full py-3 px-4 text-center bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"> Sign up </RouterLink>
-                </div>
             </div>
         </div>
         <!-- Udemy-style Announcement Banner -->
@@ -658,9 +680,9 @@ const toggleFilterSection = (section) => {
             </div>
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Enhanced Filters Sidebar -->
-                <ResourceFilters @filtersChanged="handleFiltersChanged" />
+                <ResourceFilters />
                 <!-- Enhanced Resources Grid -->
-                <ResourceGrid :filters="currentFilters" />
+                <ResourceGrid />
             </div>
         </section>
 
@@ -669,7 +691,6 @@ const toggleFilterSection = (section) => {
         <RecentlyViewed />
         <ReadingLists />
         <QuickLinks />
-        <ResourceRequestForm />
 
         <!-- Enhanced Footer -->
         <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
@@ -746,11 +767,11 @@ const toggleFilterSection = (section) => {
             </div>
         </footer>
         <!-- Chatbot Floating Button -->
-        <div class="fixed bottom-6 right-6 z-50">
+        <!-- <div class="fixed bottom-6 right-6 z-50">
             <button @click="chatStore.openTawk" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Live Support">
                 <i class="pi pi-comments text-xl"></i>
             </button>
-        </div>
+        </div> -->
 
         <!-- Custom Chat Component (Handles both custom chat and Tawk initialization) -->
         <AskLibrarian />
@@ -841,7 +862,7 @@ const toggleFilterSection = (section) => {
                 <div class="flex justify-end gap-3">
                     <button @click="closeReservationModal" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
                     <button
-                        @click="reservePhysicalBook"
+                        @click="requestBook(selectedPhysicalBook.book_item)"
                         :disabled="!selectedPhysicalBook || getAvailableCount(selectedPhysicalBook.books) === 0"
                         class="px-4 py-2 rounded-lg transition-colors font-medium"
                         :class="selectedPhysicalBook && getAvailableCount(selectedPhysicalBook.books) > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
@@ -869,10 +890,10 @@ const toggleFilterSection = (section) => {
                             <span class="hidden sm:inline">Clear Filters ({{ getActiveFilterCount() }})</span>
                             <span class="sm:hidden">{{ getActiveFilterCount() }}</span>
                         </button>
-                        <button @click="closeSearchDialog" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm">
+                        <!-- <button @click="closeSearchDialog" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm">
                             <i class="pi pi-times text-xs"></i>
                             <span class="hidden sm:inline">Close</span>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </template>

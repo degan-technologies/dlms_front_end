@@ -32,25 +32,27 @@ const mainFilters = ref({
 
 // Define separate filters for books and ebooks tables
 const booksFilters = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    language_id: { value: null, matchMode: FilterMatchMode.EQUALS },
-    category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
-    subject_id: { value: null, matchMode: FilterMatchMode.EQUALS },
-    grade_id: { value: null, matchMode: FilterMatchMode.EQUALS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 
 const ebooksFilters = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    is_downloadable: { value: null, matchMode: FilterMatchMode.EQUALS },
-    e_book_type_id: { value: null, matchMode: FilterMatchMode.EQUALS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
+
+// Pagination states for nested tables
+const booksPagination = reactive({});
+const ebooksPagination = reactive({});
+
+// Loading states for nested tables
+const booksLoading = reactive({});
+const ebooksLoading = reactive({});
 
 // Toast instance
 const toast = useToast();
 
 // Expanded rows state
 const expandedRows = ref({});
-const editingRows = ref({});
+const editingRows = ref([]);
 const booksEditingRows = reactive({});
 const ebooksEditingRows = reactive({});
 
@@ -107,73 +109,85 @@ const fetchBookItems = async () => {
     }
 };
 
-const fetchBooks = async (bookItemId) => {
+const fetchBooks = async (bookItemId, page = 1, rows = 5, title = '') => {
     try {
         const bookItem = bookItems.value.find((item) => item.id === bookItemId);
         if (!bookItem) return;
 
-        if (bookItem.books && bookItem.books.length > 0) return;
+        // Set loading state
+        booksLoading[bookItemId] = true;
 
-        bookItem.loadingBooks = true;
+        const params = {
+            book_item_id: bookItemId,
+            page: page,
+            per_page: rows,
+            with: 'bookItem,library,shelf,bookCondition'
+        };
 
-        const response = await axiosInstance.get(`/books`, {
-            params: {
-                book_item_id: bookItemId,
-                with: 'bookItem,library,shelf,bookCondition'
-            }
-        });
+        // Add title filter if provided
+        if (title) {
+            params.title = title;
+        }
+
+        const response = await axiosInstance.get(`/books`, { params });
 
         const index = bookItems.value.findIndex((item) => item.id === bookItemId);
         if (index !== -1) {
             bookItems.value[index].books = Array.isArray(response.data.data) ? response.data.data : [];
-        }
 
-        if (!booksEditingRows[bookItemId]) {
-            booksEditingRows[bookItemId] = ref([]);
+            // Update pagination info
+            booksPagination[bookItemId] = {
+                page: response.data.meta?.current_page || 1,
+                perPage: response.data.meta?.per_page || 5,
+                total: response.data.meta?.total || 0
+            };
         }
     } catch (error) {
         console.error(`Error fetching books for item ${bookItemId}:`, error);
         toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch books', life: 3000 });
     } finally {
-        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
-        if (index !== -1) {
-            bookItems.value[index].loadingBooks = false;
-        }
+        booksLoading[bookItemId] = false;
     }
 };
 
-const fetchEbooks = async (bookItemId) => {
+const fetchEbooks = async (bookItemId, page = 1, rows = 5, title = '') => {
     try {
         const bookItem = bookItems.value.find((item) => item.id === bookItemId);
         if (!bookItem) return;
 
-        if (bookItem.ebooks && bookItem.ebooks.length > 0) return;
+        // Set loading state
+        ebooksLoading[bookItemId] = true;
 
-        bookItem.loadingEbooks = true;
+        const params = {
+            book_item_id: bookItemId,
+            page: page,
+            per_page: rows,
+            with: 'bookItem,ebookType'
+        };
 
-        const response = await axiosInstance.get(`/ebooks`, {
-            params: {
-                book_item_id: bookItemId,
-                with: 'bookItem,ebookType'
-            }
-        });
+        // Add file_name filter if provided (ebooks use file_name instead of title)
+        if (title) {
+            params.file_name = title;
+        }
+
+        const response = await axiosInstance.get(`/ebooks`, { params });
 
         const index = bookItems.value.findIndex((item) => item.id === bookItemId);
         if (index !== -1) {
             bookItems.value[index].ebooks = Array.isArray(response.data.data) ? response.data.data : [];
-        }
 
-        if (!ebooksEditingRows[bookItemId]) {
-            ebooksEditingRows[bookItemId] = ref([]);
+            // Update pagination info
+            ebooksPagination[bookItemId] = {
+                page: response.data.meta?.current_page || 1,
+                perPage: response.data.meta?.per_page || 5,
+                total: response.data.meta?.total || 0
+            };
         }
     } catch (error) {
         console.error(`Error fetching ebooks for item ${bookItemId}:`, error);
         toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch ebooks', life: 3000 });
     } finally {
-        const index = bookItems.value.findIndex((item) => item.id === bookItemId);
-        if (index !== -1) {
-            bookItems.value[index].loadingEbooks = false;
-        }
+        ebooksLoading[bookItemId] = false;
     }
 };
 
@@ -452,6 +466,35 @@ const onFilterChange = () => {
     pagination.value.page = 1; // Reset to first page when filters change
     fetchBookItems();
 };
+
+// Pagination handlers for books table
+const onBooksPageChange = (event, bookItemId) => {
+    const page = event.page + 1; // PrimeVue pages are zero-based
+    const rows = event.rows;
+    const title = booksFilters.value.global.value || '';
+
+    fetchBooks(bookItemId, page, rows, title);
+};
+
+// Pagination handlers for ebooks table
+const onEbooksPageChange = (event, bookItemId) => {
+    const page = event.page + 1; // PrimeVue pages are zero-based
+    const rows = event.rows;
+    const title = ebooksFilters.value.global.value || '';
+
+    fetchEbooks(bookItemId, page, rows, title);
+};
+
+// Search handlers
+const onBooksSearchChange = (bookItemId) => {
+    const title = booksFilters.value.global.value || '';
+    fetchBooks(bookItemId, 1, booksPagination[bookItemId]?.perPage || 5, title);
+};
+
+const onEbooksSearchChange = (bookItemId) => {
+    const title = ebooksFilters.value.global.value || '';
+    fetchEbooks(bookItemId, 1, ebooksPagination[bookItemId]?.perPage || 5, title);
+};
 </script>
 <template>
     <div class="card">
@@ -463,8 +506,6 @@ const onFilterChange = () => {
         <DataTable
             v-model:expandedRows="expandedRows"
             v-model:filters="mainFilters"
-            v-model:editingRows="editingRows"
-            editMode="row"
             paginator
             :rows="pagination.perPage"
             :totalRecords="pagination.total"
@@ -474,7 +515,6 @@ const onFilterChange = () => {
             :loading="loading"
             @rowExpand="onRowExpand"
             @rowCollapse="onRowCollapse"
-            @row-edit-save="onRowEditSave"
             @page="onPageChange"
             tableStyle="min-width: 60rem"
             :globalFilterFields="['title', 'author', 'description', 'cover_image_url', 'language', 'category', 'library', 'shelf', 'subject', 'grade']"
@@ -489,7 +529,7 @@ const onFilterChange = () => {
                             <InputIcon>
                                 <i class="pi pi-search" />
                             </InputIcon>
-                            <InputText v-model="mainFilters['global'].value" placeholder="Search products..." />
+                            <InputText v-model="mainFilters['global'].value" placeholder="Search book items..." @keyup.enter="onFilterChange" />
                         </IconField>
                         <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" @change="onFilterChange" />
                         <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" @change="onFilterChange" />
@@ -502,28 +542,12 @@ const onFilterChange = () => {
                     </div>
                 </div>
             </template>
-            <Column expander />
-            <Column field="title" header="Title" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
-            <Column field="author" header="Author" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
-            <Column field="description" header="Description" style="min-width: 100px; max-width: 150px">
-                <template #editor="{ data, field }">
-                    <InputText v-model="data[field]" fluid />
-                </template>
-            </Column>
+            <Column expander /> <Column field="title" header="Title" style="min-width: 100px; max-width: 150px" />
+            <Column field="author" header="Author" style="min-width: 100px; max-width: 150px" />
+            <Column field="description" header="Description" style="min-width: 100px; max-width: 150px" />
             <Column field="cover_image" header="Cover Image" style="min-width: 100px; max-width: 150px">
                 <template #body="slotProps">
                     <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
-                </template>
-                <template #editor="">
-                    <FileUpload mode="basic" name="cover" accept="image/*" :auto="false" chooseLabel="Upload Cover Image" class="w-full" />
                 </template>
             </Column>
             <Column field="language.name" header="Language" style="min-width: 100px; max-width: 120px">
@@ -551,7 +575,21 @@ const onFilterChange = () => {
                     {{ slotProps.data.grade?.name }}
                 </template>
             </Column>
-            <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
+            <Column header="Actions" style="width: 80px; text-align: center">
+                <template #body="slotProps">
+                    <Button
+                        icon="pi pi-pencil"
+                        text
+                        @click="
+                            () => {
+                                selectedBookItem = slotProps.data;
+                                showEditBookItemModal = true;
+                            }
+                        "
+                        class="p-1"
+                    />
+                </template>
+            </Column>
             <template #expansion="slotProps">
                 <div class="p-4">
                     <div>
@@ -568,14 +606,20 @@ const onFilterChange = () => {
                     <DataTable
                         v-if="ordersExpanded[slotProps.data.id]"
                         :value="slotProps.data.books"
-                        editMode="row"
-                        v-model:editingRows="booksEditingRows[slotProps.data.id]"
-                        @row-edit-save="(event) => onBookRowEditSave(event, slotProps.data)"
+                        :loading="booksLoading[slotProps.data.id]"
+                        :lazy="true"
                         paginator
-                        :rows="5"
+                        :rows="booksPagination[slotProps.data.id]?.perPage || 5"
+                        :totalRecords="booksPagination[slotProps.data.id]?.total || 0"
+                        :first="((booksPagination[slotProps.data.id]?.page || 1) - 1) * (booksPagination[slotProps.data.id]?.perPage || 5)"
                         :rowsPerPageOptions="[5, 10, 20, 50]"
-                        dataKey="isbn"
+                        dataKey="id"
                         tableStyle="min-width: 60rem"
+                        scrollable
+                        @page="(event) => onBooksPageChange(event, slotProps.data.id)"
+                        :pt="{
+                            table: { style: 'min-width: 60rem' }
+                        }"
                     >
                         <template #header>
                             <div class="flex flex-wrap justify-between gap-2 items-center">
@@ -584,79 +628,46 @@ const onFilterChange = () => {
                                         <InputIcon>
                                             <i class="pi pi-search" />
                                         </InputIcon>
-                                        <InputText v-model="booksFilters['global'].value" placeholder="Search books..." />
+                                        <InputText v-model="booksFilters['global'].value" placeholder="Search books..." @keyup.enter="onBooksSearchChange(slotProps.data.id)" />
                                     </IconField>
-                                    <Dropdown v-model="booksFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="booksFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" />
                                 </div>
                             </div>
                         </template>
-                        <Column field="edition" header="Edition">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="title" header="Title">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
+                        <Column field="edition" header="Edition" />
+                        <Column field="title" header="Title" />
                         <Column field="cover_image" header="Cover Image">
                             <template #body="slotProps">
                                 <img :src="slotProps.data.cover_image" :alt="slotProps.data.title" class="shadow-lg" width="64" />
                             </template>
                         </Column>
-                        <Column field="pages" header="Pages">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
+                        <Column field="pages" header="Pages" />
                         <Column field="is_borrowable" header="Borrowable">
                             <template #body="slotProps">
                                 {{ slotProps.data.is_borrowable ? 'Yes' : 'No' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <Dropdown v-model="data[field]" :options="borrowableOptions" optionLabel="label" optionValue="value" placeholder="Borrowable" />
                             </template>
                         </Column>
                         <Column field="shelf" header="Shelf">
                             <template #body="slotProps">
                                 {{ slotProps.data.shelf?.name || '-' }}
                             </template>
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field].name" fluid />
-                            </template>
                         </Column>
                         <Column field="library" header="Library">
                             <template #body="slotProps">
                                 {{ slotProps.data.library?.name || '-' }}
-                            </template>
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field].name" fluid />
                             </template>
                         </Column>
                         <Column field="is_reserved" header="Reserved">
                             <template #body="slotProps">
                                 {{ slotProps.data.is_reserved ? 'Yes' : 'No' }}
                             </template>
-                            <template #editor="{ data, field }">
-                                <Dropdown v-model="data[field]" :options="reservedOptions" optionLabel="label" optionValue="value" placeholder="Reserved" />
-                            </template>
                         </Column>
-                        <Column field="publication_year" header="Publication Year">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
+                        <Column field="publication_year" header="Publication Year" />
                         <Column header="Actions" style="width: 80px; text-align: center">
                             <template #body="slotProps">
                                 <Button icon="pi pi-pencil" text @click="openEditBookModal(slotProps.data)" class="p-1" />
                                 <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteBookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
                             </template>
                         </Column>
-                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
                     </DataTable>
                     <div class="flex items-center gap-2 mt-6 mb-2">
                         <h5 class="cursor-pointer select-none mb-0" @click="toggleShipments(slotProps.data.id)">
@@ -668,14 +679,20 @@ const onFilterChange = () => {
                     <DataTable
                         v-if="shipmentsExpanded[slotProps.data.id]"
                         :value="slotProps.data.ebooks"
-                        editMode="row"
-                        v-model:editingRows="ebooksEditingRows[slotProps.data.id]"
-                        @row-edit-save="(event) => onEBookRowEditSave(event, slotProps.data)"
+                        :loading="ebooksLoading[slotProps.data.id]"
+                        :lazy="true"
                         paginator
-                        :rows="5"
+                        :rows="ebooksPagination[slotProps.data.id]?.perPage || 5"
+                        :totalRecords="ebooksPagination[slotProps.data.id]?.total || 0"
+                        :first="((ebooksPagination[slotProps.data.id]?.page || 1) - 1) * (ebooksPagination[slotProps.data.id]?.perPage || 5)"
                         :rowsPerPageOptions="[5, 10, 20, 50]"
-                        dataKey="isbn"
+                        dataKey="id"
                         tableStyle="min-width: 60rem"
+                        scrollable
+                        @page="(event) => onEbooksPageChange(event, slotProps.data.id)"
+                        :pt="{
+                            table: { style: 'min-width: 60rem' }
+                        }"
                     >
                         <template #header>
                             <div class="flex flex-wrap justify-between gap-2 items-center">
@@ -684,47 +701,23 @@ const onFilterChange = () => {
                                         <InputIcon>
                                             <i class="pi pi-search" />
                                         </InputIcon>
-                                        <InputText v-model="ebooksFilters.global.value" placeholder="Search ebooks..." />
+                                        <InputText v-model="ebooksFilters.global.value" placeholder="Search ebooks..." @keyup.enter="onEbooksSearchChange(slotProps.data.id)" />
                                     </IconField>
-
-                                    <Dropdown v-model="ebooksFilters.is_downloadable.value" :options="downloadableOptions" optionLabel="label" optionValue="value" placeholder="Downloadable" showClear style="min-width: 120px" />
-                                    <Dropdown v-model="ebooksFilters.e_book_type_id.value" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" showClear style="min-width: 120px" />
                                 </div>
                             </div>
                         </template>
-                        <Column field="book_item_id" header="Book Item ID">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-
-                        <Column field="file_name" header="File Name">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-
-                        <Column field="file_size_mb" header="File Size (MB)">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
-                        <Column field="pages" header="Pages">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
-                            </template>
-                        </Column>
+                        <Column field="book_item_id" header="Book Item ID" />
+                        <Column field="file_name" header="File Name" />
+                        <Column field="file_size_mb" header="File Size (MB)" />
+                        <Column field="pages" header="Pages" />
                         <Column field="is_downloadable" header="Downloadable">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" fluid />
+                            <template #body="slotProps">
+                                {{ slotProps.data.is_downloadable ? 'Yes' : 'No' }}
                             </template>
                         </Column>
                         <Column field="ebookType.name" header="Type">
                             <template #body="slotProps">
                                 {{ slotProps.data.e_book_type?.name || '-' }}
-                            </template>
-                            <template #editor="{ data }">
-                                <Dropdown v-model="data.e_book_type_id" :options="mainFilterOptions.ebook_types" optionLabel="label" optionValue="value" placeholder="Type" class="w-full" />
                             </template>
                         </Column>
                         <Column header="Actions" style="width: 80px; text-align: center">
@@ -733,7 +726,6 @@ const onFilterChange = () => {
                                 <Button icon="pi pi-trash" text severity="danger" @click="confirmDeleteEbookRow(slotProps.data, slotProps.index, slotProps)" class="p-1" />
                             </template>
                         </Column>
-                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center"></Column>
                     </DataTable>
                     <Dialog v-model:visible="showDeleteDialog" header="Confirm Delete" :modal="true" :closable="true" :style="{ width: '350px' }">
                         <div class="mb-4">Are you sure you want to delete this item?</div>

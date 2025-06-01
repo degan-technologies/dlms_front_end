@@ -17,6 +17,8 @@
                             <div class="text-sm opacity-90">Collections</div>
                             <div class="text-2xl font-bold">{{ totalCollections }}</div>
                         </div>
+                        <!-- User Avatar -->
+                        <Avatar @click="toggleProfileMenu" :label="user?.email?.charAt(0).toUpperCase()" class="ml-4 cursor-pointer" size="large" shape="circle" />
                     </div>
                 </div>
             </div>
@@ -248,13 +250,38 @@
                 <Button label="Delete" severity="danger" @click="confirmDelete" :loading="deleting" />
             </div>
         </Dialog>
-
         <Toast />
+
+        <!-- Profile Dialog -->
+        <Dialog position="topright" v-model:visible="showProfileMenu" header="Profile" :modal="false" :closable="true" :baseZIndex="1000" appendTo="body">
+            <div class="p-4 space-y-3">
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="pi pi-user text-2xl"></i>
+                    <h4 class="text-lg font-semibold">{{ user?.username || user?.email }}</h4>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <Button
+                        label="Settings"
+                        icon="pi pi-cog"
+                        class="p-button-text"
+                        @click="
+                            () => {
+                                showProfileMenu = false;
+                                router.push('/userprofile');
+                            }
+                        "
+                    />
+                    <Button label="Logout" :loading="loading" icon="pi pi-sign-out" class="p-button-danger" @click="logout" />
+                </div>
+            </div>
+        </Dialog>
     </div>
 </template>
 
 <script setup>
+import { useAuthStore } from '@/stores/authStore';
 import axiosInstance from '@/util/axios-config';
+import { storeToRefs } from 'pinia';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, reactive, ref } from 'vue';
@@ -270,6 +297,18 @@ import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog
 
 const router = useRouter();
 const toast = useToast();
+
+// Auth store
+const authStore = useAuthStore();
+const { getUser } = storeToRefs(authStore);
+
+// User computed
+const user = computed(() => {
+    return getUser.value;
+});
+
+// Profile menu state
+const showProfileMenu = ref(false);
 
 // State
 const loading = ref(true);
@@ -482,6 +521,23 @@ onMounted(async () => {
     await Promise.all([fetchFilterOptions(), fetchCollectionsCount()]);
     fetchBookItems();
 });
+
+// Profile menu toggle function
+function toggleProfileMenu() {
+    showProfileMenu.value = !showProfileMenu.value;
+}
+
+// Logout function
+const logout = async () => {
+    try {
+        loading.value = true;
+        await authStore.logout();
+        loading.value = false;
+    } catch (error) {
+        console.error('Logout error:', error);
+        loading.value = false;
+    }
+};
 </script>
 
 <style scoped>
