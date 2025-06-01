@@ -1,5 +1,5 @@
 <template>
-    <div class="lg:w-1/4 bg-white shadow-sm border border-gray-200 overflow-hidden h-screen max-h-screen flex flex-col">
+    <div class="w-full lg:w-1/4 bg-white shadow-sm border border-gray-200 overflow-hidden lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:max-h-[calc(100vh-5rem)] flex flex-col">
         <!-- Udemy-style Simple Header -->
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
             <div class="flex items-center justify-between">
@@ -168,21 +168,8 @@ const formatOptions = [
 
 // Fetch all filter options from the backend
 const fetchFilterOptions = async () => {
-    filtersLoading.value = true;
     try {
-        const response = await axiosInstance.get('/constants/all');
-
-        // Update filter options with data from API
-        if (response.data) {
-            filterOptions.value = {
-                ebook_types: response.data.ebook_types?.data || [],
-                categories: response.data.categories?.data || [],
-                languages: response.data.languages?.data || [],
-                grades: response.data.grades?.data || [],
-                subjects: response.data.subjects?.data || []
-            };
-            console.log('Filter options loaded successfully:', filterOptions.value);
-        }
+        await filterStore.fetchFilterOptions();
     } catch (error) {
         console.error('Failed to fetch filter options:', error);
         toast.add({
@@ -191,8 +178,6 @@ const fetchFilterOptions = async () => {
             detail: 'Failed to load filter options. Please try again.',
             life: 3000
         });
-    } finally {
-        filtersLoading.value = false;
     }
 };
 

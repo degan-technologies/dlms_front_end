@@ -218,11 +218,11 @@ const loadBookItemData = () => {
             title: props.bookItem.title || '',
             author: props.bookItem.author || '',
             description: props.bookItem.description || '',
-            language_id: props.bookItem.language_id || '',
-            category_id: props.bookItem.category_id || '',
-            subject_id: props.bookItem.subject_id || '',
-            grade_id: props.bookItem.grade_id || '',
-            library_id: props.bookItem.library_id || ''
+            language_id: props.bookItem.language_id || props.bookItem.language?.id || '',
+            category_id: props.bookItem.category_id || props.bookItem.category?.id || '',
+            subject_id: props.bookItem.subject_id || props.bookItem.subject?.id || '',
+            grade_id: props.bookItem.grade_id || props.bookItem.grade?.id || '',
+            library_id: props.bookItem.library_id || props.bookItem.library?.id || ''
         });
 
         // Set the current cover image if it exists

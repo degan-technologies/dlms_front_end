@@ -2,10 +2,9 @@
 import { useLayout } from '@/layout/composables/layout';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
-import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
-import AppConfigurator from './AppConfigurator.vue';
 import { useRouter } from 'vue-router';
+import AppConfigurator from './AppConfigurator.vue';
 
 const router = useRouter();
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
@@ -17,8 +16,6 @@ const loading = ref(false);
 const user = computed(() => {
     return getUser.value;
 });
-
-const toast = useToast();
 
 function toggleProfileMenu() {
     showProfileMenu.value = !showProfileMenu.value;
@@ -70,7 +67,7 @@ const logout = async () => {
                     </g>
                 </svg> -->
 
-                <img src="https://resources.finalsite.net/images/f_auto,q_auto/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" style="display:block;max-width:300px;margin-top:4px;" />
+                <img src="https://resources.finalsite.net/images/f_auto,q_auto/v1697025002/flipperschoolcom/umv1hfkk03vzp206sn4q/Flipper_Logo1.png" alt="Flipper Logo" style="display: block; max-width: 300px; margin-top: 4px" />
                 <span>FIS</span>
             </router-link>
         </div>
@@ -91,7 +88,8 @@ const logout = async () => {
                             hideOnOutsideClick: true
                         }"
                         type="button"
-                        class="layout-topbar-action layout-topbar-action-highlight">
+                        class="layout-topbar-action layout-topbar-action-highlight"
+                    >
                         <i class="pi pi-palette"></i>
                     </button>
                     <AppConfigurator />
@@ -107,23 +105,14 @@ const logout = async () => {
                     leaveToClass: 'hidden',
                     leaveActiveClass: 'animate-fadeout',
                     hideOnOutsideClick: true
-                }">
+                }"
+            >
                 <i class="pi pi-ellipsis-v"></i>
             </button>
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
-                    </button>
-
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
-                    </button>
-
-                    <Avatar @click="toggleProfileMenu" :label="user?.user?.email?.charAt(0).toUpperCase()" class="mr-2 cursor-pointer" size="large" shape="circle" />
+                    <Avatar @click="toggleProfileMenu" :label="user?.email?.charAt(0).toUpperCase()" class="mr-2 cursor-pointer" size="large" shape="circle" />
                 </div>
             </div>
         </div>
@@ -132,10 +121,20 @@ const logout = async () => {
             <div class="p-4 space-y-3">
                 <div class="flex items-center justify-center space-x-4">
                     <i class="pi pi-user text-2xl"></i>
-                    <h4 class="text-lg font-semibold">{{ user?.user?.username || user?.user?.email }}</h4>
+                    <h4 class="text-lg font-semibold">{{ user?.username || user?.email }}</h4>
                 </div>
                 <div class="flex flex-col space-y-2">
-                    <Button label="Settings" icon="pi pi-cog" class="p-button-text" @click="() => { showProfileMenu = false; router.push('/userprofile'); }" />
+                    <Button
+                        label="Settings"
+                        icon="pi pi-cog"
+                        class="p-button-text"
+                        @click="
+                            () => {
+                                showProfileMenu = false;
+                                router.push('/userprofile');
+                            }
+                        "
+                    />
                     <Button label="Logout" :loading="loading" icon="pi pi-sign-out" class="p-button-danger" @click="logout" />
                 </div>
             </div>

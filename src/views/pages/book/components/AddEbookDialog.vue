@@ -163,17 +163,18 @@ const addEbook = handleSubmit(async (values) => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
         } else {
-            // For non-PDF types, just send JSON data with file_path
-            const ebookData = {
-                book_item_id: props.bookItemId,
-                file_name: values.file_name,
-                is_downloadable: Boolean(values.is_downloadable),
-                e_book_type_id: values.e_book_type_id,
-                file_path: values.file_path
-            };
+            // For non-PDF types, use FormData as well
+            const formData = new FormData();
+            formData.append('book_item_id', props.bookItemId);
+            formData.append('file_name', values.file_name);
+            formData.append('is_downloadable', Boolean(values.is_downloadable));
+            formData.append('e_book_type_id', values.e_book_type_id);
+            formData.append('file_path', values.file_path);
 
-            // Send POST request with JSON
-            await axiosInstance.post(`/ebooks`, ebookData);
+            // Send POST request with FormData
+            await axiosInstance.post(`/ebooks`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
         }
 
         toast.add({ severity: 'success', summary: 'Success', detail: 'Ebook added successfully', life: 3000 });

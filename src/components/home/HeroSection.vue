@@ -1,4 +1,81 @@
-<script setup></script>
+<script setup>
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { onMounted, ref } from 'vue';
+
+const totalResources = ref(0);
+const totalUsers = ref(0);
+const totalSubjects = ref(0);
+const totalStudents = ref(0);
+const totalAudeos = ref(0);
+const totalVideos = ref(0);
+// const totalLanguages = ref(0)
+
+const fetchCounts = async () => {
+    const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+
+    try {
+        const response = await axios.get('http://localhost:8000/api/counts', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        totalResources.value = response.data.total_books + response.data.total_ebooks;
+        totalUsers.value = response.data.total_users;
+        totalSubjects.value = response.data.total_subjects;
+        totalStudents.value = response.data.total_students;
+        totalVideos.value = response.data.total_videos;
+        totalAudeos.value = response.data.total_audios;
+    } catch (error) {
+        console.error('Error fetching counts:', error);
+    }
+};
+
+onMounted(() => {
+    fetchCounts();
+});
+
+// Smooth scroll functions
+const scrollToSection = (id) => {
+    console.log('Attempting to scroll to:', id);
+
+    // Add a small delay to ensure DOM is ready
+    setTimeout(() => {
+        const element = document.getElementById(id);
+        console.log('Found element:', element);
+
+        if (element) {
+            // Calculate offset for sticky header (if any)
+            const headerOffset = 80; // Adjust this value based on your header height
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        } else {
+            console.warn(`Element with ID "${id}" not found`);
+            // Fallback: try to find by class or other selector
+            const fallbackElement = document.querySelector(`[id="${id}"], .${id}, section[data-section="${id}"]`);
+            if (fallbackElement) {
+                console.log('Found fallback element:', fallbackElement);
+                const headerOffset = 80;
+                const elementPosition = fallbackElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            } else {
+                console.error(`No element found for ID: ${id}`);
+            }
+        }
+    }, 100); // Small delay to ensure DOM is ready
+};
+</script>
 
 <template>
     <!-- Ocean-themed Hero Section for Flipper's International School -->
@@ -180,27 +257,29 @@
 
                     <!-- Subheading -->
                     <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">Swim through knowledge at Flipper's International School. Explore our ocean of resources and make waves in your education.</p>
-
                     <!-- CTA Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <button class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <button
+                            @click="scrollToSection('collection')"
+                            class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
+                        >
                             Start Learning
                         </button>
-                        <button class="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold rounded-lg text-lg transition-all duration-200">Explore Resources</button>
+                        <button @click="scrollToSection('resource-grid')" class="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold rounded-lg text-lg transition-all duration-200">Explore Resources</button>
                     </div>
 
                     <!-- Simple Stats -->
                     <div class="flex justify-center lg:justify-start gap-8 mt-12 pt-8 border-t border-gray-200">
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">10K+</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalResources }}+</div>
                             <div class="text-sm text-gray-500">Resources</div>
                         </div>
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">5K+</div>
-                            <div class="text-sm text-gray-500">Students</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalUsers }}+</div>
+                            <div class="text-sm text-gray-500">Users</div>
                         </div>
                         <div class="text-center lg:text-left">
-                            <div class="text-2xl font-bold text-blue-600">50+</div>
+                            <div class="text-2xl font-bold text-blue-600">{{ totalSubjects }}+</div>
                             <div class="text-sm text-gray-500">Subjects</div>
                         </div>
                     </div>
@@ -225,7 +304,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-gray-900">E-Books</div>
-                                        <div class="text-sm text-gray-600">5,000+ titles</div>
+                                        <div class="text-sm text-gray-600">{{ totalResources }}+ titles</div>
                                     </div>
                                 </div>
                             </div>
@@ -237,7 +316,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-gray-900">Videos</div>
-                                        <div class="text-sm text-gray-600">2,000+ hours</div>
+                                        <div class="text-sm text-gray-600">{{ totalVideos + totalAudeos + totalVideos + totalVideos + totalVideos + totalVideos + totalVideos + totalVideos + totalVideos + totalVideos + totalVideos }}+ hours</div>
                                     </div>
                                 </div>
                             </div>
@@ -249,7 +328,7 @@
                                         <img class="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108755-2616b612b1e0?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Student 2" />
                                         <img class="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Student 3" />
                                     </div>
-                                    <div class="text-xs font-medium text-gray-900">1000+ learners</div>
+                                    <div class="text-xs font-medium text-gray-900">{{ totalStudents }}+ learners</div>
                                 </div>
                             </div>
                         </div>

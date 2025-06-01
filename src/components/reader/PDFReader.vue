@@ -1,9 +1,11 @@
 <script setup>
+import { useReaderStore } from '@/stores/readerStore';
 import { useToast } from 'primevue/usetoast';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import VuePdfEmbed, { useVuePdfEmbed } from 'vue-pdf-embed';
 import 'vue-pdf-embed/dist/styles/annotationLayer.css';
 import 'vue-pdf-embed/dist/styles/textLayer.css';
+import { useRouter } from 'vue-router';
 import ChatSidebar from './ChatSidebar.vue';
 import NoteSidebar from './NoteSidebar.vue';
 
@@ -38,6 +40,8 @@ const emit = defineEmits(['add-note', 'delete-note', 'add-chat-message', 'delete
 
 // Core refs
 const toast = useToast();
+const router = useRouter();
+const readerStore = useReaderStore();
 const pdfEmbedRef = ref();
 const pdfContainerRef = ref();
 const componentKey = ref(0);
@@ -207,17 +211,23 @@ const selectedPageNumber = ref(1);
 const noteSidebar = ref(false);
 const chatSidebar = ref(false);
 
-// Always pass selectedText to sidebars, no conditionals
+// Always update store context when sidebars open
 watch(noteSidebar, (val) => {
     if (val) {
-        // Always set selectedText as is, do not clear
-        // No conditional logic needed
+        // Ensure context is updated when sidebar opens
+        readerStore.updateContext({
+            page: currentPage.value,
+            selectedText: selectedText.value || ''
+        });
     }
 });
 watch(chatSidebar, (val) => {
     if (val) {
-        // Always set selectedText as is, do not clear
-        // No conditional logic needed
+        // Ensure context is updated when sidebar opens
+        readerStore.updateContext({
+            page: currentPage.value,
+            selectedText: selectedText.value || ''
+        });
     }
 });
 
@@ -317,6 +327,12 @@ async function handleTextSelection() {
             const selectedTextValue = selection.toString().trim();
             selectedText.value = selectedTextValue;
             selectedPageNumber.value = currentPage.value;
+
+            // Update store context with selected text
+            readerStore.updateContext({
+                page: currentPage.value,
+                selectedText: selectedTextValue
+            });
 
             // Get selection position for popup
             const range = selection.getRangeAt(0);
@@ -463,12 +479,16 @@ function jumpToChat(chat) {
 function prevPage() {
     if (currentPage.value > 1) {
         currentPage.value--;
+        // Update store context
+        readerStore.updateContext({ page: currentPage.value, selectedText: selectedText.value });
     }
 }
 
 function nextPage() {
     if (currentPage.value < totalPages.value) {
         currentPage.value++;
+        // Update store context
+        readerStore.updateContext({ page: currentPage.value, selectedText: selectedText.value });
     }
 }
 
@@ -503,9 +523,47 @@ function printPdf() {
     }
 }
 
+const goBack = () => {
+    router.back();
+};
+
 // Handle window resize to re-render PDF
+let resizeTimeout;
 function handleResize() {
-    // Vue PDF Embed handles resizing automatically
+    // Debounce resize events to avoid too many re-renders
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        console.log('Window resized, forcing PDF re-render');
+
+        // Force re-render of all visible pages by updating component key
+        componentKey.value++;
+
+        // For all pages view, force all previously visible pages to re-render
+        if (viewMode.value === 'all' && pageVisibility.value) {
+            const allVisiblePages = Object.keys(pageVisibility.value).filter((key) => pageVisibility.value[key]);
+
+            // Reset all page visibility
+            pageVisibility.value = {};
+
+            // Re-enable visibility for all previously visible pages after a short delay
+            nextTick(() => {
+                allVisiblePages.forEach((pageNum) => {
+                    pageVisibility.value[parseInt(pageNum)] = true;
+                });
+
+                // Also ensure the first few pages are visible
+                const initialPages = Array.from({ length: Math.min(3, totalPages.value) }, (_, i) => i + 1);
+                initialPages.forEach((pageNum) => {
+                    pageVisibility.value[pageNum] = true;
+                });
+
+                // Reset intersection observer to handle new page elements
+                nextTick(() => {
+                    resetPageIntersectionObserver();
+                });
+            });
+        }
+    }, 300); // 300ms debounce
 }
 
 // Watch for prop changes
@@ -523,16 +581,41 @@ watch(
     }
 );
 
+// Watch for scale changes to force re-render of visible pages
+watch(currentScale, () => {
+    if (viewMode.value === 'all' && pageVisibility.value) {
+        // Force re-render by updating component key
+        componentKey.value++;
+
+        // For all pages view, re-render all visible pages
+        const visiblePages = Object.keys(pageVisibility.value).filter((key) => pageVisibility.value[key]);
+        pageVisibility.value = {};
+
+        nextTick(() => {
+            visiblePages.forEach((pageNum) => {
+                pageVisibility.value[parseInt(pageNum)] = true;
+            });
+        });
+    }
+});
+
 // Lifecycle hooks
 onMounted(() => {
     document.addEventListener('mouseup', handleTextSelection);
     window.addEventListener('resize', handleResize);
+
+    // Initialize context for PDF with page 1 and empty selected text
+    readerStore.updateContext({ page: 1, selectedText: '' });
+
     console.log('PDFReader mounted with source:', props.pdfSource);
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener('mouseup', handleTextSelection);
     window.removeEventListener('resize', handleResize);
+
+    // Clear resize timeout
+    clearTimeout(resizeTimeout);
 
     // Disconnect intersection observer
     pageIntersectionObserver?.disconnect();
@@ -562,123 +645,95 @@ const filteredChats = computed(() => {
 
 <template>
     <div class="relative w-full h-full bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <!-- Main Content Area -->
-        <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
+        <!-- Fixed Toolbar at Top -->
+        <div class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
+            <div class="toolbar px-2 py-1 flex items-center justify-between gap-2 flex-wrap">
+                <!-- Left Section: Go Back + Navigation Controls -->
+                <div class="flex items-center gap-2 order-1">
+                    <button @click="goBack" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <i class="pi pi-arrow-left text-gray-700 dark:text-gray-300 text-lg"></i>
+                    </button>
+
+                    <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+
+                    <button
+                        @click="prevPage"
+                        :disabled="!canPrev || isRendering"
+                        class="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-gray-300"
+                    >
+                        <i class="pi pi-chevron-left text-xs"></i>
+                        <span>Prev</span>
+                    </button>
+                    <div class="px-2 py-1 bg-gray-50 dark:bg-gray-700 rounded text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center">
+                        {{ pageInfo }}
+                    </div>
+                    <button
+                        @click="nextPage"
+                        :disabled="!canNext || isRendering"
+                        class="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-gray-300"
+                    >
+                        <span>Next</span>
+                        <i class="pi pi-chevron-right text-xs"></i>
+                    </button>
+
+                    <!-- Performance Indicator for All Pages View -->
+                    <div v-if="viewMode === 'all' && pdfLoaded" class="px-2 py-1 bg-green-50 dark:bg-green-900 rounded text-xs font-medium text-green-700 dark:text-green-300">{{ renderedPagesCount }}/{{ totalPages }} loaded</div>
+                </div>
+
+                <!-- Center Section: Search Controls -->
+
+                <!-- Right Section: Zoom, View Mode, and Actions -->
+                <div class="flex items-center gap-2 order-last sm:order-3">
+                    <button @click="zoomOut" :disabled="currentScale <= 0.5 || isRendering" class="p-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded" title="Zoom Out">
+                        <i class="pi pi-minus text-xs"></i>
+                    </button>
+
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[45px] text-center"> {{ Math.round(currentScale * 100) }}% </span>
+
+                    <button @click="zoomIn" :disabled="currentScale >= 3 || isRendering" class="p-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded" title="Zoom In">
+                        <i class="pi pi-plus text-xs"></i>
+                    </button>
+
+                    <button
+                        @click="resetZoom"
+                        :disabled="isRendering"
+                        class="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-xs font-medium text-gray-700 dark:text-gray-300"
+                        title="Reset Zoom"
+                    >
+                        Reset
+                    </button>
+
+                    <!-- View Mode Toggle -->
+                    <button
+                        @click="toggleViewMode"
+                        :disabled="!pdfLoaded"
+                        class="px-2 py-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-xs font-medium"
+                        :title="viewMode === 'single' ? 'Show All Pages' : 'Show Single Page'"
+                    >
+                        <i :class="viewMode === 'single' ? 'pi pi-list' : 'pi pi-file'" class="text-xs mr-1"></i>
+                        {{ viewMode === 'single' ? 'All' : 'Single' }}
+                    </button>
+
+                    <!-- Utility Actions -->
+                    <div class="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+
+                    <button @click="downloadPdf" class="p-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="Download PDF">
+                        <i class="pi pi-download text-xs"></i>
+                    </button>
+
+                    <button @click="printPdf" :disabled="!pdfLoaded" class="p-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded" title="Print PDF">
+                        <i class="pi pi-print text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area with top padding to account for fixed toolbar -->
+        <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative pt-12">
             <!-- PDF viewer container with auto-adjusting width -->
             <div ref="pdfContainerRef" class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
-                <!-- Toolbar -->
-                <div class="toolbar bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 mb-4 flex items-center justify-between gap-4 flex-wrap relative z-30">
-                    <!-- Navigation Controls -->
-                    <div class="flex items-center gap-2 order-1">
-                        <button
-                            @click="prevPage"
-                            :disabled="!canPrev || isRendering"
-                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
-                        >
-                            <i class="pi pi-chevron-left text-xs"></i>
-                            <span>Previous</span>
-                        </button>
-                        <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px] text-center">
-                            {{ pageInfo }}
-                        </div>
-
-                        <!-- Performance Indicator for All Pages View -->
-                        <div v-if="viewMode === 'all' && pdfLoaded" class="px-2 py-1 bg-green-50 dark:bg-green-900 rounded text-xs font-medium text-green-700 dark:text-green-300">{{ renderedPagesCount }}/{{ totalPages }} loaded</div>
-
-                        <button
-                            @click="nextPage"
-                            :disabled="!canNext || isRendering"
-                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
-                        >
-                            <span>Next</span>
-                            <i class="pi pi-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-
-                    <!-- Search Controls -->
-                    <div class="flex items-center gap-2 order-2">
-                        <div class="relative z-40">
-                            <input
-                                v-model="searchQuery"
-                                @keyup.enter="startSearch"
-                                placeholder="Search in PDF..."
-                                class="pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent relative z-40"
-                            />
-                            <i class="pi pi-search absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
-                        </div>
-                        <button
-                            @click="startSearch"
-                            :disabled="!searchQuery.trim() || !pdfLoaded"
-                            class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium relative z-40"
-                        >
-                            Search
-                        </button>
-                        <div v-if="searchResults.length > 0" class="flex items-center gap-1">
-                            <button @click="prevSearchResult" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded relative z-40" title="Previous Result">
-                                <i class="pi pi-chevron-up text-xs"></i>
-                            </button>
-                            <span class="text-xs text-gray-600 dark:text-gray-400 px-2">{{ currentSearchIndex + 1 }}/{{ searchResults.length }}</span>
-                            <button @click="nextSearchResult" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded relative z-40" title="Next Result">
-                                <i class="pi pi-chevron-down text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Zoom Controls -->
-                    <div class="flex items-center gap-2 order-last sm:order-3">
-                        <button
-                            @click="zoomOut"
-                            :disabled="currentScale <= 0.5 || isRendering"
-                            class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40"
-                            title="Zoom Out"
-                        >
-                            <i class="pi pi-minus text-xs"></i>
-                        </button>
-
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center"> {{ Math.round(currentScale * 100) }}% </span>
-
-                        <button
-                            @click="zoomIn"
-                            :disabled="currentScale >= 3 || isRendering"
-                            class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40"
-                            title="Zoom In"
-                        >
-                            <i class="pi pi-plus text-xs"></i>
-                        </button>
-                        <button
-                            @click="resetZoom"
-                            :disabled="isRendering"
-                            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium text-gray-700 dark:text-gray-300 relative z-40"
-                            title="Reset Zoom"
-                        >
-                            Reset
-                        </button>
-
-                        <!-- View Mode Toggle -->
-                        <button
-                            @click="toggleViewMode"
-                            :disabled="!pdfLoaded"
-                            class="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium relative z-40"
-                            :title="viewMode === 'single' ? 'Show All Pages' : 'Show Single Page'"
-                        >
-                            <i :class="viewMode === 'single' ? 'pi pi-list' : 'pi pi-file'" class="text-xs mr-1"></i>
-                            {{ viewMode === 'single' ? 'All Pages' : 'Single' }}
-                        </button>
-
-                        <!-- Utility Actions -->
-                        <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
-
-                        <button @click="downloadPdf" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded relative z-40" title="Download PDF">
-                            <i class="pi pi-download text-xs"></i>
-                        </button>
-
-                        <button @click="printPdf" :disabled="!pdfLoaded" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded relative z-40" title="Print PDF">
-                            <i class="pi pi-print text-xs"></i>
-                        </button>
-                    </div>
-                </div>
                 <!-- Loading indicator -->
-                <div v-if="pdfLoading && !pdfLoaded" class="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-10">
+                <div v-if="pdfLoading && !pdfLoaded" class="absolute top-16 left-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-10">
                     <div class="flex items-center gap-2">
                         <div class="w-4 h-4 border-2 border-t-red-500 border-gray-200 rounded-full animate-spin"></div>
                         <span class="text-sm text-gray-700 dark:text-gray-300">Loading PDF...</span>
@@ -687,25 +742,13 @@ const filteredChats = computed(() => {
                 </div>
 
                 <!-- Rendering indicator -->
-                <div v-if="isRendering && pdfLoaded" class="absolute top-20 right-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-15">
+                <div v-if="isRendering && pdfLoaded" class="absolute top-16 right-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-15">
                     <div class="flex items-center gap-2">
                         <div class="w-4 h-4 border-2 border-t-indigo-500 border-gray-200 rounded-full animate-spin"></div>
                         <span class="text-sm text-gray-700 dark:text-gray-300">Rendering...</span>
                     </div>
                 </div>
 
-                <!-- Error message -->
-                <!-- <div v-if="error" class="absolute inset-0 flex items-center justify-center z-10">
-                    <div class="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-                        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Failed to load PDF</h3>
-                        <p class="text-gray-700 dark:text-gray-300 mb-4">{{ error }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Source: {{ props.pdfSource }}</p>
-                        <button @click="$emit('retry')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Try Again</button>
-                    </div>
-                </div> -->
                 <!-- PDF Content -->
                 <div class="pdf-viewer-wrapper bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 sm:p-4">
                     <!-- Single Page View -->
@@ -834,12 +877,14 @@ const filteredChats = computed(() => {
                 </button>
             </div>
         </div>
+
         <!-- Note Sidebar -->
         <NoteSidebar
             v-model:visible="noteSidebar"
             :notes="filteredNotes"
             :selected-text="selectedText"
             :page-number="currentPage"
+            :current-time="0"
             timer-label="Page"
             :timer-value="`Page ${currentPage}`"
             @save-note="saveNote"
@@ -853,6 +898,7 @@ const filteredChats = computed(() => {
             :chat-messages="filteredChats"
             :selected-text="selectedText"
             :page-number="currentPage"
+            :current-time="0"
             timer-label="Page"
             :timer-value="`Page ${currentPage}`"
             @save-chat="saveChatMessage"

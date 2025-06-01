@@ -254,7 +254,7 @@ onMounted(() => {
                         </template>
                         <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="id" header="ID" sortable style="min-width: 5rem"></Column>
-                        <Column field="category_name" header="Name" sortable style="min-width: 16rem"></Column>
+                        <Column field="name" header="Name" sortable style="min-width: 16rem"></Column>
                         <Column field="created_at" header="Created At" sortable style="min-width: 18rem">
                             <template #body="slotProps">
                                 {{ new Date(slotProps.data.created_at).toLocaleString() }}

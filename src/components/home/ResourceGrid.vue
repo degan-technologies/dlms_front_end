@@ -1,18 +1,22 @@
 <script setup>
 import { useAuthStore } from '@/stores/authStore';
+import { useFilterStore } from '@/stores/filterStore';
 import axiosInstance from '@/util/axios-config';
 import Cookies from 'js-cookie';
+import { storeToRefs } from 'pinia';
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+// Use stores
+const filterStore = useFilterStore();
 const authStore = useAuthStore();
-const user = computed(() => authStore?.getUser ?? null); // Null safety for authStore
-console.log('User:', user?.value?.user ?? null);
-console.log('User ID:', user?.value?.user?.id ?? null);
-const userId = computed(() => user?.value?.user?.id ?? null);
+const { resources, loading, totalRecords, currentPage, resourcesPerPage } = storeToRefs(filterStore);
+
+const user = computed(() => authStore.getUser || {});
+const userId = computed(() => (user.value && user.value.user ? user.value.user.id : null));
 const authLoading = ref(true);
 
 const props = defineProps({
@@ -27,290 +31,17 @@ const emit = defineEmits(['filterReset']);
 
 const router = useRouter();
 const toast = useToast();
-const loading = ref(true);
-const first = ref(0);
-const resourcesPerPage = ref(6); // Initial fetch limit of 6
-const totalRecords = ref(0);
 // We'll keep local bookmarks for non-authenticated users or fallback
-const bookmarkedResources = ref(JSON.parse(localStorage.getItem('bookmarkedResources') || '[]'));
 const userBookmarks = ref([]); // For bookmarks from the API
 
-// Initialize with empty resources array
-const resources = ref([]);
-
-// Watch for filter changes from parent component
-watch(
-    () => props.filters,
-    (newFilters) => {
-        console.log('Filters changed in ResourceGrid:', newFilters);
-        applyFiltersToAPI(newFilters);
-    },
-    { deep: true }
-);
-
-// Apply filters to API request
-const applyFiltersToAPI = async (filters) => {
-    if (!filters || Object.keys(filters).length === 0) {
-        await fetchResources();
-        return;
-    }
-
-    loading.value = true;
-    try {
-        const currentPage = Math.floor(first.value / resourcesPerPage.value) + 1;
-        const params = {
-            page: currentPage,
-            per_page: resourcesPerPage.value,
-            format: 'all'
-        };
-
-        // Add filters to API params
-        if (filters.keyword && filters.keyword.trim()) {
-            params.search = filters.keyword.trim();
-        }
-        if (filters.categoryId && filters.categoryId.length > 0) {
-            params.category_ids = filters.categoryId.join(',');
-        }
-        if (filters.language && filters.language !== '') {
-            params.language = filters.language;
-        }
-        if (filters.gradeLevel && filters.gradeLevel.length > 0) {
-            params.grade_ids = filters.gradeLevel.join(',');
-        }
-        if (filters.subject && filters.subject.length > 0) {
-            params.subject_ids = filters.subject.join(',');
-        }
-        if (filters.itemType && filters.itemType.length > 0) {
-            params.ebook_type_ids = filters.itemType.join(',');
-        }
-
-        const response = await axiosInstance.get('/book-items', { params });
-
-        if (response.data && response.data.data) {
-            processResourcesData(response.data);
-        }
-    } catch (error) {
-        console.error('Failed to fetch filtered resources:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to apply filters. Please try again.',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
-    }
-};
-
-// Fetch resources from API
-const fetchResources = async () => {
-    loading.value = true;
-    try {
-        // Calculate current page from first and rows per page
-        const currentPage = Math.floor(first.value / resourcesPerPage.value) + 1;
-
-        // Add pagination parameters to the request
-        const response = await axiosInstance.get('/book-items', {
-            params: {
-                page: currentPage,
-                per_page: resourcesPerPage.value,
-                format: 'all'
-            }
-        });
-
-        if (response.data && response.data.data) {
-            // Create a new array to hold our expanded resources
-            const expandedResources = [];
-
-            // Process each book item and create separate entries for physical books and ebooks
-            response.data.data.forEach((item) => {
-                const hasPhysicalBook = item.books_count && item.books_count.total > 0;
-                const hasEbook = item.ebooks_count && item.ebooks_count.total > 0;
-
-                // If it has physical books, create a physical book card
-                if (hasPhysicalBook) {
-                    const physicalBookCard = {
-                        id: `${item.id}-physical`,
-                        originalId: item.id,
-                        title: item.title,
-                        author: item.author,
-                        description: item.description,
-                        type: 'Physical Book',
-                        image: item.cover_image,
-                        category: item.category ? item.category.name : null,
-                        language: item.language ? item.language.name : null,
-                        grade: item.grade ? `Grade ${item.grade.name}` : '',
-                        subject: item.subject ? item.subject.name : null,
-                        library: item.library ? item.library.name : null,
-                        library_id: item.library ? item.library.id : null,
-                        available_books_count: item.books_count.available,
-                        total_books_count: item.books_count.total,
-                        availability_status: item.books_count.available > 0 ? 'available' : 'borrowed',
-                        resource_type: 'physical',
-                        // Only include what's in the API response
-                        is_physical: true
-                    };
-                    expandedResources.push(physicalBookCard);
-                }
-
-                // If it has ebooks, create one combined ebook card
-                if (hasEbook) {
-                    const ebookTypes = item.ebooks_count.by_type || {};
-
-                    // Create combined type string showing all available formats
-                    const availableTypes = [];
-                    if (ebookTypes.pdf > 0) availableTypes.push(`PDF (${ebookTypes.pdf})`);
-                    if (ebookTypes.video > 0) availableTypes.push(`Video (${ebookTypes.video})`);
-                    if (ebookTypes.audio > 0) availableTypes.push(`Audio (${ebookTypes.audio})`);
-
-                    const ebookCard = {
-                        id: `${item.id}-ebook`,
-                        originalId: item.id,
-                        title: item.title,
-                        author: item.author,
-                        description: item.description,
-                        type: 'Digital Collection',
-                        image: item.cover_image,
-                        category: item.category ? item.category.name : null,
-                        language: item.language ? item.language.name : null,
-                        grade: item.grade ? `Grade ${item.grade.name}` : '',
-                        subject: item.subject ? item.subject.name : null,
-                        library: item.library ? item.library.name : null,
-                        total_ebooks_count: item.ebooks_count.total,
-                        downloadable_count: item.ebooks_count.downloadable,
-                        ebook_types: availableTypes.join(', '),
-                        ebooks_count: item.ebooks_count,
-                        availability_status: 'available',
-                        resource_type: 'ebook',
-                        ebook_types_breakdown: ebookTypes,
-                        is_ebook: true
-                    };
-                    expandedResources.push(ebookCard);
-                }
-            });
-
-            // Set the resources to our expanded list
-            resources.value = expandedResources;
-            console.log('Fetched resources:', resources.value);
-
-            // Set total records (now it's the number of cards, not book items)
-            totalRecords.value = expandedResources.length;
-        }
-    } catch (error) {
-        console.error('Failed to fetch resources:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to load resources. Please try again.',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
-    }
-};
-
-// Enhanced helper functions for better UI
-const clearAllFilters = () => {
-    emit('filterReset');
-    toast.add({
-        severity: 'success',
-        summary: 'Filters Cleared',
-        detail: 'All filters have been cleared. Showing all resources.',
-        life: 2000
-    });
-};
-
-const showSuggestions = () => {
-    toast.add({
-        severity: 'info',
-        summary: 'Tip',
-        detail: 'Try browsing by category or reducing filter criteria to find more resources.',
-        life: 4000
-    });
-};
-
-const processResourcesData = (apiResponse) => {
-    // Create a new array to hold our expanded resources
-    const expandedResources = [];
-
-    // Process each book item and create separate entries for physical books and ebooks
-    apiResponse.data.forEach((item) => {
-        const hasPhysicalBook = item.books_count && item.books_count.total > 0;
-        const hasEbook = item.ebooks_count && item.ebooks_count.total > 0;
-
-        // If it has physical books, create a physical book card
-        if (hasPhysicalBook) {
-            const physicalBookCard = {
-                id: `${item.id}-physical`,
-                originalId: item.id,
-                title: item.title,
-                author: item.author,
-                description: item.description,
-                type: 'Physical Book',
-                image: item.cover_image,
-                category: item.category ? item.category.name : null,
-                language: item.language ? item.language.name : null,
-                grade: item.grade ? `Grade ${item.grade.name}` : '',
-                subject: item.subject ? item.subject.name : null,
-                library: item.library ? item.library.name : null,
-                library_id: item.library ? item.library.id : null,
-                available_books_count: item.books_count.available,
-                total_books_count: item.books_count.total,
-                availability_status: item.books_count.available > 0 ? 'available' : 'borrowed',
-                resource_type: 'physical',
-                is_physical: true
-            };
-            expandedResources.push(physicalBookCard);
-        }
-
-        // If it has ebooks, create one combined ebook card
-        if (hasEbook) {
-            const ebookTypes = item.ebooks_count.by_type || {};
-
-            // Create combined type string showing all available formats
-            const availableTypes = [];
-            if (ebookTypes.pdf > 0) availableTypes.push(`PDF (${ebookTypes.pdf})`);
-            if (ebookTypes.video > 0) availableTypes.push(`Video (${ebookTypes.video})`);
-            if (ebookTypes.audio > 0) availableTypes.push(`Audio (${ebookTypes.audio})`);
-
-            const ebookCard = {
-                id: `${item.id}-ebook`,
-                originalId: item.id,
-                title: item.title,
-                author: item.author,
-                description: item.description,
-                type: 'Digital Collection',
-                image: item.cover_image,
-                category: item.category ? item.category.name : null,
-                language: item.language ? item.language.name : null,
-                grade: item.grade ? `Grade ${item.grade.name}` : '',
-                subject: item.subject ? item.subject.name : null,
-                library: item.library ? item.library.name : null,
-                total_ebooks_count: item.ebooks_count.total,
-                downloadable_count: item.ebooks_count.downloadable,
-                ebook_types: availableTypes.join(', '),
-                ebooks_count: item.ebooks_count,
-                availability_status: 'available',
-                resource_type: 'ebook',
-                ebook_types_breakdown: ebookTypes,
-                is_ebook: true
-            };
-            expandedResources.push(ebookCard);
-        }
-    });
-
-    // Set the resources to our expanded list
-    resources.value = expandedResources;
-
-    // Set pagination info from API response
-    totalRecords.value = apiResponse.total || 0;
-};
+// Computed property to get current page first index
+const first = computed(() => (currentPage.value - 1) * resourcesPerPage.value);
 
 // Helper functions
 const resetFilters = () => {
     // Reset the filters and fetch all resources
     console.log('Filters reset');
-    fetchResources();
+    filterStore.resetFilters();
 };
 
 const capitalizeFirstLetter = (string) => {
@@ -319,14 +50,11 @@ const capitalizeFirstLetter = (string) => {
 };
 
 const onPageChange = (event) => {
-    first.value = event.first;
-    resourcesPerPage.value = event.rows;
-
-    // Fetch resources with the new pagination parameters
-    fetchResources();
+    const page = Math.floor(event.first / resourcesPerPage.value) + 1;
+    filterStore.updatePage(page);
     console.log('Page changed:', {
-        page: Math.floor(event.first / event.rows) + 1,
-        perPage: event.rows,
+        page: page,
+        perPage: resourcesPerPage.value,
         first: event.first
     });
 };
@@ -376,7 +104,7 @@ onMounted(async () => {
         await authStore.authCheck();
     }
     authLoading.value = false;
-    fetchResources();
+    await filterStore.fetchResources();
 });
 
 // Local state for preview modal
@@ -394,53 +122,12 @@ const showResourcePreview = (resource) => {
 
 // Function to request/reserve a book
 const requestBook = async (resource) => {
-    if (authLoading.value) {
-        toast.add({
-            severity: 'info',
-            summary: 'Please wait',
-            detail: 'Checking authentication status...',
-            life: 2000
-        });
-        return;
-    }
-    if (!userId.value) {
-        toast.add({
-            severity: 'error',
-            summary: 'Not Authenticated',
-            detail: 'You must be logged in to reserve a book.',
-            life: 3000
-        });
-        return;
-    }
-
     if (resource && resource.available_books_count > 0) {
-        // Generate a random reservation code (8 uppercase letters/numbers)
-        const reservationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-        // --- NEW: Select a random book_id from available_books array ---
-        // Assume resource.available_books is an array of book IDs (add this to your resource processing if not present)
-        let randomBookId = null;
-        if (Array.isArray(resource.available_books) && resource.available_books.length > 0) {
-            const idx = Math.floor(Math.random() * resource.available_books.length);
-            randomBookId = resource.available_books[idx];
-        }
-
         try {
             await axiosInstance.post('/reservations', {
-                reservation_code: reservationCode,
-                user_id: userId.value,
-                book_item_id: resource.originalId || resource.id.split('-')[0], // always send book_item_id
-                book_id: randomBookId, // send the randomly selected book_id
-                library_id: resource.library_id || null,
-                reservation_date: new Date().toISOString().slice(0, 19).replace('T', ' '), // current date/time
-                status: 'pending'
+                book_item_id: resource.originalId // always send book_item_id
             });
 
-            // --- NEW: Update UI availability after reservation ---
-            if (typeof resource.available_books_count === 'number') {
-                resource.available_books_count = Math.max(0, resource.available_books_count - 1);
-                resource.availability_status = resource.available_books_count > 0 ? 'available' : 'borrowed';
-            }
             toast.add({
                 severity: 'info',
                 summary: 'Book Reservation',
@@ -483,7 +170,7 @@ const goToDetailsPage = (resource) => {
 };
 </script>
 <template>
-    <div class="lg:w-3/4">
+    <div id="resource-grid" class="w-full lg:w-3/4 min-h-screen">
         <!-- Enhanced Loading State -->
         <div v-if="loading" class="flex justify-center items-center py-16">
             <div class="relative">
@@ -525,26 +212,21 @@ const goToDetailsPage = (resource) => {
                             "
                         />
 
-                        <!-- Gradient Overlay for Better Text Readability -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10"></div>
 
                         <!-- Course Type Badge -->
                         <div class="absolute top-3 left-3">
-                            <span class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-xs font-bold rounded-full shadow-md" :class="resource.resource_type === 'physical' ? 'text-green-700' : 'text-purple-700'">
+                            <span class="px-3 py-1.5 bg-white/95 text-xs font-bold rounded-full shadow-md" :class="resource.resource_type === 'physical' ? 'text-green-700' : 'text-purple-700'">
                                 {{ resource.resource_type === 'physical' ? '📚 Physical Book' : '🎓 Digital Course' }}
                             </span>
                         </div>
 
                         <!-- Enhanced Availability/Count Badge -->
                         <div class="absolute top-3 right-3">
-                            <span
-                                v-if="resource.resource_type === 'physical'"
-                                class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-xs font-bold rounded-full shadow-md"
-                                :class="resource.availability_status === 'available' ? 'text-green-700' : 'text-red-700'"
-                            >
+                            <span v-if="resource.resource_type === 'physical'" class="px-3 py-1.5 bg-white/95 text-xs font-bold rounded-full shadow-md" :class="resource.availability_status === 'available' ? 'text-green-700' : 'text-red-700'">
                                 {{ resource.available_books_count }}/{{ resource.total_books_count }} Available
                             </span>
-                            <span v-else class="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-purple-700 text-xs font-bold rounded-full shadow-md"> {{ resource.downloadable_count }} Lessons </span>
+                            <span v-else class="px-3 py-1.5 bg-white/95 text-purple-700 text-xs font-bold rounded-full shadow-md"> {{ resource.downloadable_count }} Lessons </span>
                         </div>
 
                         <!-- Content Type Indicators for eBooks -->
@@ -662,7 +344,7 @@ const goToDetailsPage = (resource) => {
                                     "
                                     @click.stop="resource.resource_type === 'physical' ? requestBook(resource) : goToDetailsPage(resource)"
                                 >
-                                    {{ resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'Reserve' : 'Join List') : 'Start' }}
+                                    {{ resource.resource_type === 'physical' ? (resource.availability_status === 'available' ? 'Reserve' : 'Not Available') : 'Start' }}
                                 </button>
                             </div>
                         </div>
@@ -689,10 +371,61 @@ const goToDetailsPage = (resource) => {
             />
         </div>
         <!-- Resource Preview Modal -->
-        <Dialog v-model:visible="previewModalVisible" :modal="true" :breakpoints="{ '1200px': '75vw', '960px': '85vw', '640px': '95vw' }" :style="{ width: '60rem' }" :showHeader="false" :dismissableMask="true" :closeOnEscape="true">
-            <div v-if="selectedResource" class="bg-white">
-                <!-- Modal Header -->
-                <div class="flex items-start gap-6 p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <Dialog
+            v-model:visible="previewModalVisible"
+            :modal="true"
+            :breakpoints="{ '1200px': '75vw', '960px': '85vw', '640px': '95vw' }"
+            :style="{ width: '60rem' }"
+            :showHeader="false"
+            :dismissableMask="true"
+            :closeOnEscape="true"
+            class="resource-preview-modal"
+        >
+            <div v-if="selectedResource" class="bg-white overflow-hidden">
+                <!-- Mobile Header Image (Full Width on Mobile) -->
+                <div class="block md:hidden relative h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                    <img :src="selectedResource.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'" :alt="selectedResource.title" class="w-full h-full object-cover" />
+
+                    <!-- Mobile Image Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+
+                    <!-- Close Button -->
+                    <button @click="previewModalVisible = false" class="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full transition-colors z-10">
+                        <i class="pi pi-times text-white text-lg"></i>
+                    </button>
+
+                    <!-- Resource Type Badge - Mobile -->
+                    <div class="absolute top-4 left-4">
+                        <span class="px-3 py-1.5 bg-white/95 text-xs font-bold rounded-full shadow-md" :class="selectedResource.resource_type === 'physical' ? 'text-green-700' : 'text-purple-700'">
+                            {{ selectedResource.resource_type === 'physical' ? '📚 Physical Book' : '🎓 Digital Course' }}
+                        </span>
+                    </div>
+
+                    <!-- Mobile Title Overlay -->
+                    <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
+                        <h2 class="text-xl font-bold mb-1 leading-tight">{{ selectedResource.title }}</h2>
+                        <p v-if="selectedResource.author" class="text-white/90 text-sm mb-3">by {{ selectedResource.author }}</p>
+
+                        <!-- Mobile Quick Stats -->
+                        <div class="flex items-center gap-4 text-xs text-white/90">
+                            <span v-if="selectedResource.resource_type === 'physical'" class="flex items-center gap-1">
+                                <i class="pi pi-bookmark"></i>
+                                {{ selectedResource.available_books_count }}/{{ selectedResource.total_books_count }} Available
+                            </span>
+                            <span v-else class="flex items-center gap-1">
+                                <i class="pi pi-play-circle"></i>
+                                {{ selectedResource.downloadable_count }} Lessons
+                            </span>
+                            <span v-if="selectedResource.library" class="flex items-center gap-1">
+                                <i class="pi pi-building"></i>
+                                {{ selectedResource.library }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Modal Header (Hidden on Mobile) -->
+                <div class="hidden md:flex items-start gap-6 p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                     <div class="w-24 h-32 flex-shrink-0">
                         <img
                             :src="selectedResource.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'"
@@ -748,18 +481,27 @@ const goToDetailsPage = (resource) => {
                         </div>
                     </div>
                 </div>
-
                 <!-- Modal Content -->
-                <div class="p-6">
+                <div class="p-4 md:p-6">
+                    <!-- Mobile metadata badges (shown only on mobile) -->
+                    <div class="md:hidden mb-4">
+                        <div class="flex flex-wrap gap-2">
+                            <span v-if="selectedResource.category" class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full border border-blue-200"> <i class="pi pi-folder mr-1"></i>{{ selectedResource.category }} </span>
+                            <span v-if="selectedResource.subject" class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200"> <i class="pi pi-book mr-1"></i>{{ selectedResource.subject }} </span>
+                            <span v-if="selectedResource.grade" class="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200"> <i class="pi pi-chart-line mr-1"></i>{{ selectedResource.grade }} </span>
+                            <span v-if="selectedResource.language" class="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full border border-gray-200"> <i class="pi pi-globe mr-1"></i>{{ selectedResource.language }} </span>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Description and Content -->
                         <div class="lg:col-span-2 space-y-6">
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
                                     <i class="pi pi-info-circle text-blue-500"></i>
                                     About this {{ selectedResource.resource_type === 'physical' ? 'book' : 'course' }}
                                 </h3>
-                                <p class="text-gray-600 leading-relaxed text-base">
+                                <p class="text-gray-600 leading-relaxed text-sm md:text-base">
                                     {{ selectedResource.description || 'This educational resource provides valuable learning materials to enhance your knowledge and skills.' }}
                                 </p>
                             </div>
@@ -862,13 +604,13 @@ const goToDetailsPage = (resource) => {
                                     </div>
                                 </div>
                             </div>
-
                             <!-- Actions -->
                             <div class="space-y-3">
+                                <!-- Mobile Primary Action Button (Full Width) -->
                                 <button
                                     v-if="selectedResource.resource_type === 'ebook'"
                                     @click="goToDetailsPage(selectedResource)"
-                                    class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md"
+                                    class="w-full py-3 md:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md text-sm md:text-base"
                                 >
                                     <i class="pi pi-play-circle"></i>
                                     Start learning
@@ -876,21 +618,22 @@ const goToDetailsPage = (resource) => {
                                 <button
                                     v-else-if="selectedResource.resource_type === 'physical'"
                                     @click="requestBook(selectedResource)"
-                                    class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                                    class="w-full py-3 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md text-sm md:text-base"
                                     :disabled="selectedResource.available_books_count === 0"
                                 >
                                     <i class="pi pi-bookmark"></i>
                                     {{ selectedResource.available_books_count > 0 ? 'Reserve book' : 'Currently unavailable' }}
                                 </button>
 
+                                <!-- Secondary Actions (Mobile Optimized) -->
                                 <div class="grid grid-cols-2 gap-3">
-                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                                    <button class="py-2 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-1">
                                         <i class="pi pi-heart"></i>
-                                        Save
+                                        <span class="hidden sm:inline">Save</span>
                                     </button>
-                                    <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                                    <button class="py-2 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-1">
                                         <i class="pi pi-share-alt"></i>
-                                        Share
+                                        <span class="hidden sm:inline">Share</span>
                                     </button>
                                 </div>
                             </div>
@@ -1198,6 +941,23 @@ const goToDetailsPage = (resource) => {
     box-shadow:
         0 20px 25px -5px rgba(0, 0, 0, 0.1),
         0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Mobile modal optimizations */
+:deep(.resource-preview-modal .p-dialog) {
+    margin: 0;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+@media (min-width: 768px) {
+    :deep(.resource-preview-modal .p-dialog) {
+        margin: 1rem;
+        height: auto;
+        max-height: calc(100vh - 2rem);
+        border-radius: 1rem;
+    }
 }
 
 :deep(.p-dialog-mask) {

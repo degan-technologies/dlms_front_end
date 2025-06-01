@@ -258,7 +258,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-white py-10 flex flex-col items-center">
+    <div class="min-h-screen py-10 flex flex-col items-center">
         <div class="w-full max-w-4xl mx-auto">
             <!-- Header with switch buttons -->
             <div class="flex items-center justify-between mb-8">

@@ -152,8 +152,8 @@ const loadEbookData = () => {
     if (props.ebook) {
         setValues({
             file_name: props.ebook.file_name || '',
-            e_book_type_id: props.ebook.e_book_type_id || '',
-            is_downloadable: props.ebook.is_downloadable || false,
+            e_book_type_id: props.ebook.e_book_type_id || props.ebook.e_book_type?.id || '',
+            is_downloadable: props.ebook.is_downloadable === undefined ? false : props.ebook.is_downloadable,
             file_path: props.ebook.file_path || ''
         });
 
