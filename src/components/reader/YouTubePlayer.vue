@@ -4,37 +4,26 @@
         <div class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
             <div class="px-2 py-1 flex items-center justify-between gap-2">
                 <!-- Left Section: Go Back + Video Info -->
-                <div class="flex items-center gap-2">
-                    <button @click="goBack" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <div class="flex items-center gap-2 md:gap-10 p-2 md:p-5">
+                    <button @click="goBack" class="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         <i class="pi pi-arrow-left text-gray-700 dark:text-gray-300 text-lg"></i>
                     </button>
 
                     <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
 
-                    <div class="flex flex-col" v-if="videoMeta.title">
-                        <h1 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate max-w-lg leading-tight">
+                    <div class="flex flex-col max-w-xs sm:max-w-md md:max-w-lg" v-if="videoMeta.title">
+                        <h1 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate leading-tight" :title="videoMeta.title">
                             {{ videoMeta.title }}
                         </h1>
-                        <span v-if="videoMeta.author" class="text-xs text-gray-600 dark:text-gray-400">
+                        <span v-if="videoMeta.author" class="text-xs text-gray-600 dark:text-gray-400 truncate" :title="videoMeta.author">
                             {{ videoMeta.author }}
                         </span>
                     </div>
                 </div>
 
                 <!-- Center Section: Current Time -->
-                <div class="flex items-center gap-2" v-if="videoMeta.duration">
-                    <div class="px-2 py-1 bg-gray-50 dark:bg-gray-700 rounded text-xs font-medium text-gray-700 dark:text-gray-300 text-center">{{ formatDuration(currentTime) }} / {{ formatDuration(videoMeta.duration) }}</div>
-                </div>
 
                 <!-- Right Section: Player Status -->
-                <div class="flex items-center gap-2">
-                    <div v-if="loading" class="flex items-center gap-2">
-                        <div class="w-4 h-4 border-2 border-t-red-500 border-gray-200 rounded-full animate-spin"></div>
-                        <span class="text-xs text-gray-600 dark:text-gray-400">Loading...</span>
-                    </div>
-                    <div v-else-if="isPlaying" class="px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded text-xs font-medium text-red-700 dark:text-red-300">Playing</div>
-                    <div v-else-if="!loading && videoMeta.title" class="px-2 py-1 bg-gray-50 dark:bg-gray-700 rounded text-xs font-medium text-gray-700 dark:text-gray-300">Paused</div>
-                </div>
             </div>
         </div>
 

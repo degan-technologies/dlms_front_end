@@ -177,10 +177,32 @@ const reservedOptions = [
     { label: 'No', value: false }
 ];
 
-const publicationYearOptions = Array.from({ length: 30 }, (_, i) => {
-    const year = new Date().getFullYear() - i;
-    return { label: year.toString(), value: year };
-});
+const publicationYearOptions = ref([]);
+
+// Generate publication year options
+const generatePublicationYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const startYear = 1900;
+    const years = [];
+
+    // If there's a book with a publication year, make sure it's included
+    if (props.book?.publication_year) {
+        const bookYear = parseInt(props.book.publication_year);
+        if (bookYear < startYear) {
+            years.push({ label: bookYear.toString(), value: bookYear });
+        }
+    }
+
+    // Generate years from current year down to 1900
+    for (let year = currentYear; year >= startYear; year--) {
+        years.push({ label: year.toString(), value: year });
+    }
+
+    // Sort to ensure proper order and remove duplicates
+    const uniqueYears = [...new Set(years.map((y) => y.value))].sort((a, b) => b - a).map((year) => ({ label: year.toString(), value: year }));
+
+    publicationYearOptions.value = uniqueYears;
+};
 
 // Form schema
 const bookSchema = z.object({
@@ -230,17 +252,22 @@ const loadBookData = () => {
     resetForm();
     setErrors({});
 
+    // Generate publication year options first
+    generatePublicationYearOptions();
+
     if (props.book) {
+        const publicationYearValue = props.book.publication_year ? parseInt(props.book.publication_year) : new Date().getFullYear();
+
         setValues({
             edition: props.book.edition || '',
             isbn: props.book.isbn || '',
             title: props.book.title || '',
             pages: props.book.pages || null,
             is_borrowable: props.book.is_borrowable === undefined ? true : props.book.is_borrowable,
-            shelf_id: props.book.shelf_id || '',
-            library_id: props.book.library_id || '',
+            shelf_id: props.book.shelf_id || props.book.shelf?.id || '',
+            library_id: props.book.library_id || props.book.library?.id || '',
             is_reserved: props.book.is_reserved === undefined ? false : props.book.is_reserved,
-            publication_year: props.book.publication_year || new Date().getFullYear()
+            publication_year: publicationYearValue
         });
 
         // Set the current cover image if it exists

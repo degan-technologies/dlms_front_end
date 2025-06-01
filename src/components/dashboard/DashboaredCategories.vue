@@ -76,32 +76,33 @@ onMounted(() => {
                 <Button label="View Detail" icon="pi pi-eye" class="p-button-primary" />
             </router-link>
         </div>
-        <DataTable
-            :value="categories"
-            :paginator="true"
-            :rows="rows"
-            :totalRecords="totalRecords"
-            :first="first"
-            :rowsPerPageOptions="rowsPerPageOptions"
-            :loading="loading"
-            :lazy="true"
-            @page="onPage"
-            @sort="onSort"
-            responsiveLayout="scroll"
-            class="p-datatable-sm min-w-full"
-            scrollable
-            style="min-width: 600px"
-            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
-        >
-            <Column field="id" header="ID" sortable style="min-width: 5rem" />
-            <Column field="name" header="Name" sortable style="min-width: 16rem" />
-            <Column field="books_count" header="Books" sortable style="min-width: 8rem">
-                <template #body="slotProps">
-                    <Badge :value="slotProps.data.books_count || slotProps.data.total_books || 0" severity="info"></Badge>
-                </template>
-            </Column>
-        </DataTable>
+        <div class="overflow-x-auto w-full">
+            <DataTable
+                :value="categories"
+                :paginator="true"
+                :rows="rows"
+                :totalRecords="totalRecords"
+                :first="first"
+                :rowsPerPageOptions="rowsPerPageOptions"
+                :loading="loading"
+                :lazy="true"
+                @page="onPage"
+                @sort="onSort"
+                responsiveLayout="scroll"
+                class="p-datatable-sm"
+                scrollable
+                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+            >
+                <Column field="id" header="ID" sortable style="min-width: 5rem" />
+                <Column field="name" header="Name" sortable style="min-width: 16rem" />
+                <Column field="books_count" header="Books" sortable style="min-width: 8rem">
+                    <template #body="slotProps">
+                        <Badge :value="slotProps.data.books_count || slotProps.data.total_books || 0" severity="info"></Badge>
+                    </template>
+                </Column>
+            </DataTable>
+        </div>
     </div>
 </template>
 <style scoped>

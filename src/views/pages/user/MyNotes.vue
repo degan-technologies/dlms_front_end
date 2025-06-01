@@ -27,11 +27,6 @@
                 <div class="space-y-12">
                     <div v-for="group in groupedNotes" :key="group.ebook.id" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                         <div class="flex flex-col md:flex-row gap-6 p-8 items-start bg-gradient-to-r from-indigo-50 via-white to-purple-50 border-b border-gray-100">
-                            <img
-                                :src="group.ebook.cover_image_url || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
-                                alt="Ebook cover"
-                                class="w-32 h-44 object-cover rounded-xl border border-gray-200 shadow-sm"
-                            />
                             <div class="flex-1">
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     <span class="text-xs font-semibold text-gray-600 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
@@ -51,25 +46,42 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 pb-8 pt-6 bg-gradient-to-br from-white to-indigo-50">
-                            <div
-                                v-for="note in group.notes"
-                                :key="note.id"
-                                @click="goToReader(group.ebook)"
-                                class="group bg-yellow-50 rounded-2xl shadow hover:shadow-xl border border-yellow-100 cursor-pointer transition-all p-6 flex flex-col gap-3 hover:bg-yellow-100 relative"
-                            >
-                                <span class="absolute top-4 right-4 text-xs text-gray-400 font-semibold">#{{ note.id }}</span>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Page {{ note.page_number }}</span>
-                                    <span v-if="note.highlight_text" class="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">Highlight: {{ note.highlight_text }}</span>
-                                </div>
-                                <div class="text-gray-900 font-semibold text-lg line-clamp-2">{{ note.content }}</div>
-                                <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                                    <span><i class="pi pi-calendar mr-1"></i>{{ formatDate(note.created_at) }}</span>
-                                </div>
-                                <button @click.stop="deleteNote(note)" class="mt-2 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded shadow text-xs font-semibold flex items-center gap-1 transition-all">
-                                    <i class="pi pi-trash"></i> Remove
-                                </button>
+                        <div class="px-8 pb-8 pt-6 bg-gradient-to-br from-white to-indigo-50">
+                            <!-- Notes Carousel -->
+                            <div class="notes-carousel-container">
+                                <Carousel
+                                    :value="group.notes"
+                                    :numVisible="getCarouselVisible(group.notes.length)"
+                                    :numScroll="1"
+                                    :circular="true"
+                                    :autoplayInterval="0"
+                                    :showNavigators="group.notes.length > 1"
+                                    :showIndicators="group.notes.length > 3"
+                                    :responsiveOptions="carouselResponsiveOptions"
+                                    class="notes-carousel"
+                                >
+                                    <template #item="{ data: note }">
+                                        <div class="p-2">
+                                            <div
+                                                @click="goToReader(group.ebook)"
+                                                class="group bg-yellow-50 rounded-2xl shadow hover:shadow-xl border border-yellow-100 cursor-pointer transition-all p-6 flex flex-col gap-3 hover:bg-yellow-100 relative h-64"
+                                            >
+                                                <span class="absolute top-4 right-4 text-xs text-gray-400 font-semibold">#{{ note.id }}</span>
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <span class="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Page {{ note.page_number }}</span>
+                                                    <span v-if="note.highlight_text" class="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">Highlight</span>
+                                                </div>
+                                                <div class="text-gray-900 font-semibold text-lg line-clamp-3 flex-1">{{ note.content }}</div>
+                                                <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                                                    <span><i class="pi pi-calendar mr-1"></i>{{ formatDate(note.created_at) }}</span>
+                                                </div>
+                                                <button @click.stop="deleteNote(note)" class="mt-2 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded shadow text-xs font-semibold flex items-center gap-1 transition-all self-start">
+                                                    <i class="pi pi-trash"></i> Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </Carousel>
                             </div>
                         </div>
                     </div>
@@ -98,11 +110,11 @@
 
 <script setup>
 import axiosInstance from '@/util/axios-config';
+import Carousel from 'primevue/carousel';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-
 const router = useRouter();
 const toast = useToast();
 const loading = ref(true);
@@ -233,6 +245,31 @@ const getYoutubeVideoId = (url) => {
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
 };
+
+// Carousel configuration
+const carouselResponsiveOptions = ref([
+    {
+        breakpoint: '1024px',
+        numVisible: 3,
+        numScroll: 1
+    },
+    {
+        breakpoint: '768px',
+        numVisible: 2,
+        numScroll: 1
+    },
+    {
+        breakpoint: '560px',
+        numVisible: 1,
+        numScroll: 1
+    }
+]);
+
+const getCarouselVisible = (notesLength) => {
+    if (notesLength === 1) return 1;
+    if (notesLength === 2) return 2;
+    return Math.min(3, notesLength);
+};
 </script>
 
 <style scoped>
@@ -242,5 +279,63 @@ const getYoutubeVideoId = (url) => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-clamp: 2;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 3;
+}
+
+.notes-carousel-container {
+    margin: 0 -8px;
+}
+
+.notes-carousel :deep(.p-carousel-item) {
+    display: flex;
+    align-items: stretch;
+}
+
+.notes-carousel :deep(.p-carousel-item > div) {
+    width: 100%;
+}
+
+/* Custom Carousel Styling */
+.notes-carousel :deep(.p-carousel-prev),
+.notes-carousel :deep(.p-carousel-next) {
+    background-color: rgba(99, 102, 241, 0.1);
+    border: 2px solid rgb(99, 102, 241);
+    color: rgb(99, 102, 241);
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.notes-carousel :deep(.p-carousel-prev):hover,
+.notes-carousel :deep(.p-carousel-next):hover {
+    background-color: rgb(99, 102, 241);
+    color: white;
+    transform: scale(1.1);
+}
+
+.notes-carousel :deep(.p-carousel-indicators) {
+    padding: 1rem 0;
+}
+
+.notes-carousel :deep(.p-carousel-indicator) {
+    background-color: rgba(99, 102, 241, 0.3);
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    margin: 0 6px;
+    transition: all 0.3s ease;
+}
+
+.notes-carousel :deep(.p-carousel-indicator.p-highlight) {
+    background-color: rgb(99, 102, 241);
+    transform: scale(1.2);
 }
 </style>

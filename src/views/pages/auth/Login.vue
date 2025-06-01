@@ -61,27 +61,6 @@ const handleLogin = async () => {
         loading.value = false;
     }
 };
-
-// Social login methods
-const loginWithGoogle = () => {
-    loading.value = true;
-    // Implement Google OAuth login here
-    // In production, you would redirect to Google auth endpoint or use a library
-    setTimeout(() => {
-        loading.value = false;
-        window.location.href = '/dashboard';
-    }, 1000);
-};
-
-const loginWithLinkedIn = () => {
-    loading.value = true;
-    // Implement LinkedIn OAuth login here
-    // In production, you would redirect to LinkedIn auth endpoint or use a library
-    setTimeout(() => {
-        loading.value = false;
-        window.location.href = '/dashboard';
-    }, 1000);
-};
 </script>
 
 <template>
@@ -793,33 +772,8 @@ const loginWithLinkedIn = () => {
                                     <label for="rememberMe" class="text-sm text-gray-600">Remember me</label>
                                 </div>
                             </div>
-
                             <Button class="w-full" type="submit" label="Sign In" severity="info" icon="pi pi-sign-in" :loading="loading"> </Button>
                         </form>
-
-                        <!-- Divider -->
-                        <div class="relative flex items-center my-6">
-                            <div class="flex-grow border-t border-blue-200"></div>
-                            <span class="flex-shrink mx-3 text-blue-400 text-sm font-medium">or continue with</span>
-                            <div class="flex-grow border-t border-blue-200"></div>
-                        </div>
-
-                        <!-- Social Login Buttons -->
-                        <div class="grid grid-cols-2 gap-3 mb-6">
-                            <Button type="button" @click="loginWithGoogle" class="p-button-outlined border-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 py-3 px-4 rounded-xl transition-all duration-300" outlined>
-                                <i class="pi pi-google mr-2"></i>
-                                <span>Google</span>
-                            </Button>
-
-                            <Button type="button" @click="loginWithLinkedIn" class="p-button-outlined border-2 border-cyan-300 text-cyan-600 hover:bg-cyan-50 hover:border-cyan-400 py-3 px-4 rounded-xl transition-all duration-300" outlined>
-                                <i class="pi pi-linkedin mr-2"></i>
-                                <span>LinkedIn</span>
-                            </Button>
-                        </div>
-                        <div class="text-center text-sm text-gray-600">
-                            <span>New to Digital Library?</span>
-                            <router-link to="/auth/register" class="text-blue-500 font-medium hover:text-blue-700 hover:underline ml-1 transition-colors"> Create an account </router-link>
-                        </div>
                     </div>
                 </div>
             </div>

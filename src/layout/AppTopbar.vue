@@ -3,8 +3,8 @@ import { useLayout } from '@/layout/composables/layout';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
-import AppConfigurator from './AppConfigurator.vue';
 import { useRouter } from 'vue-router';
+import AppConfigurator from './AppConfigurator.vue';
 
 const router = useRouter();
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
@@ -112,7 +112,7 @@ const logout = async () => {
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <Avatar @click="toggleProfileMenu" :label="user?.user?.email?.charAt(0).toUpperCase()" class="mr-2 cursor-pointer" size="large" shape="circle" />
+                    <Avatar @click="toggleProfileMenu" :label="user?.email?.charAt(0).toUpperCase()" class="mr-2 cursor-pointer" size="large" shape="circle" />
                 </div>
             </div>
         </div>
@@ -121,7 +121,7 @@ const logout = async () => {
             <div class="p-4 space-y-3">
                 <div class="flex items-center justify-center space-x-4">
                     <i class="pi pi-user text-2xl"></i>
-                    <h4 class="text-lg font-semibold">{{ user?.user?.username || user?.user?.email }}</h4>
+                    <h4 class="text-lg font-semibold">{{ user?.username || user?.email }}</h4>
                 </div>
                 <div class="flex flex-col space-y-2">
                     <Button

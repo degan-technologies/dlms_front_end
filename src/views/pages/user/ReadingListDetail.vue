@@ -129,14 +129,6 @@
                                     <span class="font-semibold text-gray-800">{{ collection.ebooks_count?.downloadable || 0 }}</span>
                                     <span class="text-gray-600">downloadable</span>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-clock text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Self-paced</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-infinity text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Lifetime access</span>
-                                </div>
                             </div>
                         </div>
                     </div>

@@ -36,27 +36,22 @@ export const useAuthStore = defineStore(
                 });
 
                 const { token, user } = response.data;
-                // Store token in cookies with longer expiration and proper settings for development
+
+                // Store token in cookies
                 Cookies.set('access_token', token, {
-                    expires: rememberMe ? 30 : 1, // Increase expiration
-                    secure: window.location.protocol === 'https:',
-                    sameSite: 'lax',
-                    path: '/'
-                });
-                console.log('[authStore] Set access_token cookie:', Cookies.get('access_token'), {
                     expires: rememberMe ? 30 : 1,
                     secure: window.location.protocol === 'https:',
                     sameSite: 'lax',
                     path: '/'
                 });
-                // Set token in axios headers for subsequent requests
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
                 // Set the auth state
                 auth.value.isAuthenticated = true;
                 auth.value.user = user;
 
-                console.log('Logged-in user:', user);
+                console.log('Login successful for user:', user);
+                console.log('User roles:', user.roles);
+
                 toast.add({
                     severity: 'success',
                     summary: 'Success',
@@ -64,11 +59,10 @@ export const useAuthStore = defineStore(
                     life: 3000
                 });
 
-                if (user.roles.some((role) => role.name === 'student')) {
-                    router.push('/'); // student route
-                } else {
-                    router.push('/dashboard'); // route for other roles
-                }
+                // Route based on user role using helper function
+                const redirectPath = determineRedirectPath(user.roles);
+                console.log('Redirecting to:', redirectPath);
+                router.push(redirectPath);
             } catch (error) {
                 console.error('Login error:', error);
                 toast.add({
@@ -153,8 +147,41 @@ export const useAuthStore = defineStore(
                 auth.value.user = null;
                 router.push('/auth/login');
             }
-        }
+        } // Helper function to determine redirect path based on user roles
+        function determineRedirectPath(userRoles) {
+            if (!userRoles || userRoles.length === 0) {
+                return '/dashboard'; // Default fallback
+            }
 
+            const roleNames = userRoles.map((role) => role.name.toLowerCase());
+            const roleIds = userRoles.map((role) => role.id);
+
+            console.log('Determining redirect path for roles:', roleNames, roleIds);
+
+            // Check by role name first (more reliable)
+            if (roleNames.includes('student')) {
+                return '/';
+            } else if (roleNames.includes('teacher')) {
+                return '/teacher/dashboard';
+            } else if (roleNames.includes('superadmin') || roleNames.includes('admin') || roleNames.includes('librarian')) {
+                return '/dashboard';
+            }
+
+            // Fallback check by role ID
+            if (roleIds.includes(5)) {
+                // STUDENT
+                return '/';
+            } else if (roleIds.includes(4)) {
+                // TEACHER
+                return '/teacher/dashboard';
+            } else if (roleIds.includes(1) || roleIds.includes(2) || roleIds.includes(3)) {
+                // SUPERADMIN, ADMIN, LIBRARIAN
+                return '/dashboard';
+            }
+
+            // Default fallback
+            return '/dashboard';
+        }
         const getUser = computed(() => {
             return auth.value.user ? auth.value.user : null;
         });

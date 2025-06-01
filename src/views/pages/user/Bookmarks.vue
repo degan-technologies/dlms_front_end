@@ -24,9 +24,71 @@
                 <p class="text-gray-500 max-w-md mx-auto">You haven't bookmarked any resources yet.</p>
             </div>
             <div v-else>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     <div v-for="bookmark in bookmarks" :key="bookmark.id" class="bg-white rounded-2xl shadow-lg border border-yellow-200 overflow-hidden group hover:shadow-xl transition-all">
-                        <div class="flex flex-col md:flex-row gap-6 p-6 items-start bg-gradient-to-r from-yellow-50 via-white to-blue-50 border-b border-yellow-100">
+                        <!-- Mobile Layout: Full-width image at top -->
+                        <div class="block md:hidden">
+                            <!-- Mobile Hero Image -->
+                            <div class="relative h-56 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                                <img
+                                    :src="bookmark.ebook?.cover_image_url || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
+                                    alt="Ebook cover"
+                                    class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                                />
+
+                                <!-- Mobile Image Overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+
+                                <!-- Type and Download Badge - Mobile -->
+                                <div class="absolute top-4 left-4 right-4 flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-white flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                                        <i :class="getEbookTypeIcon(bookmark.ebook)" class="text-white"></i>
+                                        {{ bookmark.ebook?.ebook_type?.name || 'File' }}
+                                    </span>
+                                    <span v-if="bookmark.ebook?.is_downloadable" class="text-xs text-white font-semibold bg-green-500/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-green-400/30">
+                                        <i class="pi pi-download mr-1"></i>Available
+                                    </span>
+                                </div>
+
+                                <!-- Mobile Title Overlay -->
+                                <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
+                                    <h2 class="text-xl font-bold mb-2 leading-tight line-clamp-2">{{ bookmark.ebook?.title || 'Untitled File' }}</h2>
+                                    <div class="flex items-center gap-3 text-sm text-white/90 mb-1">
+                                        <span v-if="bookmark.ebook?.author" class="flex items-center gap-1.5"> <i class="pi pi-user"></i>{{ bookmark.ebook.author }} </span>
+                                        <span class="flex items-center gap-1.5"> <i class="pi pi-calendar"></i>{{ formatDate(bookmark.created_at) }} </span>
+                                    </div>
+
+                                    <!-- Quick stats on mobile -->
+                                    <div class="flex items-center gap-3 text-xs text-white/80 mt-2">
+                                        <span class="flex items-center gap-1"> <i class="pi pi-bookmark"></i>Saved </span>
+                                        <span v-if="bookmark.ebook?.book_item?.category" class="flex items-center gap-1"> <i class="pi pi-tag"></i>{{ bookmark.ebook.book_item.category.name }} </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mobile Content Area -->
+                            <div class="p-5">
+                                <div class="flex gap-3">
+                                    <button
+                                        @click="goToReader(bookmark.ebook)"
+                                        class="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                    >
+                                        <i class="pi pi-play text-lg"></i>
+                                        <span>Open</span>
+                                    </button>
+                                    <button
+                                        @click.stop="deleteBookmark(bookmark)"
+                                        class="px-5 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl shadow-md text-sm font-semibold flex items-center gap-2 transition-all hover:shadow-lg transform hover:-translate-y-0.5"
+                                    >
+                                        <i class="pi pi-trash"></i>
+                                        <span class="hidden xs:inline">Remove</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Layout: Side-by-side -->
+                        <div class="hidden md:flex flex-col md:flex-row gap-6 p-6 items-start bg-gradient-to-r from-yellow-50 via-white to-blue-50 border-b border-yellow-100">
                             <img
                                 :src="bookmark.ebook?.cover_image_url || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
                                 alt="Ebook cover"

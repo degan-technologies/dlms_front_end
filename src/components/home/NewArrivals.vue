@@ -11,7 +11,6 @@
                     <h2 class="text-3xl font-bold text-gray-900 mb-2">What to learn next</h2>
                     <p class="text-gray-600 text-lg max-w-2xl">New courses picked just for you</p>
                 </div>
-                <button class="mt-4 sm:mt-0 text-purple-600 hover:text-purple-700 font-semibold text-sm border border-purple-200 hover:border-purple-300 px-4 py-2 rounded-lg transition-all duration-300 hover:bg-purple-50">View all new</button>
             </div>
             <!-- Loading state -->
             <div v-if="loading" class="flex justify-center items-center py-16">

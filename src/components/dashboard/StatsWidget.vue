@@ -1,6 +1,6 @@
 <template>
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3" v-for="(card, index) in cards" :key="index">
-        <div class="card mb-0">
+    <div class="card grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div v-for="(card, index) in cards" :key="index" class="card mb-0 shadow-lg flex flex-col justify-between h-full min-h-[170px]">
             <div class="flex justify-between mb-4">
                 <div>
                     <span class="block text-muted-color font-medium mb-4">{{ card.label }}</span>

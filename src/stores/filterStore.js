@@ -64,23 +64,24 @@ export const useFilterStore = defineStore('filter', () => {
                 page: currentPage.value,
                 per_page: resourcesPerPage.value,
                 format: filters.value.format || 'all'
-            };
-
-            // Add filter parameters to API request
+            }; // Add filter parameters to API request
             if (filters.value.keyword && filters.value.keyword.trim()) {
-                params.title = filters.value.keyword.trim();
+                params.search = filters.value.keyword.trim();
             }
             if (filters.value.categoryId && filters.value.categoryId.length > 0) {
-                params.category_id = filters.value.categoryId[0];
+                params.category_ids = filters.value.categoryId.join(',');
             }
             if (filters.value.language && filters.value.language !== '') {
                 params.language_id = filters.value.language;
             }
             if (filters.value.gradeLevel && filters.value.gradeLevel.length > 0) {
-                params.grade_id = filters.value.gradeLevel[0];
+                params.grade_ids = filters.value.gradeLevel.join(',');
             }
             if (filters.value.subject && filters.value.subject.length > 0) {
-                params.subject_id = filters.value.subject[0];
+                params.subject_ids = filters.value.subject.join(',');
+            }
+            if (filters.value.itemType && filters.value.itemType.length > 0) {
+                params.ebook_type_ids = filters.value.itemType.join(',');
             }
 
             console.log('API request params:', params);
@@ -183,9 +184,8 @@ export const useFilterStore = defineStore('filter', () => {
                 expandedResources.push(ebookCard);
             }
         });
-
         resources.value = expandedResources;
-        totalRecords.value = apiResponse.total || 0;
+        totalRecords.value = apiResponse.pagination?.total || apiResponse.total || 0;
     };
 
     const resetFilters = () => {
