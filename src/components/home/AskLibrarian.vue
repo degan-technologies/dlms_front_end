@@ -1,62 +1,3 @@
-<template>
-    <div class="fixed bottom-6 right-6 flex flex-col items-end z-50 space-y-2">
-        <!-- Custom Chat Panel -->
-        <transition name="slide-fade">
-            <section v-if="chatStore.isChatOpen" class="mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow-xl border border-indigo-100 flex flex-col">
-                <header class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3">
-                    <h2 class="font-semibold text-lg select-none">Ask a Librarian</h2>
-                    <button @click="chatStore.closeChat" aria-label="Close chat" class="hover:text-indigo-300 transition">
-                        <i class="pi pi-times"></i>
-                    </button>
-                </header>
-
-                <div ref="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 bg-indigo-50 min-h-[40vh] max-h-[60vh]">
-                    <div v-for="(pair, index) in messages" :key="index" class="space-y-3">
-                        <!-- Question from visitor -->
-                        <div class="flex justify-start">
-                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-white text-gray-800 border border-gray-200">
-                                <p class="whitespace-pre-wrap break-words">{{ pair.question?.message || 'No question' }}</p>
-                                <span class="block mt-1 text-[10px] text-gray-400 text-left select-none">
-                                    {{ formatTime(pair.question?.created_at) }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Answer from librarian -->
-                        <div class="flex justify-end" v-if="pair.answer">
-                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-600 text-white">
-                                <p class="whitespace-pre-wrap break-words">{{ pair.answer.message }}</p>
-                                <span class="block mt-1 text-[10px] text-gray-300 text-right select-none">
-                                    {{ formatTime(pair.answer.created_at) }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex justify-end italic text-gray-500" v-else>
-                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-100 text-indigo-700">No answer yet.</div>
-                        </div>
-                    </div>
-
-                    <div v-if="isTyping" class="flex justify-start">
-                        <div class="bg-white border rounded-full px-4 py-1 text-sm text-gray-500 animate-pulse select-none">Librarian is typing...</div>
-                    </div>
-                </div>
-
-                <form @submit.prevent="sendMessage" class="flex flex-wrap items-center gap-2 p-4 border-t border-indigo-100 bg-white rounded-b-xl">
-                    <input
-                        v-model="newMessage"
-                        :disabled="loading"
-                        type="text"
-                        placeholder="Type your message..."
-                        class="flex-1 min-w-[150px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                        @keydown.enter.exact.prevent="sendMessage"
-                    />
-                    <button type="submit" :disabled="loading || !newMessage.trim()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed">Send</button>
-                </form>
-            </section>
-        </transition>
-    </div>
-</template>
-
 <script setup>
 import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
@@ -178,6 +119,64 @@ onBeforeUnmount(() => {
     // Clean up if needed
 });
 </script>
+<template>
+    <div class="fixed bottom-6 right-6 flex flex-col items-end z-50 space-y-2">
+        <!-- Custom Chat Panel -->
+        <transition name="slide-fade">
+            <section v-if="chatStore.isChatOpen" class="mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow-xl border border-indigo-100 flex flex-col">
+                <header class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3">
+                    <h2 class="font-semibold text-lg select-none">Ask a Librarian</h2>
+                    <button @click="chatStore.closeChat" aria-label="Close chat" class="hover:text-indigo-300 transition">
+                        <i class="pi pi-times"></i>
+                    </button>
+                </header>
+
+                <div ref="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 bg-indigo-50 min-h-[40vh] max-h-[60vh]">
+                    <div v-for="(pair, index) in messages" :key="index" class="space-y-3">
+                        <!-- Question from visitor -->
+                        <div class="flex justify-start">
+                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-white text-gray-800 border border-gray-200">
+                                <p class="whitespace-pre-wrap break-words">{{ pair.question?.message || 'No question' }}</p>
+                                <span class="block mt-1 text-[10px] text-gray-400 text-left select-none">
+                                    {{ formatTime(pair.question?.created_at) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Answer from librarian -->
+                        <div class="flex justify-end" v-if="pair.answer">
+                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-600 text-white">
+                                <p class="whitespace-pre-wrap break-words">{{ pair.answer.message }}</p>
+                                <span class="block mt-1 text-[10px] text-gray-300 text-right select-none">
+                                    {{ formatTime(pair.answer.created_at) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex justify-end italic text-gray-500" v-else>
+                            <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-100 text-indigo-700">No answer yet.</div>
+                        </div>
+                    </div>
+
+                    <div v-if="isTyping" class="flex justify-start">
+                        <div class="bg-white border rounded-full px-4 py-1 text-sm text-gray-500 animate-pulse select-none">Librarian is typing...</div>
+                    </div>
+                </div>
+
+                <form @submit.prevent="sendMessage" class="flex flex-wrap items-center gap-2 p-4 border-t border-indigo-100 bg-white rounded-b-xl">
+                    <input
+                        v-model="newMessage"
+                        :disabled="loading"
+                        type="text"
+                        placeholder="Type your message..."
+                        class="flex-1 min-w-[150px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                        @keydown.enter.exact.prevent="sendMessage"
+                    />
+                    <button type="submit" :disabled="loading || !newMessage.trim()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed">Send</button>
+                </form>
+            </section>
+        </transition>
+    </div>
+</template>
 
 <style scoped>
 .slide-fade-enter-active,

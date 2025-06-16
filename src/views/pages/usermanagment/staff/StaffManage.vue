@@ -48,7 +48,7 @@ const fetchStaff = async () => {
             }
         });
 
-        staff.value = response.data.data.map(s => ({
+        staff.value = response.data.data.map((s) => ({
             ...s,
             'user.username': s.user?.username || ''
         }));
@@ -104,7 +104,7 @@ const deleteSelectedStaff = async () => {
 
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        const deletePromises = selectedStaff.value.map(s =>
+        const deletePromises = selectedStaff.value.map((s) =>
             axios.delete(`http://localhost:8000/api/staff/${s.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
@@ -126,7 +126,7 @@ const editForm = ref({
     user: {
         username: '',
         email: '',
-        phone_no: '',
+        phone_no: ''
     }
 });
 
@@ -139,7 +139,7 @@ const openEditDialog = (staffMember) => {
         user: {
             username: staffMember.user?.username || '',
             email: staffMember.user?.email || '',
-            phone_no: staffMember.user?.phone_no || '',
+            phone_no: staffMember.user?.phone_no || ''
         }
     };
     showEditDialog.value = true;
@@ -155,7 +155,7 @@ const updateStaff = async () => {
             //password: editForm.value.user.password,
             email: editForm.value.user.email,
             phone_no: editForm.value.user.phone_no,
-            department: editForm.value.department,
+            department: editForm.value.department
         };
 
         await axios.put(`http://localhost:8000/api/staff/${editForm.value.id}`, staffData, {
@@ -175,15 +175,15 @@ const updateStaff = async () => {
         <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage staff in the system.</p>
 
         <!-- Toolbar -->
-        <div class="flex justify-content-between align-items-center mb-3">
-            <div>
+        <div class="toolbar-responsive mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="toolbar-actions flex gap-2">
                 <Button label="Add Staff" icon="pi pi-plus" class="mr-2 p-button-success" @click="addStaff" />
                 <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedStaff.length" @click="deleteSelectedStaff" />
             </div>
-            <span class="p-input-icon-left" style="min-width: 300px;">
-                <i class="pi pi-search" />
+            <div class="toolbar-search flex items-center gap-2 w-full md:w-auto">
+                <i class="pi pi-search text-gray-500" />
                 <InputText v-model="filters.global.value" placeholder="Search staff..." @input="onFilter" class="w-full" />
-            </span>
+            </div>
         </div>
 
         <!-- Data Table -->
@@ -223,8 +223,8 @@ const updateStaff = async () => {
         <Dialog v-model:visible="showEditDialog" :modal="true" :closable="true" :style="{ width: '500px' }">
             <template #header>
                 <div class="flex align-items-center gap-2">
-                    <i class="pi pi-user-edit" style="font-size: 1.5rem; color: #42a5f5;"></i>
-                    <span class="text-xl font-bold" style="color: #42a5f5;">Edit Staff</span>
+                    <i class="pi pi-user-edit" style="font-size: 1.5rem; color: #42a5f5"></i>
+                    <span class="text-xl font-bold" style="color: #42a5f5">Edit Staff</span>
                 </div>
             </template>
             <div class="mb-2 text-gray-600">Update the staff information below and click <b>Update</b> to save changes.</div>
@@ -273,9 +273,7 @@ const updateStaff = async () => {
 <style scoped>
 .card {
     padding: 2rem;
-    background-color: white;
     border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .field {
     display: flex;

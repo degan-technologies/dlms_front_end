@@ -32,7 +32,7 @@ async function fetchNotifications() {
     try {
         loading.value = true;
         error.value = null;
-        const response = await axiosInstance.get('/notifications');
+        const response = await axiosInstance.get('/librarian/notifications');
         notifications.value = response.data.data.notifications;
         unreadCount.value = response.data.data.meta.unread_count;
     } catch (err) {
@@ -124,7 +124,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="card">
+    <div class="card border border-gray-200 rounded-xl p-6">
         <div class="flex items-center justify-between mb-6">
             <div class="font-semibold text-xl">
                 Notifications

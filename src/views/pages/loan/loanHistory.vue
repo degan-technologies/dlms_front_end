@@ -3,7 +3,7 @@ import axiosInstance from '@/util/axios-config';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const toast = useToast();
 const loans = ref([]);
@@ -49,7 +49,15 @@ const onPage = (event) => {
     fetchLoans();
 };
 
-const onFilter = () => {
+const onSearch = () => {
+    page.value = 1;
+    fetchLoans();
+};
+
+const resetFilters = () => {
+    filter.value = '';
+    status.value = '';
+    dateRange.value = [];
     page.value = 1;
     fetchLoans();
 };
@@ -68,7 +76,7 @@ const handleMarkReturned = (loan) => {
     const now = new Date();
     const returnDate = now.toISOString().slice(0, 10);
     const due = new Date(loan.due_date);
-    const daysLate = Math.ceil((now - due) / (1000 * 60 * 60 * 24));
+    const daysLate = Math.max(0, Math.floor((now - due) / (1000 * 60 * 60 * 24)));
     let fineAmount = 0;
     let reason = '';
     if (daysLate > 0) {
@@ -143,19 +151,6 @@ const confirmReturnWithFine = async () => {
     }
 };
 
-let fetchLoansTimeout = null;
-watch(
-    () => [filter.value, status.value, dateRange.value],
-    () => {
-        page.value = 1;
-        if (fetchLoansTimeout) clearTimeout(fetchLoansTimeout);
-        fetchLoansTimeout = setTimeout(() => {
-            fetchLoans();
-        }, 300); // 300ms debounce
-    },
-    { deep: true }
-);
-
 onMounted(fetchLoans);
 
 function getDueStatus(loan) {
@@ -187,22 +182,22 @@ function getDueStatus(loan) {
                         <p class="text-gray-600 text-sm sm:text-base">View all book loans and their status.</p>
                     </div>
                     <div class="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 md:gap-2 md:justify-end mb-6">
-                        <InputText v-model="filter" placeholder="Search by title, author, date..." class="w-full sm:w-64" @keyup.enter="onFilter" />
+                        <InputText v-model="filter" placeholder="Search by title, author, date..." class="w-full sm:w-64" @keyup.enter="onSearch" />
                         <Dropdown
                             v-model="status"
                             :options="[
                                 { label: 'All', value: '' },
                                 { label: 'Returned', value: 'Returned' },
-                                { label: 'Not Returned', value: 'NotReturned' }
+                                { label: 'Not Returned', value: 'Not Returned' }
                             ]"
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Status"
                             class="w-full sm:w-40"
-                            @change="onFilter"
                         />
-                        <Calendar v-model="dateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" @date-select="onFilter" />
-                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFilter" />
+                        <Calendar v-model="dateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" />
+                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onSearch" />
+                        <Button icon="pi pi-refresh" label="Reset" class="p-button-secondary w-full sm:w-auto" @click="resetFilters" />
                     </div>
                 </div>
                 <div class="w-full">
@@ -258,8 +253,9 @@ function getDueStatus(loan) {
                             <Column header="Fine">
                                 <template #body="{ data }">
                                     <span v-if="data.fine">
-                                        ${{ data.fine.amount }}
-                                        <span :class="data.fine.status === 'paid' ? 'text-green-600' : 'text-red-500'"> ({{ data.fine.status }}) </span>
+                                        ${{ data.fine.amount }} (<span :class="data.fine.status === 'true' || data.fine.status === true ? 'text-green-600' : 'text-red-500'">
+                                            {{ data.fine.status === 'true' || data.fine.status === true ? 'Paid' : 'Not Paid' }} </span
+                                        >)
                                     </span>
                                     <span v-else>-</span>
                                 </template>

@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const toast = useToast();
 const languages = ref([]);
@@ -20,17 +20,45 @@ const subjectForm = ref({ id: null, name: '', code: '' });
 
 const selectedTable = ref('languages'); // 'languages' or 'subjects'
 
-const languageSearch = ref('');
-const subjectSearch = ref('');
+const languageKeyword = ref('');
+const subjectKeyword = ref('');
 
-const filteredLanguages = computed(() => {
-    if (!languageSearch.value) return languages.value;
-    return languages.value.filter((lang) => (lang.name && lang.name.toLowerCase().includes(languageSearch.value.toLowerCase())) || (lang.code && lang.code.toLowerCase().includes(languageSearch.value.toLowerCase())));
-});
-const filteredSubjects = computed(() => {
-    if (!subjectSearch.value) return subjects.value;
-    return subjects.value.filter((subj) => subj.name && subj.name.toLowerCase().includes(subjectSearch.value.toLowerCase()));
-});
+const searchLanguages = async () => {
+    loading.value = true;
+    try {
+        const res = await axiosInstance.get('/constants/languages', {
+            params: { search: languageKeyword.value }
+        });
+        languages.value = res.data.data || res.data;
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to search languages',
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+const searchSubjects = async () => {
+    loading.value = true;
+    try {
+        const res = await axiosInstance.get('/constants/subjects', {
+            params: { search: subjectKeyword.value }
+        });
+        subjects.value = res.data.data || res.data;
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to search subjects',
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+};
 
 const fetchLanguages = async () => {
     loading.value = true;
@@ -129,7 +157,7 @@ const deleteLanguage = async (lang) => {
         toast.add({
             severity: 'success',
             summary: 'Success',
-            detail: 'Language deleted',
+            detail: 'Language deleted successfully',
             life: 3000
         });
         fetchLanguages();
@@ -137,7 +165,7 @@ const deleteLanguage = async (lang) => {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to delete language',
+            detail: error.response?.data?.message || 'Failed to delete language',
             life: 3000
         });
     } finally {
@@ -210,12 +238,18 @@ const deleteSubject = async (subject) => {
             detail: 'Subject deleted',
             life: 3000
         });
+        toast.add({
+            severity: 'info',
+            summary: 'Info',
+            detail: 'Subject deleted successfully',
+            life: 3000
+        });
         fetchSubjects();
     } catch (error) {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to delete subject',
+            detail: error.response?.data?.message || 'Failed to delete subject',
             life: 3000
         });
     } finally {
@@ -258,54 +292,73 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen py-10 flex flex-col items-center">
-        <div class="w-full max-w-4xl mx-auto">
+    <div class="card min-h-screen py-10 flex flex-col items-center">
+        <div class="w-full mx-auto rounded-lg md:p-6">
             <!-- Header with switch buttons -->
-            <div class="flex items-center justify-between mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <h2 class="text-2xl font-extrabold text-blue-800 flex items-center gap-2">
-                    <i class="pi pi-cog text-xl text-blue-500" />
+                    <i class="pi pi-cog text-xl text-blue-500"></i>
                     Manage Constants
                 </h2>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     <Button :label="'Languages'" :class="selectedTable === 'languages' ? 'p-button-primary' : 'p-button-outlined'" @click="selectedTable = 'languages'" />
                     <Button :label="'Subjects'" :class="selectedTable === 'subjects' ? 'p-button-primary' : 'p-button-outlined'" @click="selectedTable = 'subjects'" />
                 </div>
             </div>
+
             <!-- Languages DataTable -->
             <div v-if="selectedTable === 'languages'">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-blue-700 flex items-center gap-2"><i class="pi pi-globe text-lg text-blue-500" /> Languages</h3>
-                    <Button label="Add Language" icon="pi pi-plus" class="p-button-success" @click="openNew" />
+                <!-- Header Row -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h3 class="text-xl font-bold text-blue-700 flex items-center gap-2">
+                        <i class="pi pi-globe text-lg text-blue-500"></i>
+                        Languages
+                    </h3>
+                    <Button label="Add Language" icon="pi pi-plus" class="p-button-success w-full sm:w-auto" @click="openNew" />
                 </div>
-                <div class="mb-4 flex items-center gap-2">
-                    <InputText v-model="languageSearch" placeholder="Search languages..." class="w-full max-w-xs" />
+
+                <!-- Search Bar Row -->
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                    <InputText v-model="languageKeyword" placeholder="Search languages..." class="w-full sm:max-w-xs" @keyup.enter="searchLanguages" />
+                    <Button icon="pi pi-search" label="Search" :loading="loading" class="p-button-primary w-full sm:w-auto" @click="searchLanguages" />
                 </div>
-                <DataTable :value="filteredLanguages" :loading="loading" class="p-datatable-sm mb-10" responsive-layout="scroll" :paginator="true" :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
+
+                <DataTable :value="languages" :loading="loading" class="p-datatable-sm mb-10" responsive-layout="scroll" :paginator="true" :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
                     <Column field="name" header="Name" sortable></Column>
                     <Column field="code" header="Code" sortable></Column>
                     <Column header="Actions" style="width: 8rem; text-align: center">
                         <template #body="{ data }">
-                            <Button icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-sm mr-2" @click="openEdit(data)" />
-                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="askDeleteLanguage(data)" />
+                            <div class="flex flex-row flex-nowrap items-center justify-center gap-2">
+                                <Button icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-sm" @click="openEdit(data)" />
+                                <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="askDeleteLanguage(data)" />
+                            </div>
                         </template>
                     </Column>
                 </DataTable>
             </div>
             <!-- Subjects DataTable -->
-            <div v-else>
-                <div class="flex items-center justify-between mb-6">
+            <div v-else class="w-full">
+                <!-- Header Row (Title + Add Button) -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h3 class="text-xl font-bold text-blue-700 flex items-center gap-2"><i class="pi pi-book text-lg text-blue-500" /> Subjects</h3>
-                    <Button label="Add Subject" icon="pi pi-plus" class="p-button-success" @click="openNewSubject" />
+                    <Button label="Add Subject" icon="pi pi-plus" class="p-button-success w-full sm:w-auto" @click="openNewSubject" />
                 </div>
-                <div class="mb-4 flex items-center gap-2">
-                    <InputText v-model="subjectSearch" placeholder="Search subjects..." class="w-full max-w-xs" />
+
+                <!-- Search Input + Button -->
+                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
+                    <InputText v-model="subjectKeyword" placeholder="Search subjects..." class="w-full sm:max-w-xs" @keyup.enter="searchSubjects" />
+                    <Button icon="pi pi-search" label="Search" @click="searchSubjects" :loading="loading" class="p-button-primary w-full sm:w-auto" />
                 </div>
-                <DataTable :value="filteredSubjects" :loading="loading" class="p-datatable-sm" responsive-layout="scroll" :paginator="true" :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
+
+                <!-- DataTable -->
+                <DataTable :value="subjects" :loading="loading" class="p-datatable-sm" responsive-layout="scroll" :paginator="true" :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
                     <Column field="name" header="Name" sortable></Column>
                     <Column header="Actions" style="width: 8rem; text-align: center">
                         <template #body="{ data }">
-                            <Button icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-sm mr-2" @click="openEditSubject(data)" />
-                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="askDeleteSubject(data)" />
+                            <div class="flex flex-row flex-nowrap items-center justify-center gap-2">
+                                <Button icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-sm" @click="openEditSubject(data)" />
+                                <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="askDeleteSubject(data)" />
+                            </div>
                         </template>
                     </Column>
                 </DataTable>
@@ -325,7 +378,7 @@ onMounted(() => {
             </div>
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="dialogVisible = false" />
-                <Button :label="isEdit ? 'Update' : 'Create'" icon="pi pi-check" class="p-button-primary" @click="saveLanguage" :loading="loading" />
+                <Button :label="isEdit ? 'Update' : 'Add'" icon="pi pi-check" class="p-button-primary" @click="saveLanguage" :loading="loading" />
             </template>
         </Dialog>
         <!-- Subject Dialog -->
@@ -344,7 +397,7 @@ onMounted(() => {
             </div>
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="subjectDialogVisible = false" />
-                <Button :label="isSubjectEdit ? 'Update' : 'Create'" icon="pi pi-check" class="p-button-primary" @click="saveSubject" :loading="loading" />
+                <Button :label="isSubjectEdit ? 'Update' : 'Add'" icon="pi pi-check" class="p-button-primary" @click="saveSubject" :loading="loading" />
             </template>
         </Dialog>
         <!-- Delete Confirmation Dialog -->

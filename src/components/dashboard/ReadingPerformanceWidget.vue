@@ -8,12 +8,13 @@ const { getPrimary, getSurface, isDarkTheme } = useLayout();
 const chartData = ref(null);
 const chartOptions = ref(null);
 const gradeLabels = ref([]);
-const sectionMap = ref({}); // { 'A': [10, 12, 5], 'B': [4, 8, 9] }
+const sectionMap = ref({});
+const loading = ref(true); // <-- loading state
 
 async function fetchChartData() {
     try {
         const response = await axiosInstance.get('/reading-performance');
-        const result = response.data.data; // ✅ Use .data.data
+        const result = response.data.data;
         console.log('Reading Performance Data:', result);
 
         const tempMap = {};
@@ -21,7 +22,6 @@ async function fetchChartData() {
 
         result.forEach((grade) => {
             grades.push(`Grade ${grade.name}`);
-
             grade.sections.forEach((section) => {
                 if (!tempMap[section.name]) {
                     tempMap[section.name] = [];
@@ -35,6 +35,8 @@ async function fetchChartData() {
         chartData.value = setChartData();
     } catch (error) {
         console.error('Failed to fetch reading performance:', error);
+    } finally {
+        loading.value = false; // turn off loading
     }
 }
 
@@ -118,10 +120,22 @@ onMounted(async () => {
     chartOptions.value = setChartOptions();
 });
 </script>
-
 <template>
-    <div class="card">
+    <div class="w-full p-0 md:p-6">
         <div class="font-semibold text-xl mb-4">Reading Performance Metrics</div>
-        <Chart type="bar" :data="chartData" :options="chartOptions" class="h-80" />
+
+        <!-- Graph Loading Skeleton -->
+        <div v-if="loading" class="h-80 w-full flex flex-col justify-between animate-pulse">
+            <div class="h-6 bg-gray-300 rounded w-1/3 mb-4"></div>
+            <!-- Simulated heading or axis -->
+            <div class="flex-1 grid grid-cols-12 gap-2 items-end px-2">
+                <div v-for="n in 12" :key="n" class="bg-gray-300 rounded-t w-full" :style="{ height: `${Math.random() * 60 + 40}%` }"></div>
+            </div>
+            <div class="h-4 bg-gray-200 rounded mt-4 w-3/4"></div>
+            <!-- Simulated x-axis labels -->
+        </div>
+
+        <!-- Actual Chart -->
+        <Chart v-else type="bar" :data="chartData" :options="chartOptions" class="h-80" />
     </div>
 </template>

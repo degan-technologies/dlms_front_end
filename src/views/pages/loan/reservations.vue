@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const toast = useToast();
 const reservations = ref([]);
@@ -12,6 +12,7 @@ const page = ref(1);
 const filter = ref('');
 const status = ref('');
 const dateRange = ref([]);
+const rowsPerPageOptions = [5, 10, 20, 50];
 
 const fetchReservations = async () => {
     loading.value = true;
@@ -49,18 +50,10 @@ const onFilter = () => {
     fetchReservations();
 };
 
-let fetchReservationsTimeout = null;
-watch(
-    () => [filter.value, status.value, dateRange.value],
-    () => {
-        page.value = 1;
-        if (fetchReservationsTimeout) clearTimeout(fetchReservationsTimeout);
-        fetchReservationsTimeout = setTimeout(() => {
-            fetchReservations();
-        }, 300);
-    },
-    { deep: true }
-);
+const onSearch = () => {
+    page.value = 1;
+    fetchReservations();
+};
 
 const handleApprove = async (reservation) => {
     try {
@@ -115,13 +108,21 @@ const handleReject = async (reservation) => {
     }
 };
 
+const resetFilters = () => {
+    filter.value = '';
+    status.value = '';
+    dateRange.value = [];
+    page.value = 1;
+    fetchReservations();
+};
+
 onMounted(fetchReservations);
 </script>
 
 <template>
-    <div class="min-h-screen py-6 flex flex-col items-center">
-        <div class="w-full px-2 sm:px-4 md:px-6 mx-auto">
-            <div class="w-full shadow-5 p-4 sm:p-6 md:p-8 rounded-3xl border border-blue-100">
+    <div class="card min-h-screen md:py-6 flex flex-col items-center">
+        <div class="w-full sm:px-4 md:px-6 mx-auto">
+            <div class="w-full p-4 sm:p-6 md:p-8">
                 <div class="flex flex-col gap-10 mb-6">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-blue-800 flex items-center gap-2 mb-4">
@@ -131,7 +132,7 @@ onMounted(fetchReservations);
                         <p class="text-gray-600 text-sm sm:text-base">Manage all book reservations and their status.</p>
                     </div>
                     <div class="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 md:gap-2 md:justify-end mb-6">
-                        <InputText v-model="filter" placeholder="Search by book, user, code..." class="w-full sm:w-64" @keyup.enter="onFilter" />
+                        <InputText v-model="filter" placeholder="Search by book, user, code..." class="w-full sm:w-64" @keyup.enter="onSearch" />
                         <Dropdown
                             v-model="status"
                             :options="[
@@ -149,7 +150,8 @@ onMounted(fetchReservations);
                             @change="onFilter"
                         />
                         <Calendar v-model="dateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" @date-select="onFilter" />
-                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFilter" />
+                        <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onSearch" />
+                        <Button icon="pi pi-refresh" label="Reset" class="p-button-secondary w-full sm:w-auto" @click="resetFilters" />
                     </div>
                 </div>
                 <div class="w-full">
@@ -159,13 +161,18 @@ onMounted(fetchReservations);
                             :loading="loading"
                             :paginator="true"
                             :rows="rows"
+                            :lazy="true"
                             :total-records="totalRecords"
+                            :rowsPerPageOptions="rowsPerPageOptions"
                             @page="onPage"
                             dataKey="id"
                             responsive-layout="scroll"
                             class="p-datatable-sm min-w-full"
                             scrollable
                             style="min-width: 900px"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+                            responsiveLayout="scroll"
                         >
                             <Column field="id" header="#" style="width: 4rem" />
                             <Column field="reservation_code" header="Code" />
