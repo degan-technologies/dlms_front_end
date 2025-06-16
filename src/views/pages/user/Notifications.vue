@@ -145,8 +145,7 @@ function listenForNewNotifications() {
         });
 
         // Optional: confirm subscription
-        channel.subscribed(() => {
-        });
+        channel.subscribed(() => {});
 
         channel.error((err) => {
             console.error(`[Echo] Subscription error on ${channelName}:`, err);
@@ -177,38 +176,67 @@ onMounted(() => {
 
 <template>
     <div class="card">
-        <div v-if="showDetail && selectedNotification">
-            <div class="bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg shadow-md p-6 mb-6 border border-blue-200">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <i class="pi pi-bell text-3xl text-blue-500"></i>
+        <template v-if="showDetail && selectedNotification">
+            <div class="rounded-xl p-6 mb-6 border border-blue-200 shadow-sm">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-4">
+                        <i class="pi pi-bell text-3xl text-blue-600"></i>
                         <div>
-                            <div class="font-bold text-2xl text-blue-900 mb-1">{{ selectedNotification.title }}</div>
-                            <div class="text-gray-500 text-xs">{{ new Date(selectedNotification.created_at).toLocaleString() }}</div>
+                            <h2 class="text-2xl font-bold text-blue-900">{{ selectedNotification.title }}</h2>
+                            <p class="text-xs text-gray-500">{{ new Date(selectedNotification.created_at).toLocaleString() }}</p>
                         </div>
                     </div>
                     <Button icon="pi pi-times" class="p-button-rounded p-button-text text-gray-500 hover:text-red-500" @click="closeNotificationDetail" v-tooltip.left="'Back to Notifications'" />
                 </div>
-                <div class="text-gray-800 text-lg mb-4">{{ selectedNotification.message }}</div>
-                <div v-if="selectedNotification.book" class="mb-4 bg-white rounded p-4 border border-blue-100">
-                    <div class="font-semibold text-base text-blue-700 mb-1">Book Info</div>
-                    <div class="text-base text-gray-800">
-                        Title: <span class="font-medium">{{ selectedNotification.book.title || 'N/A' }}</span>
-                    </div>
-                    <div class="text-base text-gray-800">
-                        Due Date: <span class="font-medium">{{ selectedNotification.book.due_date || 'N/A' }}</span>
-                    </div>
-                    <div class="text-base text-gray-800">
-                        Days Overdue: <span class="font-medium">{{ selectedNotification.book.days_overdue ?? 'N/A' }}</span>
-                    </div>
+
+                <!-- Main Message -->
+                <p class="text-gray-800 text-lg leading-relaxed mb-4">
+                    {{ selectedNotification.message }}
+                </p>
+
+                <!-- Book Info Section -->
+                <div v-if="selectedNotification.book" class="rounded-lg p-4 border border-blue-100 mb-4">
+                    <h3 class="font-semibold text-blue-700 text-base mb-2 flex items-center gap-2"><i class="pi pi-book text-blue-600"></i> Book Info</h3>
+
+                    <p class="text-gray-800 text-base mb-1">
+                        <span class="font-medium">Title:</span>
+                        {{ selectedNotification.book.title || 'N/A' }}
+                    </p>
+
+                    <p v-if="selectedNotification.book.due_date" class="text-gray-800 text-base mb-1 flex items-center gap-1">
+                        <i class="pi pi-calendar text-blue-600"></i>
+                        <span class="font-medium">Due Date:</span> {{ selectedNotification.book.due_date }}
+                    </p>
+
+                    <p v-if="selectedNotification.book.days_overdue !== null && selectedNotification.book.days_overdue !== undefined" class="text-gray-800 text-base flex items-center gap-1">
+                        <i class="pi pi-clock text-blue-600"></i>
+                        <span v-if="selectedNotification.book.days_overdue < 0">
+                            Remaining Days:
+                            <span class="font-medium">{{ Math.abs(selectedNotification.book.days_overdue) }}</span>
+                        </span>
+                        <span v-else>
+                            Days Overdue:
+                            <span class="font-medium text-red-600">{{ selectedNotification.book.days_overdue }}</span>
+                        </span>
+                    </p>
                 </div>
+
+                <!-- Actions -->
                 <div class="flex flex-wrap gap-2 mt-6">
-                    <Button v-if="selectedNotification.actions && selectedNotification.actions.view_loan" icon="pi pi-external-link" label="View Loan" class="p-button-sm p-button-info" @click="$router.push(selectedNotification.actions.view_loan)" />
-                    <Button icon="pi pi-trash" label="Delete Notification" class="p-button-danger p-button-sm" @click="deleteNotification(selectedNotification.id)" />
+                    <Button
+                        v-if="selectedNotification.actions && selectedNotification.actions.view_loan"
+                        icon="pi pi-external-link"
+                        label="View Loan"
+                        class="p-button-text p-button-sm p-button-info"
+                        @click="$router.push(selectedNotification.actions.view_loan)"
+                    />
+                    <Button icon="pi pi-trash" label="Delete Notification" class="p-button-text p-button-danger p-button-sm" @click="deleteNotification(selectedNotification.id)" />
                 </div>
             </div>
-        </div>
-        <div v-else>
+        </template>
+
+        <template v-else>
             <div class="flex items-center justify-between mb-6">
                 <div class="font-semibold text-xl">
                     Notifications
@@ -237,7 +265,7 @@ onMounted(() => {
                             v-for="notification in group"
                             :key="notification.id"
                             class="flex items-center py-2 border-b border-surface hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors cursor-pointer"
-                            :class="{ 'bg-blue-50 dark:bg-surface-800': notification.status === 'unread' }"
+                            :class="{ 'font-bold': notification.status === 'unread' }"
                             @click="openNotificationDetail(notification)"
                         >
                             <div class="w-12 h-12 flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-full mr-4 shrink-0">
@@ -253,7 +281,13 @@ onMounted(() => {
                                 <div class="flex items-center mt-1 text-xs text-surface-500">
                                     <span>{{ notification.time_ago }}</span>
                                     <span v-if="notification.book && notification.book.days_overdue !== null" class="mx-2">•</span>
-                                    <span v-if="notification.book && notification.book.days_overdue !== null">{{ Math.floor(notification.book.days_overdue) }} days overdue</span>
+                                    <span v-if="notification.book && notification.book.days_overdue !== null">
+                                        <template v-if="notification.book.days_overdue < 0">
+                                            {{ Math.abs(Math.floor(notification.book.days_overdue)) }} Remaining Day<span v-if="Math.abs(Math.floor(notification.book.days_overdue)) !== 1">s</span>
+                                        </template>
+                                        <template v-else-if="notification.book.days_overdue === 0"> Due Today </template>
+                                        <template v-else> {{ Math.floor(notification.book.days_overdue) }} Day<span v-if="Math.floor(notification.book.days_overdue) !== 1">s</span> overdue </template>
+                                    </span>
                                 </div>
                             </div>
                             <Button v-if="notification.status === 'unread'" icon="pi pi-check" class="p-button-text p-button-sm" @click.stop="markAsRead(notification.id)" v-tooltip.left="'Mark as read'" />
@@ -269,6 +303,6 @@ onMounted(() => {
                     </ul>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
 </template>

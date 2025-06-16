@@ -21,7 +21,7 @@ const router = createRouter({
                     path: '/userprofile',
                     name: 'userprofile',
                     component: () => import('@/views/pages/UserProfile.vue'),
-                    meta: { requiresAuth: true, isAdminOrSuperAdmin: true }
+                    meta: { requiresAuth: true, isAdminOrSuperAdminOrLibrarian: true }
                 },
 
                 // User Management Routes
@@ -318,9 +318,6 @@ router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
     const accessToken = Cookies.get('access_token');
 
-    console.log(`[Router] Navigating to: ${to.path}`);
-    console.log(`[Router] Has token: ${!!accessToken}`);
-
     // Skip authentication checks for public routes
     if (to.path === '/' || to.path.startsWith('/auth/') || to.path === '/pdf') {
         // If user is authenticated and tries to access login page, redirect based on role
@@ -362,7 +359,6 @@ router.beforeEach(async (to, from, next) => {
             const userRoles = user.roles;
             const userRoleIds = userRoles.map((role) => role.id);
             const userRoleNames = userRoles.map((role) => role.name.toLowerCase());
-            console.log(`[Router] User roles for ${to.path}:`, userRoleNames, userRoleIds);
 
             // Super admin has access to everything
             if (userRoleIds.includes(ROLE.SUPERADMIN)) {

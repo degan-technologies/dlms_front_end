@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import debounce from 'lodash-es/debounce';
 
 const router = useRouter();
 const students = ref([]);
@@ -28,7 +27,7 @@ const filters = ref({
 // }, 300);
 
 const fetchStudents = async () => {
-   // loading.value = true;
+    // loading.value = true;
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
         if (!token) {
@@ -55,7 +54,7 @@ const fetchStudents = async () => {
             }
         });
 
-        students.value = response.data.data.map(student => ({
+        students.value = response.data.data.map((student) => ({
             ...student,
             'user.username': student.user?.username || ''
         }));
@@ -87,10 +86,6 @@ const onFilter = () => {
     //fetchStudentsDebounced();
 };
 
-const viewDetails = (student) => router.push({ name: 'StudentDetails', params: { id: student.id } });
-
-const editStudent = (student) => router.push({ name: 'EditStudent', params: { id: student.id } });
-
 const deleteStudent = async (student) => {
     if (!confirm(`Are you sure you want to delete ${student.first_name} ${student.last_name}?`)) return;
     try {
@@ -116,7 +111,7 @@ const deleteSelectedStudents = async () => {
 
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        const deletePromises = selectedStudents.value.map(student =>
+        const deletePromises = selectedStudents.value.map((student) =>
             axios.delete(`http://localhost:8000/api/students/${student.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
@@ -135,20 +130,20 @@ const editForm = ref({
     id: null,
     first_name: '',
     last_name: '',
-    grade:{
-        name: '',
+    grade: {
+        name: ''
     },
-    section:{
-        name: '',
+    section: {
+        name: ''
     },
-    
+
     gender: '',
-   
+
     adress: '',
     user: {
         username: '',
         email: '',
-        phone_no: '',
+        phone_no: ''
     }
 });
 
@@ -160,7 +155,7 @@ const openEditDialog = (student) => {
 const updateStudent = async () => {
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        
+
         // Prepare the data to be sent to the backend
         const studentData = {
             first_name: editForm.value.first_name,
@@ -171,7 +166,7 @@ const updateStudent = async () => {
             gender: editForm.value.gender,
             username: editForm.value.user.username,
             email: editForm.value.user.email,
-            phone_no: editForm.value.user.phone_no,
+            phone_no: editForm.value.user.phone_no
             // Add password if needed
             // password: editForm.value.user.password
         };
@@ -192,16 +187,16 @@ const updateStudent = async () => {
         <h5 class="m-0">Student Management</h5>
         <p class="mt-2 mb-4 text-gray-600">Browse, search, and manage students in the system.</p>
 
-        <!-- Toolbar -->
-        <div class="flex justify-content-between align-items-center mb-3">
-            <div>
-                <Button label="Add Student" icon="pi pi-plus" class="mr-2 p-button-success" @click="addStudent" />
+        <!-- Responsive Toolbar -->
+        <div class="toolbar-responsive mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="toolbar-actions flex gap-2">
+                <Button label="Add Student" icon="pi pi-plus" class="p-button-success" @click="addStudent" />
                 <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedStudents.length" @click="deleteSelectedStudents" />
             </div>
-            <span class="p-input-icon-left" style="min-width: 300px;">
-                <i class="pi pi-search" />
-                <InputText v-model="filters.global.value" placeholder="Search students..." @input="onFilter" class="w-full" />
-            </span>
+            <div class="toolbar-search flex items-center gap-2 w-full md:w-auto">
+                <i class="pi pi-search text-gray-500" />
+                <InputText v-model="filters.global.value" placeholder="Search students..." @input="onFilter" class="w-full md:w-64" />
+            </div>
         </div>
 
         <!-- Data Table -->
@@ -243,8 +238,8 @@ const updateStudent = async () => {
         <Dialog v-model:visible="showEditDialog" :modal="true" :closable="true" :style="{ width: '500px' }">
             <template #header>
                 <div class="flex align-items-center gap-2">
-                    <i class="pi pi-user-edit" style="font-size: 1.5rem; color: #42a5f5;"></i>
-                    <span class="text-xl font-bold" style="color: #42a5f5;">Edit Student</span>
+                    <i class="pi pi-user-edit" style="font-size: 1.5rem; color: #42a5f5"></i>
+                    <span class="text-xl font-bold" style="color: #42a5f5">Edit Student</span>
                 </div>
             </template>
             <div class="mb-2 text-gray-600">Update the student information below and click <b>Update</b> to save changes.</div>
@@ -300,9 +295,7 @@ const updateStudent = async () => {
 <style scoped>
 .card {
     padding: 2rem;
-    background-color: white;
     border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .field {
     display: flex;

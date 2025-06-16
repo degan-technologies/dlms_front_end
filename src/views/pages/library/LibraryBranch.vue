@@ -1,6 +1,5 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
-import { debounce } from 'lodash-es';
 import Button from 'primevue/button';
 import DataView from 'primevue/dataview';
 import { useConfirm } from 'primevue/useconfirm';
@@ -108,11 +107,6 @@ const confirmBulkDelete = () => {
         }
     });
 };
-
-const onGlobalFilter = debounce(async (e) => {
-    globalFilterValue.value = e.target.value;
-    await fetchBranches();
-}, 400);
 </script>
 
 <template>
@@ -121,9 +115,10 @@ const onGlobalFilter = debounce(async (e) => {
         <div class="p-col">
             <Toolbar>
                 <template #start>
-                    <Button label="New Branch" icon="pi pi-plus" @click="openNew" class="p-button-success" />
-                    <span class="p-ml-8"></span>
-                    <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedBranches.length" @click="confirmBulkDelete" />
+                    <div class="flex items-center gap-3">
+                        <Button label="New Branch" icon="pi pi-plus" @click="openNew" class="p-button-success" />
+                        <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedBranches.length" @click="confirmBulkDelete" />
+                    </div>
                 </template>
                 <template #end>
                     <div class="p-toolbar-group-right p-d-flex p-ai-center">

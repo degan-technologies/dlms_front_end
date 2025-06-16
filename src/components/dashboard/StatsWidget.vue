@@ -1,28 +1,9 @@
-<template>
-    <div class="card grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="(card, index) in cards" :key="index" class="card mb-0 shadow-lg flex flex-col justify-between h-full min-h-[170px]">
-            <div class="flex justify-between mb-4">
-                <div>
-                    <span class="block text-muted-color font-medium mb-4">{{ card.label }}</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">
-                        {{ card.value }}
-                    </div>
-                </div>
-                <div class="flex items-center justify-center rounded-border" :class="card.iconBg" style="width: 2.5rem; height: 2.5rem">
-                    <i :class="['pi', card.icon, card.iconColor, '!text-xl']"></i>
-                </div>
-            </div>
-            <span class="text-primary font-medium">{{ card.footerHighlight }}</span>
-            <span class="text-muted-color">{{ card.footerText }}</span>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { onMounted, ref } from 'vue';
 
 const cards = ref([]);
+const loading = ref(true);
 
 onMounted(async () => {
     try {
@@ -32,6 +13,7 @@ onMounted(async () => {
         cards.value = Object.entries(data).map(([key, value]) => {
             return formatCard(key, value);
         });
+        loading.value = false;
     } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);
     }
@@ -141,3 +123,42 @@ function formatCard(key, value) {
     };
 }
 </script>
+<template>
+    <div class="card grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Loading Skeletons -->
+        <template v-if="loading">
+            <div v-for="n in 4" :key="n" class="card border rounded mb-0 flex flex-col justify-between h-full min-h-[100px] animate-pulse bg-gray-100 dark:bg-gray-700">
+                <div class="flex justify-between mb-4 p-4">
+                    <div>
+                        <div class="h-4 bg-gray-300 dark:bg-gray-600 mb-2 rounded w-3/4"></div>
+                        <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                    </div>
+                    <div class="rounded-full bg-gray-300 dark:bg-gray-600" style="width: 2.5rem; height: 2.5rem"></div>
+                </div>
+                <div class="p-4">
+                    <div class="h-4 bg-gray-300 dark:bg-gray-600 mb-2 rounded w-1/3"></div>
+                    <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Actual Cards -->
+        <template v-else>
+            <div v-for="(card, index) in cards" :key="index" class="card border rounded mb-0 flex flex-col justify-between h-full min-h-[100px]">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">{{ card.label }}</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">
+                            {{ card.value }}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center rounded-border" :class="card.iconBg" style="width: 2.5rem; height: 2.5rem">
+                        <i :class="['pi', card.icon, card.iconColor, '!text-xl']"></i>
+                    </div>
+                </div>
+                <span class="text-primary font-medium">{{ card.footerHighlight }}</span>
+                <span class="text-muted-color">{{ card.footerText }}</span>
+            </div>
+        </template>
+    </div>
+</template>

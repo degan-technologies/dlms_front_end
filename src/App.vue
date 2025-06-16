@@ -1,7 +1,7 @@
 <script setup></script>
 
 <template>
-     <Toast />
+    <Toast />
     <router-view />
 </template>
 

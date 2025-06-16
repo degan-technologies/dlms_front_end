@@ -59,21 +59,25 @@ const onPage = (event) => {
 </script>
 
 <template>
-    <div class="card mt-8 shadow-lg border border-gray-200 rounded-xl" style="font-size: 1.1rem">
-        <div class="flex justify-between items-center">
+    <div class="card border border-gray-200 rounded-xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <!-- Title with Icon -->
             <div class="flex items-center gap-2">
-                <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="font-extrabold text-2xl bg-gradient-to-r from-green-500 via-blue-500 to-teal-400 bg-clip-text text-transparent drop-shadow"> Borrowing Status </span>
+                <span class="font-bold text-xl sm:text-2xl text-gray-800">Borrowing Status</span>
             </div>
-            <router-link to="/loans/loan/history" class="flex items-center gap-2">
-                <button class="px-4 py-2 rounded-full bg-green-500 text-white hover:bg-green-600 shadow transition font-semibold">Detail</button>
+
+            <!-- Detail Button -->
+            <router-link to="/loans/loan/history" class="self-start sm:self-auto">
+                <Button label="Detail" icon="pi pi-eye" class="p-button-primary" />
             </router-link>
         </div>
-        <div class="mb-4 flex items-center gap-2 mt-4">
+
+        <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-4">
             <label class="font-medium text-green-700"> Status:</label>
-            <select v-model="statusFilter" class="border rounded px-2 py-1">
+            <select v-model="statusFilter" class="border rounded px-2 py-1 w-full sm:w-auto">
                 <option value="all">All Borrowing Status</option>
                 <option value="returned">Returned</option>
                 <option value="not returned">Not Returned</option>
@@ -98,7 +102,6 @@ const onPage = (event) => {
                 paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords} loans"
             >
-                <Column field="id" header="#" :body="(_, { rowIndex }) => rowIndex + 1 + (currentPage - 1) * perPage" style="width: 4rem" />
                 <Column field="user_id" header="User ID" />
                 <Column field="book_title" header="Book" />
                 <Column field="borrow_date" header="Borrow Date" />

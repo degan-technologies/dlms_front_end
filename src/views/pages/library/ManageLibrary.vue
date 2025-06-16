@@ -1,6 +1,5 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
-import { debounce } from 'lodash-es';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import { useConfirm } from 'primevue/useconfirm';
@@ -24,8 +23,6 @@ const globalFilterValue = ref('');
 const viewMode = ref('list');
 const toast = ref(null);
 const confirm = useConfirm();
-const layout = ref('grid');
-const options = ref(['list', 'grid']);
 const branches = ref([]);
 
 const fetchLibraries = async () => {
@@ -130,12 +127,6 @@ const confirmBulkDelete = () => {
         }
     });
 };
-
-const onGlobalFilter = debounce(async (e) => {
-    globalFilterValue.value = e.target.value;
-    await fetchLibraries();
-    console.log('Global filter applied:', globalFilterValue.value);
-}, 400);
 </script>
 
 <template>
@@ -144,17 +135,16 @@ const onGlobalFilter = debounce(async (e) => {
         <div class="p-col">
             <Toolbar>
                 <template #start>
-                    <Button label="New Library" icon="pi pi-plus" @click="openNew" class="p-button-success" />
-                    <span class="p-ml-8"></span>
-                    <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedLibraries.length" @click="confirmBulkDelete" />
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <Button label="New Library" icon="pi pi-plus" @click="openNew" class="p-button-success" />
+                        <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedLibraries.length" @click="confirmBulkDelete" />
+                    </div>
                 </template>
                 <template #end>
-                    <!-- <span class="p-input-icon-left">
-                        <i class="pi pi-search" />
-                        <InputText placeholder="Global Search" v-model="globalFilterValue" @input="onGlobalFilter" />
-                    </span> -->
-                    <Button icon="pi pi-th-large" class="p-button-text p-ml-2" @click="viewMode = 'grid'" :class="{ 'p-button-outlined': viewMode !== 'grid' }" />
-                    <Button icon="pi pi-list" class="p-button-text p-ml-1" @click="viewMode = 'list'" :class="{ 'p-button-outlined': viewMode !== 'list' }" />
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <Button icon="pi pi-th-large" class="p-button-text" @click="viewMode = 'grid'" :class="{ 'p-button-outlined': viewMode !== 'grid' }" />
+                        <Button icon="pi pi-list" class="p-button-text" @click="viewMode = 'list'" :class="{ 'p-button-outlined': viewMode !== 'list' }" />
+                    </div>
                 </template>
             </Toolbar>
         </div>
@@ -222,7 +212,7 @@ const onGlobalFilter = debounce(async (e) => {
         </DataView>
 
         <!-- Dialog -->
-        <Dialog :header="library.id ? 'Edit Library' : 'New Library'" v-model:visible="dialog" modal :style="{ width: '600px' }" class="p-dialog-rounded">
+        <Dialog :header="library.id ? 'Edit Library' : 'New Library'" v-model:visible="dialog" modal :style="{ width: '95vw', maxWidth: '600px' }" class="p-dialog-rounded">
             <div class="card flex justify-center">
                 <Toast />
                 <form

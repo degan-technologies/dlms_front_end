@@ -51,9 +51,9 @@ const onPage = (event) => {
     const page = Math.floor(event.first / event.rows) + 1;
     loadCategories(page, event.rows);
 };
-
 const onSort = (event) => {
-    sortField.value = event.sortField;
+    // If the selected field is 'name', use 'category_name' for the API
+    sortField.value = event.sortField === 'name' ? 'category_name' : event.sortField;
     sortOrder.value = event.sortOrder;
     loadCategories(1, rows.value);
     first.value = 0;
@@ -64,18 +64,22 @@ onMounted(() => {
 });
 </script>
 <template>
-    <div class="card p-4 shadow mb-10 rounded-lg bg-white">
-        <div class="flex items-center justify-between mb-8">
-            <div class="font-extrabold text-2xl text-transparent bg-gradient-to-r from-green-500 via-blue-500 to-teal-400 bg-clip-text drop-shadow flex items-center gap-2">
-                <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <div class="card p-4 mb-10 rounded-lg border border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <!-- Left: Title with Icon -->
+            <div class="font-bold text-lg sm:text-xl flex items-center gap-2">
+                <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v4a1 1 0 001 1h3m10 0h3a1 1 0 001-1V7m-1-4H4a1 1 0 00-1 1v2a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1z" />
                 </svg>
-                Total Books of FIS
+                <span>Total Books of FIS</span>
             </div>
-            <router-link to="/constants/categories">
-                <Button label="View Detail" icon="pi pi-eye" class="p-button-primary" />
+
+            <!-- Right: Button -->
+            <router-link to="/constants/categories" class="self-start sm:self-auto">
+                <Button label="Detail" icon="pi pi-eye" class="p-button-primary" />
             </router-link>
         </div>
+
         <div class="overflow-x-auto w-full">
             <DataTable
                 :value="categories"
@@ -91,12 +95,12 @@ onMounted(() => {
                 responsiveLayout="scroll"
                 class="p-datatable-sm"
                 scrollable
-                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+                style="min-width: 900px"
+                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
             >
-                <Column field="id" header="ID" sortable style="min-width: 5rem" />
                 <Column field="name" header="Name" sortable style="min-width: 16rem" />
-                <Column field="books_count" header="Books" sortable style="min-width: 8rem">
+                <Column field="books_count" header="Books" style="min-width: 8rem">
                     <template #body="slotProps">
                         <Badge :value="slotProps.data.books_count || slotProps.data.total_books || 0" severity="info"></Badge>
                     </template>

@@ -14,22 +14,22 @@ import ResourceGrid from '@/components/home/ResourceGrid.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 // Note: AskLibrarian component would need to be created separately
 import AskLibrarian from '@/components/home/AskLibrarian.vue';
+import SchoolBranch from '@/components/home/SchoolBranch.vue';
 import { useAuthStore } from '@/stores/authStore';
-import { useFilterStore } from '@/stores/filterStore';
+import { useChatStore } from '@/stores/chatStore';
 
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 // import { useHomeStore } from '@/stores/homeStore';
 const authStore = useAuthStore();
-const filterStore = useFilterStore();
+const store = useChatStore();
 const router = useRouter();
 const toast = useToast();
 const user = computed(() => authStore.getUser || {});
 const userId = computed(() => user.value?.user?.id || null);
 const authLoading = ref(true);
-const { auth } = storeToRefs(authStore); // this makes `auth.isAuthenticated` reactive
-
+const { auth } = storeToRefs(authStore);
 // Search functionality
 const searchQuery = ref('');
 const searchResults = ref([]);
@@ -64,15 +64,13 @@ const showAnnouncements = ref(true);
 // Special announcement state
 const showAnnouncement = ref(false);
 const specialNotice = ref(null);
-
-// Filter state for resource grid
-const currentFilters = ref({});
 const searchCurrentPage = ref(1);
 const searchPerPage = ref(15);
 
 const logout = authStore.logout;
 
 import axiosInstance from '@/util/axios-config';
+import Cookies from 'js-cookie';
 import Toast from 'primevue/toast';
 
 // Mobile menu state
@@ -175,6 +173,12 @@ onUnmounted(() => {
     }
 });
 
+// Watch for route changes and re-subscribe to notifications
+watch(
+    () => router.currentRoute.value.fullPath,
+    () => {}
+);
+
 const announcements = ref([
     { id: 1, message: 'New Science Fiction Collection available in the library from May 15th!' },
     { id: 2, message: 'Library extended hours during exam week - Open until 10 PM' },
@@ -187,21 +191,10 @@ const dismissAnnouncement = () => {
     showAnnouncements.value = false;
 };
 
-// Function to navigate to a specific announcement
-
-// Compute the current visible announcement with improved transition handling
-// Functions for announcement navigation with smoother transitions
 const nextAnnouncement = () => {
-    // Small timeout to ensure Vue has completed any ongoing transitions
     setTimeout(() => {
         currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length;
     }, 50);
-};
-
-// Chatbot modal state and toggle function
-const showChatbot = ref(false);
-const toggleChatbot = () => {
-    showChatbot.value = !showChatbot.value;
 };
 
 // Navigate to ebook details
@@ -249,43 +242,6 @@ const requestBook = async (resource) => {
         });
     }
 };
-// Reserve physical book
-const reservePhysicalBook = async () => {
-    if (!selectedPhysicalBook.value) return;
-
-    try {
-        // Find available book to reserve
-        const availableBook = selectedPhysicalBook.value.books.find((book) => book.is_borrowable && !book.is_reserved);
-
-        if (!availableBook) {
-            toast.add({
-                severity: 'warn',
-                summary: 'Not Available',
-                detail: 'No copies are currently available for reservation.',
-                life: 4000
-            });
-            return;
-        }
-
-        toast.add({
-            severity: 'success',
-            summary: 'Reservation Successful',
-            detail: `"${selectedPhysicalBook.value.book_item.title}" has been reserved for you.`,
-            life: 4000
-        });
-
-        showReservationModal.value = false;
-        selectedPhysicalBook.value = null;
-    } catch (error) {
-        console.error('Reservation error:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Reservation Failed',
-            detail: 'Failed to reserve the book. Please try again.',
-            life: 4000
-        });
-    }
-};
 
 // Close reservation modal
 const closeReservationModal = () => {
@@ -298,24 +254,12 @@ const getAvailableCount = (books) => {
     return books.filter((book) => book.is_borrowable && !book.is_reserved).length;
 };
 
-// Handle filter changes from ResourceFilters component
-const handleFiltersChanged = (filters) => {
-    currentFilters.value = filters;
-};
-
 // Handle search pagination
 const onSearchPageChange = (event) => {
     searchCurrentPage.value = Math.floor(event.first / searchPerPage.value) + 1;
     searchPerPage.value = event.rows;
     performSearch();
 };
-
-// Helper function to check if a resource should display an ebook badge
-
-// Helper function to get ebook breakdown counts for display
-
-// Missing functions for chatbot (referenced in template)
-// Functions removed as they're now handled by the chatStore
 
 const showSearchDialog = ref(false);
 
@@ -462,7 +406,8 @@ onMounted(async () => {
         await authStore.authCheck();
     }
     authLoading.value = false;
-    fetchResources();
+    store.closeTawk();
+    fetchUnreadNotifications();
 });
 </script>
 
@@ -521,7 +466,7 @@ onMounted(async () => {
                         <RouterLink to="/notifications" class="text-gray-700 hover:text-purple-600 transition-colors font-medium text-sm flex items-center gap-1 relative">
                             <i class="pi pi-bell text-lg"></i>
                             Notifications
-                            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-2 min-w-[1.2em] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                            <span v-if="unreadNotifications > 0" class="ml-auto min-w-[1.5rem] h-[1.5rem] bg-red-500 text-white text-sm rounded-full flex items-center justify-center font-bold animate-pulse px-1">
                                 {{ unreadNotifications }}
                             </span>
                         </RouterLink>
@@ -540,7 +485,6 @@ onMounted(async () => {
                         </div>
                         <div v-else class="flex items-center gap-3">
                             <RouterLink to="/auth/login" class="px-4 py-2 text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors font-medium text-sm"> Log in </RouterLink>
-                            <RouterLink to="/auth/register" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm"> Sign up </RouterLink>
                         </div>
                     </nav>
                     <!-- Mobile Search & Menu -->
@@ -593,7 +537,7 @@ onMounted(async () => {
                     <RouterLink to="/notifications" @click="showMobileMenu = false" class="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors">
                         <i class="pi pi-bell text-lg"></i>
                         <span class="font-medium">Notifications</span>
-                        <span v-if="unreadNotifications > 0" class="ml-auto w-2 h-2 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                        <span v-if="unreadNotifications > 0" class="ml-auto min-w-[1.5rem] h-[1.5rem] bg-red-500 text-white text-sm rounded-full flex items-center justify-center font-bold animate-pulse px-1">
                             {{ unreadNotifications }}
                         </span>
                     </RouterLink>
@@ -691,6 +635,7 @@ onMounted(async () => {
         <RecentlyViewed />
         <ReadingLists />
         <QuickLinks />
+        <SchoolBranch />
 
         <!-- Enhanced Footer -->
         <footer class="bg-gray-900 text-white pt-16 pb-8 mt-16">
@@ -767,11 +712,11 @@ onMounted(async () => {
             </div>
         </footer>
         <!-- Chatbot Floating Button -->
-        <!-- <div class="fixed bottom-6 right-6 z-50">
-            <button @click="chatStore.openTawk" class="bg-sky-600 hover:bg-sky-700 text-white p-4 rounded-full shadow-lg transition transform hover:scale-105" title="Live Support">
-                <i class="pi pi-comments text-xl"></i>
+        <div class="fixed bottom-6 right-10 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-transparent">
+            <button @click="store.openTawk" class="bg-green-500 hover:bg-green-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-105" title="Live Support">
+                <i class="pi pi-comments text-2xl"></i>
             </button>
-        </div> -->
+        </div>
 
         <!-- Custom Chat Component (Handles both custom chat and Tawk initialization) -->
         <AskLibrarian />
@@ -873,9 +818,6 @@ onMounted(async () => {
                 </div>
             </template>
         </Dialog>
-
-        <!-- Resource Modal -->
-        <!-- <ResourceModal /> -->
         <!-- Search Dialog -->
         <Dialog v-model:visible="showSearchDialog" modal :style="{ width: '95vw', maxWidth: '1400px', height: '90vh' }" header="Search Resources" :closable="true" @hide="closeSearchDialog">
             <template #header>
@@ -890,10 +832,6 @@ onMounted(async () => {
                             <span class="hidden sm:inline">Clear Filters ({{ getActiveFilterCount() }})</span>
                             <span class="sm:hidden">{{ getActiveFilterCount() }}</span>
                         </button>
-                        <!-- <button @click="closeSearchDialog" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm">
-                            <i class="pi pi-times text-xs"></i>
-                            <span class="hidden sm:inline">Close</span>
-                        </button> -->
                     </div>
                 </div>
             </template>

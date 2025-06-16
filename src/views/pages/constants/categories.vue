@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 const toast = useToast();
 const categories = ref([]);
 const category = ref({});
@@ -17,12 +17,7 @@ const totalRecords = ref(0);
 const first = ref(0);
 const rows = ref(10); // Default rows per page
 const rowsPerPageOptions = [5, 10, 20, 50];
-const categorySearch = ref('');
-
-const filteredCategories = computed(() => {
-    if (!categorySearch.value) return categories.value;
-    return categories.value.filter((cat) => (cat.category_name && cat.category_name.toLowerCase().includes(categorySearch.value.toLowerCase())) || (cat.id && String(cat.id).includes(categorySearch.value)));
-});
+const searchKeyword = ref('');
 
 const loadCategories = async (page, pageSize = 10) => {
     loading.value = true;
@@ -50,6 +45,39 @@ const loadCategories = async (page, pageSize = 10) => {
             severity: 'error',
             summary: 'Error',
             detail: error.response?.data?.message || 'Failed to load categories',
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+};
+
+const searchCategories = async () => {
+    loading.value = true;
+    try {
+        const response = await axiosInstance.get('/constants/categories', {
+            params: {
+                page: 1,
+                per_page: rows.value,
+                sort_by: sortField.value,
+                sort_dir: sortOrder.value === 1 ? 'asc' : 'desc',
+                search: searchKeyword.value
+            }
+        });
+        const meta = response.data.meta;
+        categories.value = response.data.data.map((cat) => ({
+            ...cat,
+            books_count: cat.books_count ?? 0
+        }));
+        totalRecords.value = Array.isArray(meta.total) ? meta.total[0] : meta.total;
+        first.value = ((Array.isArray(meta.current_page) ? meta.current_page[0] : meta.current_page) - 1) * (Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page);
+        rows.value = Array.isArray(meta.per_page) ? meta.per_page[0] : meta.per_page;
+    } catch (error) {
+        console.error('Error searching categories', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Failed to search categories',
             life: 3000
         });
     } finally {
@@ -116,7 +144,7 @@ const saveCategory = async () => {
 };
 
 const onSort = (event) => {
-    sortField.value = event.sortField;
+    sortField.value = event.sortField === 'name' ? 'category_name' : event.sortField;
     sortOrder.value = event.sortOrder;
     loadCategories(1, rows.value);
     first.value = 0;
@@ -224,11 +252,12 @@ onMounted(() => {
                     </template>
                 </Toolbar>
                 <div class="mb-3 flex items-center gap-2">
-                    <InputText v-model="categorySearch" placeholder="Search categories..." class="w-full max-w-xs" />
+                    <InputText v-model="searchKeyword" placeholder="Search categories..." class="w-full max-w-xs" />
+                    <Button icon="pi pi-search" label="Search" @click="searchCategories" :loading="loading" class="p-button-primary" />
                 </div>
                 <div style="overflow: auto">
                     <DataTable
-                        :value="filteredCategories"
+                        :value="categories"
                         v-model:selection="selectedCategories"
                         dataKey="id"
                         :paginator="true"
@@ -260,15 +289,15 @@ onMounted(() => {
                                 {{ new Date(slotProps.data.created_at).toLocaleString() }}
                             </template>
                         </Column>
-                        <Column field="books_count" header="Books" sortable style="min-width: 8rem">
+                        <Column field="books_count" header="Books" style="min-width: 8rem">
                             <template #body="slotProps">
                                 <Badge :value="slotProps.data.books_count || slotProps.data.total_books || 0" severity="info"></Badge>
                             </template>
                         </Column>
                         <Column header="Actions" style="min-width: 8rem">
                             <template #body="slotProps">
-                                <Button icon="pi pi-pencil" v-tooltip="'Edit'" class="p-button-rounded p-button-success mr-2" @click="editCategory(slotProps.data)" />
-                                <Button icon="pi pi-trash" v-tooltip="'Delete'" class="p-button-rounded p-button-danger" @click="confirmDeleteCategory(slotProps.data)" :disabled="(slotProps.data.books_count || slotProps.data.total_books || 0) > 0" />
+                                <Button icon="pi pi-pencil" v-tooltip="'Edit'" class="p-button-sm p-button-rounded p-button-success mr-2" @click="editCategory(slotProps.data)" />
+                                <Button icon="pi pi-trash" v-tooltip="'Delete'" class="p-button-sm p-button-rounded p-button-danger" @click="confirmDeleteCategory(slotProps.data)" />
                             </template>
                         </Column>
                     </DataTable>

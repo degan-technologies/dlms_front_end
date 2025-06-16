@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const toast = useToast();
 const loadingFines = ref(false);
@@ -44,7 +44,15 @@ const onFinePage = (event) => {
     fetchFines();
 };
 
-const onFineFilter = () => {
+const onFineSearch = () => {
+    finePage.value = 1;
+    fetchFines();
+};
+
+const resetFineFilters = () => {
+    fineFilter.value = '';
+    fineStatus.value = '';
+    fineDateRange.value = [];
     finePage.value = 1;
     fetchFines();
 };
@@ -82,6 +90,7 @@ const markFinePaidWithReceipt = async () => {
         receiptFile.value = null;
         selectedFine.value = null;
         toast.add({ severity: 'success', summary: 'Success', detail: 'Payment status and receipt uploaded', life: 2000 });
+        fetchFines(); // Refresh fines list
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Failed to update fine status', life: 3000 });
     }
@@ -93,15 +102,6 @@ const updateFineStatus = (fine) => {
     showReceiptDialog.value = true;
 };
 
-watch(
-    () => [fineFilter.value, fineStatus.value, fineDateRange.value],
-    () => {
-        finePage.value = 1;
-        fetchFines();
-    },
-    { deep: true }
-);
-
 onMounted(fetchFines);
 </script>
 
@@ -109,7 +109,7 @@ onMounted(fetchFines);
     <div class="card mt-5">
         <h5 class="mb-3">Payment Management (Fines)</h5>
         <div class="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 md:gap-2 md:justify-end mb-4">
-            <InputText v-model="fineFilter" placeholder="Search by reason, user, loan..." class="w-full sm:w-64" @keyup.enter="onFineFilter" />
+            <InputText v-model="fineFilter" placeholder="Search by reason, user, loan..." class="w-full sm:w-64" @keyup.enter="onFineSearch" />
             <Dropdown
                 v-model="fineStatus"
                 :options="[
@@ -121,10 +121,10 @@ onMounted(fetchFines);
                 optionValue="value"
                 placeholder="Status"
                 class="w-full sm:w-40"
-                @change="onFineFilter"
             />
-            <Calendar v-model="fineDateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" @date-select="onFineFilter" />
-            <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFineFilter" />
+            <Calendar v-model="fineDateRange" selectionMode="range" placeholder="Date Range" class="w-full sm:w-56" />
+            <Button icon="pi pi-search" class="p-button-primary w-full sm:w-auto" @click="onFineSearch" />
+            <Button icon="pi pi-refresh" label="Reset" class="p-button-secondary w-full sm:w-auto" @click="resetFineFilters" />
         </div>
         <div class="w-full">
             <div style="height: 100%; overflow: auto">
@@ -134,10 +134,14 @@ onMounted(fetchFines);
                     :paginator="true"
                     :rows="fineRows"
                     :totalRecords="totalFines"
+                    :lazy="true"
                     @page="onFinePage"
                     dataKey="id"
+                    :rowsPerPageOptions="[5, 10, 20, 50]"
                     responsive-layout="scroll"
                     class="p-datatable-sm min-w-full"
+                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} loans"
                     scrollable
                     style="min-width: 1100px"
                 >
@@ -154,16 +158,6 @@ onMounted(fetchFines);
                     <Column field="payment_date" header="Payment Date">
                         <template #body="{ data }">
                             {{ data.payment_date ? new Date(data.payment_date).toLocaleDateString() : '-' }}
-                        </template>
-                    </Column>
-                    <Column field="created_at" header="Created At">
-                        <template #body="{ data }">
-                            {{ data.created_at ? new Date(data.created_at).toLocaleString() : '-' }}
-                        </template>
-                    </Column>
-                    <Column field="updated_at" header="Updated At">
-                        <template #body="{ data }">
-                            {{ data.updated_at ? new Date(data.updated_at).toLocaleString() : '-' }}
                         </template>
                     </Column>
                     <Column field="payment_status" header="Status">
@@ -192,10 +186,9 @@ onMounted(fetchFines);
             <div class="p-field p-grid p-mb-3">
                 <label for="receipt" class="p-col-12 p-md-4 p-mb-2 md:p-mb-0">Receipt File</label>
                 <div class="p-col-12 p-md-8">
-                    <FileUpload mode="basic" name="receipt_path" accept="image/*,application/pdf" customUpload @select="handleReceiptUpload" chooseLabel="Choose File" class="w-full" />
+                    <input type="file" id="receipt" name="receipt_path" accept="image/*,application/pdf" @change="handleReceiptUpload" class="w-full" />
                 </div>
             </div>
-
             <template #footer>
                 <div class="p-d-flex p-jc-end p-gap-2">
                     <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="showReceiptDialog = false" />

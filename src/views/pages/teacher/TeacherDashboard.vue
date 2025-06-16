@@ -1,28 +1,297 @@
+<script setup>
+import { useAuthStore } from '@/stores/authStore';
+import axiosInstance from '@/util/axios-config';
+import { storeToRefs } from 'pinia';
+import Paginator from 'primevue/paginator';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+// Import components
+import CollectionModal from '@/components/modals/CollectionModal.vue';
+import CreateCollectionModal from '@/components/modals/CreateCollectionModal.vue';
+import AddBookItemDialog from '@/views/pages/book/components/AddBookItemDialog.vue';
+import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
+import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
+// import BulkUploadModal from '@/components/modals/BulkUploadModal.vue';
+
+const router = useRouter();
+const toast = useToast();
+
+// Auth store
+const authStore = useAuthStore();
+const { getUser } = storeToRefs(authStore);
+
+// User computed
+const user = computed(() => {
+    return getUser.value;
+});
+
+// Profile menu state
+const showProfileMenu = ref(false);
+
+// State
+const loading = ref(true);
+const bookItems = ref([]);
+const searchQuery = ref('');
+const totalCollections = ref(0);
+
+// Pagination
+const pagination = reactive({
+    first: 0,
+    perPage: 12,
+    total: 0
+});
+
+// Filters
+const filters = reactive({
+    category: '',
+    subject: '',
+    grade: '',
+    language: ''
+});
+
+// Modal states
+const showAddBookItemModal = ref(false);
+const showEditBookItemModal = ref(false);
+const showAddEbookModal = ref(false);
+const showCreateCollectionModal = ref(false);
+const showCollectionModal = ref(false);
+const showDeleteDialog = ref(false);
+
+// Selected items
+const selectedBookItem = ref(null);
+const selectedBookItemId = ref(null);
+const selectedBookItemForCollection = ref(null);
+const deleting = ref(false);
+
+// Filter options
+const filterOptions = reactive({
+    categories: [],
+    subjects: [],
+    grades: [],
+    languages: [],
+    libraries: [],
+    ebook_types: []
+});
+
+// Computed
+const totalResources = computed(() => {
+    return bookItems.value.reduce((total, item) => {
+        const booksCount = item.books_count || (Array.isArray(item.books) ? item.books.length : 0);
+        const ebooksCount = item.ebooks_count?.total || (Array.isArray(item.ebooks) ? item.ebooks.length : 0);
+        return total + booksCount + ebooksCount;
+    }, 0);
+});
+
+// Methods
+const fetchBookItems = async () => {
+    try {
+        loading.value = true;
+        const currentPage = Math.floor(pagination.first / pagination.perPage) + 1;
+
+        const params = {
+            page: currentPage,
+            per_page: pagination.perPage,
+            with: 'language,category,subject,grade,library,books,ebooks'
+        };
+
+        // Add search query
+        if (searchQuery.value.trim()) {
+            params.search = searchQuery.value.trim();
+        }
+
+        // Add filters
+        if (filters.category) params.category_id = filters.category;
+        if (filters.subject) params.subject_id = filters.subject;
+        if (filters.grade) params.grade_id = filters.grade;
+        if (filters.language) params.language_id = filters.language;
+
+        const response = await axiosInstance.get('/teacher-book-items', { params });
+
+        bookItems.value = response.data.data;
+        pagination.total = response.data.meta?.total || 0;
+    } catch (error) {
+        console.error('Error fetching book items:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch resources', life: 3000 });
+    } finally {
+        loading.value = false;
+    }
+};
+
+const fetchFilterOptions = async () => {
+    try {
+        const response = await axiosInstance.get('/constants/all');
+        const data = response.data;
+
+        filterOptions.categories = (data.categories?.data || []).map((c) => ({ label: c.name, value: c.id }));
+        filterOptions.subjects = (data.subjects?.data || []).map((s) => ({ label: s.name, value: s.id }));
+        filterOptions.grades = (data.grades?.data || []).map((g) => ({ label: g.name, value: g.id }));
+        filterOptions.languages = (data.languages?.data || []).map((l) => ({ label: l.name, value: l.id }));
+        filterOptions.libraries = (data.libraries?.data || []).map((l) => ({ label: l.name, value: l.id }));
+        filterOptions.ebook_types = (data.ebook_types?.data || []).map((t) => ({ label: t.name, value: t.id }));
+    } catch (error) {
+        console.error('Error fetching filter options:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch filter options', life: 3000 });
+    }
+};
+
+const fetchCollectionsCount = async () => {
+    try {
+        const response = await axiosInstance.get('/collections');
+        totalCollections.value = response.data.meta?.total || 0;
+    } catch (error) {
+        console.error('Error fetching collections count:', error);
+    }
+};
+
+// Debounced search
+let searchTimeout = null;
+const debouncedSearch = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        pagination.first = 0;
+        fetchBookItems();
+    }, 500);
+};
+
+const applyFilters = () => {
+    pagination.first = 0;
+    fetchBookItems();
+};
+
+const resetFilters = () => {
+    filters.category = '';
+    filters.subject = '';
+    filters.grade = '';
+    filters.language = '';
+    searchQuery.value = '';
+    pagination.first = 0;
+    fetchBookItems();
+};
+
+// Actions
+const viewBookItemDetails = (bookItem) => {
+    router.push(`/teacher/ebooks/${bookItem.id}`);
+};
+
+const editBookItem = (bookItem) => {
+    selectedBookItem.value = bookItem;
+    showEditBookItemModal.value = true;
+};
+
+const deleteBookItem = (bookItem) => {
+    selectedBookItem.value = bookItem;
+    showDeleteDialog.value = true;
+};
+
+const confirmDelete = async () => {
+    try {
+        deleting.value = true;
+        await axiosInstance.delete(`/book-items/${selectedBookItem.value.id}`);
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Resource deleted successfully', life: 3000 });
+        showDeleteDialog.value = false;
+        fetchBookItems();
+    } catch (error) {
+        console.error('Error deleting book item:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete resource', life: 3000 });
+    } finally {
+        deleting.value = false;
+    }
+};
+
+const addEbookToItem = (bookItem) => {
+    selectedBookItemId.value = bookItem.id;
+    showAddEbookModal.value = true;
+};
+
+const addToCollection = (bookItem) => {
+    selectedBookItemForCollection.value = bookItem;
+    showCollectionModal.value = true;
+};
+
+// Event handlers
+const onPageChange = (event) => {
+    pagination.first = event.first;
+    pagination.perPage = event.rows;
+    fetchBookItems();
+};
+
+const onBookItemAdded = () => {
+    fetchBookItems();
+};
+
+const onBookItemUpdated = () => {
+    fetchBookItems();
+};
+
+const onEbookAdded = () => {
+    fetchBookItems();
+};
+
+const onCollectionCreated = () => {
+    fetchCollectionsCount();
+};
+
+// Initialize
+onMounted(async () => {
+    await Promise.all([fetchFilterOptions(), fetchCollectionsCount()]);
+    fetchBookItems();
+});
+
+// Profile menu toggle function
+function toggleProfileMenu() {
+    showProfileMenu.value = !showProfileMenu.value;
+}
+
+// Logout function
+const logout = async () => {
+    try {
+        loading.value = true;
+        await authStore.logout();
+        loading.value = false;
+    } catch (error) {
+        console.error('Logout error:', error);
+        loading.value = false;
+    }
+};
+</script>
 <template>
     <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen">
         <!-- Header Section -->
-        <div class="bg-white shadow-sm border-b border-gray-200">
-            <div class="container mx-auto px-6 py-8">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">Resource Management</h1>
-                        <p class="text-gray-600 mt-2">Manage your digital library and educational resources</p>
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="container mx-auto px-4 md:px-6 py-6 md:py-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                    <!-- Title & Subtitle -->
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">Resource Management</h1>
+                        <p class="text-gray-500 mt-2 text-base sm:text-lg">Manage your digital library and educational resources</p>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg">
-                            <div class="text-sm opacity-90">Total Resources</div>
-                            <div class="text-2xl font-bold">{{ totalResources }}</div>
+                    <!-- Stats & Avatar -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 md:gap-6 w-full md:w-auto">
+                        <div class="flex-1 min-w-[130px] bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-lg text-center shadow-md">
+                            <div class="text-xs sm:text-sm opacity-90 font-medium">Total Resources</div>
+                            <div class="text-2xl sm:text-3xl font-bold tracking-tight">{{ totalResources }}</div>
                         </div>
-                        <div class="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-3 rounded-lg">
-                            <div class="text-sm opacity-90">Collections</div>
-                            <div class="text-2xl font-bold">{{ totalCollections }}</div>
+                        <div class="flex-1 min-w-[130px] bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-lg text-center shadow-md">
+                            <div class="text-xs sm:text-sm opacity-90 font-medium">Collections</div>
+                            <div class="text-2xl sm:text-3xl font-bold tracking-tight">{{ totalCollections }}</div>
                         </div>
                         <!-- User Avatar -->
-                        <Avatar @click="toggleProfileMenu" :label="user?.email?.charAt(0).toUpperCase()" class="ml-4 cursor-pointer" size="large" shape="circle" />
+                        <div class="flex justify-center sm:justify-end items-center w-full sm:w-auto">
+                            <Avatar
+                                @click="toggleProfileMenu"
+                                :label="user?.email?.charAt(0).toUpperCase()"
+                                class="ml-0 sm:ml-4 cursor-pointer ring-2 ring-purple-400 hover:ring-4 transition-all duration-200"
+                                size="large"
+                                shape="circle"
+                                style="background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%); color: #4f46e5"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
 
         <div class="container mx-auto px-6 py-8">
             <!-- Quick Actions -->
@@ -52,18 +321,6 @@
                             </div>
                         </div>
                     </button>
-
-                    <!-- <button @click="showBulkUploadModal = true" class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 border border-gray-200 group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                                <i class="pi pi-upload text-green-600 text-xl"></i>
-                            </div>
-                            <div class="text-left">
-                                <h3 class="font-semibold text-gray-900">Bulk Upload</h3>
-                                <p class="text-sm text-gray-600">Upload multiple files</p>
-                            </div>
-                        </div>
-                    </button> -->
                 </div>
             </div>
 
@@ -139,7 +396,9 @@
                         </div>
                         <!-- Resource count badge -->
                         <div class="absolute bottom-3 left-3">
-                            <span class="bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full"> {{ (bookItem.books?.length || 0) + (bookItem.ebooks?.length || 0) }} resources </span>
+                            <span class="bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full">
+                                {{ (bookItem.books_count || (Array.isArray(bookItem.books) ? bookItem.books.length : 0)) + (bookItem.ebooks_count?.total || (Array.isArray(bookItem.ebooks) ? bookItem.ebooks.length : 0)) }} resources
+                            </span>
                         </div>
                     </div>
 
@@ -177,7 +436,7 @@
                             </span>
                             <span class="flex items-center gap-1">
                                 <i class="pi pi-file-pdf"></i>
-                                {{ bookItem.ebooks?.length || 0 }} digital
+                                {{ bookItem.ebooks_count?.total || 0 }} digital
                             </span>
                         </div>
 
@@ -277,268 +536,6 @@
         </Dialog>
     </div>
 </template>
-
-<script setup>
-import { useAuthStore } from '@/stores/authStore';
-import axiosInstance from '@/util/axios-config';
-import { storeToRefs } from 'pinia';
-import Paginator from 'primevue/paginator';
-import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-
-// Import components
-import CollectionModal from '@/components/modals/CollectionModal.vue';
-import CreateCollectionModal from '@/components/modals/CreateCollectionModal.vue';
-import AddBookItemDialog from '@/views/pages/book/components/AddBookItemDialog.vue';
-import AddEbookDialog from '@/views/pages/book/components/AddEbookDialog.vue';
-import EditBookItemDialog from '@/views/pages/book/components/EditBookItemDialog.vue';
-// import BulkUploadModal from '@/components/modals/BulkUploadModal.vue';
-
-const router = useRouter();
-const toast = useToast();
-
-// Auth store
-const authStore = useAuthStore();
-const { getUser } = storeToRefs(authStore);
-
-// User computed
-const user = computed(() => {
-    return getUser.value;
-});
-
-// Profile menu state
-const showProfileMenu = ref(false);
-
-// State
-const loading = ref(true);
-const bookItems = ref([]);
-const searchQuery = ref('');
-const totalCollections = ref(0);
-
-// Pagination
-const pagination = reactive({
-    first: 0,
-    perPage: 12,
-    total: 0
-});
-
-// Filters
-const filters = reactive({
-    category: '',
-    subject: '',
-    grade: '',
-    language: ''
-});
-
-// Modal states
-const showAddBookItemModal = ref(false);
-const showEditBookItemModal = ref(false);
-const showAddEbookModal = ref(false);
-const showCreateCollectionModal = ref(false);
-const showCollectionModal = ref(false);
-const showBulkUploadModal = ref(false);
-const showDeleteDialog = ref(false);
-
-// Selected items
-const selectedBookItem = ref(null);
-const selectedBookItemId = ref(null);
-const selectedBookItemForCollection = ref(null);
-const deleting = ref(false);
-
-// Filter options
-const filterOptions = reactive({
-    categories: [],
-    subjects: [],
-    grades: [],
-    languages: [],
-    libraries: [],
-    ebook_types: []
-});
-
-// Computed
-const totalResources = computed(() => {
-    return bookItems.value.reduce((total, item) => {
-        return total + (item.books?.length || 0) + (item.ebooks?.length || 0);
-    }, 0);
-});
-
-// Methods
-const fetchBookItems = async () => {
-    try {
-        loading.value = true;
-        const currentPage = Math.floor(pagination.first / pagination.perPage) + 1;
-
-        const params = {
-            page: currentPage,
-            per_page: pagination.perPage,
-            with: 'language,category,subject,grade,library,books,ebooks'
-        };
-
-        // Add search query
-        if (searchQuery.value.trim()) {
-            params.search = searchQuery.value.trim();
-        }
-
-        // Add filters
-        if (filters.category) params.category_id = filters.category;
-        if (filters.subject) params.subject_id = filters.subject;
-        if (filters.grade) params.grade_id = filters.grade;
-        if (filters.language) params.language_id = filters.language;
-
-        const response = await axiosInstance.get('/teacher-book-items', { params });
-
-        bookItems.value = response.data.data;
-        pagination.total = response.data.meta?.total || 0;
-    } catch (error) {
-        console.error('Error fetching book items:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch resources', life: 3000 });
-    } finally {
-        loading.value = false;
-    }
-};
-
-const fetchFilterOptions = async () => {
-    try {
-        const response = await axiosInstance.get('/constants/all');
-        const data = response.data;
-
-        filterOptions.categories = (data.categories?.data || []).map((c) => ({ label: c.name, value: c.id }));
-        filterOptions.subjects = (data.subjects?.data || []).map((s) => ({ label: s.name, value: s.id }));
-        filterOptions.grades = (data.grades?.data || []).map((g) => ({ label: g.name, value: g.id }));
-        filterOptions.languages = (data.languages?.data || []).map((l) => ({ label: l.name, value: l.id }));
-        filterOptions.libraries = (data.libraries?.data || []).map((l) => ({ label: l.name, value: l.id }));
-        filterOptions.ebook_types = (data.ebook_types?.data || []).map((t) => ({ label: t.name, value: t.id }));
-    } catch (error) {
-        console.error('Error fetching filter options:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch filter options', life: 3000 });
-    }
-};
-
-const fetchCollectionsCount = async () => {
-    try {
-        const response = await axiosInstance.get('/collections');
-        totalCollections.value = response.data.meta?.total || 0;
-    } catch (error) {
-        console.error('Error fetching collections count:', error);
-    }
-};
-
-// Debounced search
-let searchTimeout = null;
-const debouncedSearch = () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        pagination.first = 0;
-        fetchBookItems();
-    }, 500);
-};
-
-const applyFilters = () => {
-    pagination.first = 0;
-    fetchBookItems();
-};
-
-const resetFilters = () => {
-    filters.category = '';
-    filters.subject = '';
-    filters.grade = '';
-    filters.language = '';
-    searchQuery.value = '';
-    pagination.first = 0;
-    fetchBookItems();
-};
-
-// Actions
-const viewBookItemDetails = (bookItem) => {
-    router.push(`/ebooks/${bookItem.id}`);
-};
-
-const editBookItem = (bookItem) => {
-    selectedBookItem.value = bookItem;
-    showEditBookItemModal.value = true;
-};
-
-const deleteBookItem = (bookItem) => {
-    selectedBookItem.value = bookItem;
-    showDeleteDialog.value = true;
-};
-
-const confirmDelete = async () => {
-    try {
-        deleting.value = true;
-        await axiosInstance.delete(`/book-items/${selectedBookItem.value.id}`);
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Resource deleted successfully', life: 3000 });
-        showDeleteDialog.value = false;
-        fetchBookItems();
-    } catch (error) {
-        console.error('Error deleting book item:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete resource', life: 3000 });
-    } finally {
-        deleting.value = false;
-    }
-};
-
-const addEbookToItem = (bookItem) => {
-    selectedBookItemId.value = bookItem.id;
-    showAddEbookModal.value = true;
-};
-
-const addToCollection = (bookItem) => {
-    selectedBookItemForCollection.value = bookItem;
-    showCollectionModal.value = true;
-};
-
-// Event handlers
-const onPageChange = (event) => {
-    pagination.first = event.first;
-    pagination.perPage = event.rows;
-    fetchBookItems();
-};
-
-const onBookItemAdded = () => {
-    fetchBookItems();
-};
-
-const onBookItemUpdated = () => {
-    fetchBookItems();
-};
-
-const onEbookAdded = () => {
-    fetchBookItems();
-};
-
-const onCollectionCreated = () => {
-    fetchCollectionsCount();
-};
-
-const onBulkUploadComplete = () => {
-    fetchBookItems();
-};
-
-// Initialize
-onMounted(async () => {
-    await Promise.all([fetchFilterOptions(), fetchCollectionsCount()]);
-    fetchBookItems();
-});
-
-// Profile menu toggle function
-function toggleProfileMenu() {
-    showProfileMenu.value = !showProfileMenu.value;
-}
-
-// Logout function
-const logout = async () => {
-    try {
-        loading.value = true;
-        await authStore.logout();
-        loading.value = false;
-    } catch (error) {
-        console.error('Logout error:', error);
-        loading.value = false;
-    }
-};
-</script>
 
 <style scoped>
 .line-clamp-2 {
