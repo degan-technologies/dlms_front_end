@@ -1,15 +1,23 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import axiosInstance from '@/util/axios-config';
 import Cookies from 'js-cookie';
-
+import { useConfirm } from 'primevue/useconfirm';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 const router = useRouter();
 const students = ref([]);
 const loading = ref(false);
 const selectedStudents = ref([]);
+const confirm = useConfirm();
+const searchQuery = ref('');
+
+const handleSearch = () => {
+    lazyParams.value.first = 0;
+    fetchStudents();
+};
 
 const totalRecords = ref(0);
+
 const lazyParams = ref({
     first: 0,
     rows: 10,
@@ -21,19 +29,28 @@ const filters = ref({
     global: { value: '', matchMode: 'contains' }
 });
 
-// Debounced fetch for search/filter only
-// const fetchStudentsDebounced = debounce(() => {
-//     //fetchStudents();
-// }, 300);
-
 const fetchStudents = async () => {
-    // loading.value = true;
+    loading.value = true;
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
         if (!token) {
             alert('No access token found. Please log in again.');
             return;
         }
+
+        // Map frontend field names to database column names
+        const fieldMap = {
+            FirstName: 'first_name',
+            LastName: 'last_name',
+            Username: 'user.username',
+            Email: 'user.email',
+            Gender: 'gender',
+            Grade: 'grade.name',
+            Section: 'section.name',
+            Phone: 'user.phone_no',
+            Adress: 'adress',
+            BranchName: 'user.library_branch.name'
+        };
 
         const appliedFilters = {};
         for (const key in filters.value) {
@@ -42,34 +59,42 @@ const fetchStudents = async () => {
             }
         }
 
-        const response = await axios.get('http://localhost:8000/api/students', {
+        const response = await axiosInstance.get('/students', {
             headers: { Authorization: `Bearer ${token}` },
             params: {
                 page: Math.floor(lazyParams.value.first / lazyParams.value.rows) + 1,
                 per_page: lazyParams.value.rows,
-                sortField: lazyParams.value.sortField,
-                sortOrder: lazyParams.value.sortOrder,
-                ...appliedFilters,
-                with: 'user'
+                sort_field: fieldMap[lazyParams.value.sortField] || lazyParams.value.sortField.toLowerCase(),
+                sort_order: lazyParams.value.sortOrder === 1 ? 'asc' : 'desc',
+                search: searchQuery.value,
+                ...appliedFilters
             }
         });
 
+        // Transform the response data to match your table structure
         students.value = response.data.data.map((student) => ({
             ...student,
-            'user.username': student.user?.username || ''
+            // Flatten nested objects for DataTable compatibility
+            'user.username': student.user?.username || '',
+            'user.email': student.user?.email || '',
+            'user.phone_no': student.user?.phone_no || '',
+            'grade.name': student.grade?.name || '',
+            'section.name': student.section?.name || ''
+            // Add other fields as needed
         }));
-        totalRecords.value = response.data.meta?.total ?? 0;
+
+        // Set pagination totals
+        totalRecords.value = response.data.meta.total;
     } catch (error) {
-        console.error('Error fetching students:', error);
+        console.error('Error fetching students:', {
+            error: error.message,
+            response: error.response?.data
+        });
         alert(error.response?.data?.message || 'Failed to fetch students.');
     } finally {
         loading.value = false;
     }
 };
-
-onMounted(() => {
-    fetchStudents();
-});
 
 const onPage = (event) => {
     lazyParams.value = { ...lazyParams.value, ...event };
@@ -86,42 +111,56 @@ const onFilter = () => {
     //fetchStudentsDebounced();
 };
 
-const deleteStudent = async (student) => {
-    if (!confirm(`Are you sure you want to delete ${student.first_name} ${student.last_name}?`)) return;
-    try {
-        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        await axios.delete(`http://localhost:8000/api/students/${student.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchStudents();
-    } catch (error) {
-        alert('Failed to delete student: ' + (error.response?.data?.message || error.message));
-    }
+const deleteStudent = (student) => {
+    confirm.require({
+        message: `Are you sure you want to delete ${student.first_name} ${student.last_name}?`,
+        header: 'Delete Confirmation',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+                await axiosInstance.delete(`/students/${student.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                fetchStudents();
+            } catch (error) {
+                alert('Failed to delete student: ' + (error.response?.data?.message || error.message));
+            }
+        }
+    });
 };
 
 const addStudent = () => router.push({ name: 'register' });
 
-const deleteSelectedStudents = async () => {
+const deleteSelectedStudents = () => {
     if (!selectedStudents.value.length) {
         alert('No students selected.');
         return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedStudents.value.length} selected students?`)) return;
-
-    try {
-        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        const deletePromises = selectedStudents.value.map((student) =>
-            axios.delete(`http://localhost:8000/api/students/${student.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-        );
-
-        await Promise.all(deletePromises);
-        fetchStudents();
-    } catch (error) {
-        alert('Failed to delete selected students: ' + (error.response?.data?.message || error.message));
-    }
+    confirm.require({
+        message: `Are you sure you want to delete ${selectedStudents.value.length} selected students?`,
+        header: 'Delete Confirmation',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+                await Promise.all(
+                    selectedStudents.value.map((student) =>
+                        axiosInstance.delete(`/students/${student.id}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        })
+                    )
+                );
+                selectedStudents.value = [];
+                fetchStudents();
+            } catch (error) {
+                alert('Failed to delete students: ' + (error.response?.data?.message || error.message));
+            }
+        }
+    });
 };
 
 // Edit form logic
@@ -171,7 +210,7 @@ const updateStudent = async () => {
             // password: editForm.value.user.password
         };
 
-        await axios.put(`http://localhost:8000/api/students/${editForm.value.id}`, studentData, {
+        await axiosInstance.put(`/students/${editForm.value.id}`, studentData, {
             headers: { Authorization: `Bearer ${token}` }
         });
         showEditDialog.value = false;
@@ -180,6 +219,9 @@ const updateStudent = async () => {
         alert('Failed to update student: ' + (error.response?.data?.message || error.message));
     }
 };
+onMounted(() => {
+    fetchStudents();
+});
 </script>
 
 <template>
@@ -194,8 +236,10 @@ const updateStudent = async () => {
                 <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedStudents.length" @click="deleteSelectedStudents" />
             </div>
             <div class="toolbar-search flex items-center gap-2 w-full md:w-auto">
-                <i class="pi pi-search text-gray-500" />
-                <InputText v-model="filters.global.value" placeholder="Search students..." @input="onFilter" class="w-full md:w-64" />
+                <span class="p-input-icon-left w-full">
+                    <InputText v-model="searchQuery" placeholder="Search students..." @keyup.enter="handleSearch" class="w-full" />
+                </span>
+                <Button icon="pi pi-search" class="p-button-outlined" @click="handleSearch" />
             </div>
         </div>
 
@@ -204,6 +248,8 @@ const updateStudent = async () => {
             v-model:selection="selectedStudents"
             :value="students"
             :paginator="true"
+            :isLazy="true"
+            :rowsPerPageOptions="[10, 20, 50]"
             :rows="lazyParams.rows"
             :totalRecords="totalRecords"
             :loading="loading"
@@ -213,16 +259,15 @@ const updateStudent = async () => {
             @sort="onSort"
             @filter="onFilter"
         >
-            <Column selectionMode="multiple" headerStyle="width: 3rem" />
-            <Column field="user.username" header="Username" sortable />
             <Column field="first_name" header="First Name" sortable />
             <Column field="last_name" header="Last Name" sortable />
-            <Column field="user.email" header="Email" sortable />
+            <Column field="user.username" header="Username" />
             <Column field="gender" header="Gender" sortable />
-            <Column field="grade.name" header="Grade" sortable />
-            <Column field="section.name" header="Section" sortable />
-            <Column field="user.phone_no" header="Phone" sortable />
-            <Column field="adress" header="Adress" sortable />
+            <Column field="grade.name" header="Grade" />
+            <Column field="section.name" header="Section" />
+            <Column field="user.phone_no" header="Phone" />
+            <Column field="adress" header="Address" sortable />
+            <Column field="user.library_branch_name" header="BranchName" />
             <Column headerStyle="min-width:10rem; text-align:center" bodyStyle="text-align:center">
                 <template #header>Actions</template>
                 <template #body="{ data }">
@@ -289,6 +334,7 @@ const updateStudent = async () => {
                 </div>
             </form>
         </Dialog>
+        <ConfirmDialog />
     </div>
 </template>
 

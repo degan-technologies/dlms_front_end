@@ -1,300 +1,12 @@
-<template>
-    <div class="bg-white">
-        <!-- Fixed Page header with Udemy-style navigation -->
-        <div class="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 border-b border-gray-200">
-            <div class="container mx-auto py-4 px-6 flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button @click="$router.back()" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                        <i class="pi pi-arrow-left text-gray-700 text-lg"></i>
-                    </button>
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-xl font-bold text-gray-900 truncate max-w-lg">{{ bookItem ? bookItem.title : 'Course Details' }}</h1>
-                        <span v-if="bookItem && bookItem.grade" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium"> Grade {{ bookItem.grade.name }} </span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span v-if="bookItem && bookItem.author" class="text-gray-600 hidden md:block">by {{ bookItem.author }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="container mx-auto pt-28 pb-6 px-4">
-            <!-- Loading state -->
-            <div v-if="loading" class="flex justify-center items-center py-16">
-                <div class="flex flex-col items-center">
-                    <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-4"></i>
-                    <span class="text-gray-600">Loading resource details...</span>
-                </div>
-            </div>
-
-            <!-- Error state -->
-            <div v-else-if="error" class="flex justify-center items-center py-16">
-                <div class="flex flex-col items-center">
-                    <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-4"></i>
-                    <span class="text-gray-700 font-medium">{{ error }}</span>
-                    <button @click="fetchEbooks" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Try Again</button>
-                </div>
-            </div>
-
-            <!-- Content when loaded -->
-            <div v-else-if="bookItem && ebooks.length > 0" class="mb-8">
-                <!-- Book Item Details Card - Udemy-style -->
-                <div class="mb-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-gray-800 rounded-xl p-8 shadow-lg border border-gray-200">
-                    <div class="flex flex-col lg:flex-row gap-8 items-start">
-                        <!-- Book Cover Image -->
-                        <div class="w-full lg:w-64 flex-shrink-0">
-                            <div class="aspect-[3/4] bg-white rounded-lg overflow-hidden shadow-lg border border-gray-200">
-                                <img
-                                    :src="bookItem.cover_image || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
-                                    :alt="bookItem.title"
-                                    class="w-full h-full object-cover"
-                                    @error="(e) => (e.target.src = 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80')"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- Book Details -->
-                        <div class="flex-grow">
-                            <div class="mb-4">
-                                <span class="text-purple-600 text-sm font-medium bg-purple-100 px-3 py-1 rounded-full">Digital Learning Course</span>
-                            </div>
-
-                            <h2 class="text-3xl lg:text-4xl font-bold mb-4 leading-tight text-gray-900">{{ bookItem.title }}</h2>
-
-                            <div class="flex items-center gap-6 text-lg mb-6">
-                                <span v-if="bookItem.author" class="flex items-center gap-2">
-                                    <i class="pi pi-user text-gray-500"></i>
-                                    <span class="text-gray-700">{{ bookItem.author }}</span>
-                                </span>
-                                <span class="flex items-center gap-2">
-                                    <i class="pi pi-calendar text-gray-500"></i>
-                                    <span class="text-gray-700">{{ formatDate(bookItem.created_at || new Date()) }}</span>
-                                </span>
-                            </div>
-
-                            <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-                                {{ bookItem.description || 'Comprehensive digital learning resource designed to enhance your educational experience with interactive content and multimedia materials.' }}
-                            </p>
-
-                            <!-- Resource metadata as enhanced chips -->
-                            <div class="flex flex-wrap gap-3 mb-6">
-                                <span v-if="bookItem.category" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                                    <i class="pi pi-folder mr-2 text-blue-600"></i>{{ bookItem.category.name }}
-                                </span>
-                                <span v-if="bookItem.subject" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-700 border border-green-200">
-                                    <i class="pi pi-book mr-2 text-green-600"></i>{{ bookItem.subject.name }}
-                                </span>
-                                <span v-if="bookItem.grade" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
-                                    <i class="pi pi-chart-bar mr-2 text-yellow-600"></i>Grade {{ bookItem.grade.name }}
-                                </span>
-                                <span v-if="bookItem.language" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-700 border border-purple-200">
-                                    <i class="pi pi-globe mr-2 text-purple-600"></i>{{ bookItem.language.name }}
-                                </span>
-                            </div>
-
-                            <!-- Stats counters in Udemy style -->
-                            <div class="flex items-center gap-8 text-lg">
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-file text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">{{ ebooks.length }}</span>
-                                    <span class="text-gray-600">lessons</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-download text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">{{ downloadableCount }}</span>
-                                    <span class="text-gray-600">downloadable</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-clock text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Self-paced</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-infinity text-gray-500"></i>
-                                    <span class="font-semibold text-gray-800">Lifetime access</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Filter section - Udemy-style -->
-                <div class="flex flex-wrap gap-4 mb-8 items-center justify-between bg-white p-4 rounded-lg border border-gray-200 sticky top-20 z-10 shadow-sm">
-                    <div class="flex-1">
-                        <h3 class="text-xl font-bold text-gray-900">Course Content</h3>
-                        <p class="text-gray-600 text-sm">{{ ebooks.length }} lessons • {{ downloadableCount }} downloadable</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <div class="flex items-center gap-2">
-                            <label for="typeFilter" class="text-sm font-medium text-gray-700">Filter by type:</label>
-                            <select id="typeFilter" v-model="filters.type" class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" @change="applyFilters">
-                                <option value="all">All Types</option>
-                                <option value="pdf">PDF Documents</option>
-                                <option value="video">Video Lessons</option>
-                                <option value="audio">Audio Files</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label for="downloadableFilter" class="text-sm font-medium text-gray-700">Downloads:</label>
-                            <select
-                                id="downloadableFilter"
-                                v-model="filters.downloadable"
-                                class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                @change="applyFilters"
-                            >
-                                <option value="all">All</option>
-                                <option value="yes">Downloadable</option>
-                                <option value="no">View Only</option>
-                            </select>
-                        </div>
-                        <button @click="resetFilters" class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-                            <i class="pi pi-refresh"></i>
-                            <span>Reset</span>
-                        </button>
-                    </div>
-                </div>
-                <!-- Ebooks Grid - Enhanced Udemy-style -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-for="ebook in filteredEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">
-                        <!-- Media content (Video or PDF) at the top with no padding -->
-                        <div v-if="isYoutubeVideo(ebook)" class="aspect-video bg-gray-100 video-thumbnail relative">
-                            <iframe
-                                width="100%"
-                                height="100%"
-                                :src="getYoutubeEmbedUrl(ebook) || 'https://www.youtube.com/embed/dQw4w9WgXcQ'"
-                                frameborder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                                class="rounded-t-xl"
-                            ></iframe>
-                        </div>
-
-                        <div v-else-if="isPdfFile(ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
-                            <div class="flex items-center justify-center h-full">
-                                <div class="text-center">
-                                    <i class="pi pi-file-pdf text-red-500 text-4xl mb-2"></i>
-                                    <p class="text-red-600 font-medium text-sm">PDF Document</p>
-                                </div>
-                            </div>
-                            <!-- PDF overlay -->
-                            <div class="absolute top-3 left-3">
-                                <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
-                            </div>
-                        </div>
-                        <!-- Content section below the media -->
-                        <div class="p-4">
-                            <!-- Header with type badge and action buttons -->
-                            <div class="flex justify-between items-start mb-3">
-                                <div class="flex flex-wrap gap-2">
-                                    <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
-                                        <i :class="getEbookTypeIcon(ebook)" class="text-gray-600"></i>
-                                        {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
-                                    </span>
-                                    <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
-                                    <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
-                                </div>
-
-                                <!-- Collection Action Buttons -->
-                                <div class="flex items-center gap-1 ml-2">
-                                    <!-- Bookmark Button -->
-                                    <button
-                                        @click="bookmarkEbook(ebook)"
-                                        :class="[
-                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
-                                            isEbookBookmarked(ebook) ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-yellow-600'
-                                        ]"
-                                        :title="isEbookBookmarked(ebook) ? 'Remove bookmark' : 'Add bookmark'"
-                                    >
-                                        <i :class="['text-sm', isEbookBookmarked(ebook) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark']"></i>
-                                    </button>
-                                    <!-- Collection Button -->
-                                    <button
-                                        @click="openCollectionModal(ebook)"
-                                        :class="[
-                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
-                                            isEbookInCollection(ebook) ? 'bg-purple-100 hover:bg-purple-200 text-purple-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-purple-600'
-                                        ]"
-                                        :title="isEbookInCollection(ebook) ? 'In collection' : 'Add to collection'"
-                                    >
-                                        <i :class="['text-sm', isEbookInCollection(ebook) ? 'pi pi-folder-open' : 'pi pi-folder']"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Title - larger and truncated -->
-                            <h4 class="font-semibold text-gray-900 text-base mb-2 line-clamp-2 leading-tight">{{ ebook.file_name || 'Untitled File' }}</h4>
-                            <!-- Metadata with larger text -->
-                            <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
-                                <span class="font-medium">{{ formatFileSize(ebook.file_size_mb * 1024 * 1024) }}</span>
-                                <span v-if="ebook.pages" class="flex items-center font-medium">
-                                    <i class="pi pi-file-o mr-1"></i>
-                                    {{ ebook.pages }} pages
-                                </span>
-                            </div>
-
-                            <!-- Action buttons with larger text -->
-                            <div class="space-y-2">
-                                <button
-                                    v-if="canViewInReader(ebook) || isYoutubeVideo(ebook)"
-                                    @click="openInReader(ebook)"
-                                    class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center gap-2 transition-all text-sm font-semibold"
-                                >
-                                    <i class="pi pi-play-circle"></i>
-                                    <span>{{ isYoutubeVideo(ebook) ? 'Watch Now' : 'Read Now' }}</span>
-                                </button>
-
-                                <button
-                                    v-if="ebook.is_downloadable && ebook.file_path && !isYoutubeVideo(ebook)"
-                                    @click="downloadFile(ebook)"
-                                    class="w-full py-2 bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-center gap-2 transition-all text-sm font-medium"
-                                >
-                                    <i class="pi pi-download"></i>
-                                    <span>Download</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                <div class="mt-8 flex justify-center paginator-container">
-                    <Paginator
-                        :rows="resourcesPerPage"
-                        :totalRecords="totalRecords"
-                        v-model:first="first"
-                        :rowsPerPageOptions="[9, 15, 24, 30]"
-                        @page="onPageChange($event)"
-                        class="border-none"
-                        :template="{
-                            '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown',
-                            '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown',
-                            '1300px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport'
-                        }"
-                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                        alwaysShow="true"
-                    />
-                </div>
-            </div>
-
-            <!-- No ebooks found state -->
-            <div v-else-if="bookItem && !loading" class="flex justify-center items-center py-16">
-                <div class="flex flex-col items-center">
-                    <i class="pi pi-info-circle text-3xl text-blue-500 mb-4"></i>
-                    <span class="text-gray-700 font-medium">No digital resources found for this item</span>
-                    <p class="text-gray-600 text-sm mt-2">This book may not have any associated digital files.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modals -->
-        <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />
-    </div>
-</template>
-
 <script setup>
 import CollectionModal from '@/components/modals/CollectionModal.vue';
 import axiosInstance from '@/util/axios-config';
+import Header from '@/views/pages/home/Header.vue';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+
 
 const route = useRoute();
 const router = useRouter();
@@ -680,7 +392,296 @@ const openCollectionModal = (ebook) => {
     collectionModalVisible.value = true;
 };
 </script>
+<template>
+    <div class="layout-content">
+        <Header />
+        <!-- Fixed Page header with Udemy-style navigation -->
+        <div class="bg-gray-50 shadow-sm z-50 border-b border-gray-200">
+            <div class="container mx-auto py-4 px-6 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button @click="$router.back()" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <i class="pi pi-arrow-left text-gray-700 text-lg"></i>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl font-bold text-gray-900 truncate max-w-lg">{{ bookItem ? bookItem.title : 'Course Details' }}</h1>
+                        <span v-if="bookItem && bookItem.grade" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium"> Grade {{ bookItem.grade.name }} </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span v-if="bookItem && bookItem.author" class="text-gray-600 hidden md:block">by {{ bookItem.author }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="container mx-auto pt-28 pb-6 px-4">
+            <!-- Loading state -->
+            <div v-if="loading" class="flex justify-center items-center py-16">
+                <div class="flex flex-col items-center">
+                    <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-4"></i>
+                    <span class="text-gray-600">Loading resource details...</span>
+                </div>
+            </div>
 
+            <!-- Error state -->
+            <div v-else-if="error" class="flex justify-center items-center py-16">
+                <div class="flex flex-col items-center">
+                    <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-4"></i>
+                    <span class="text-gray-700 font-medium">{{ error }}</span>
+                    <button @click="fetchEbooks" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Try Again</button>
+                </div>
+            </div>
+
+            <!-- Content when loaded -->
+            <div v-else-if="bookItem && ebooks.length > 0" class="mb-8">
+                <!-- Book Item Details Card - Udemy-style -->
+                <div class="mb-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-gray-800 rounded-xl p-8 shadow-lg border border-gray-200">
+                    <div class="flex flex-col lg:flex-row gap-8 items-start">
+                        <!-- Book Cover Image -->
+                        <div class="w-full lg:w-64 flex-shrink-0">
+                            <div class="aspect-[3/4] bg-white rounded-lg overflow-hidden shadow-lg border border-gray-200">
+                                <img
+                                    :src="bookItem.cover_image || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
+                                    :alt="bookItem.title"
+                                    class="w-full h-full object-cover"
+                                    @error="(e) => (e.target.src = 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80')"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Book Details -->
+                        <div class="flex-grow">
+                            <div class="mb-4">
+                                <span class="text-purple-600 text-sm font-medium bg-purple-100 px-3 py-1 rounded-full">Digital Learning Course</span>
+                            </div>
+
+                            <h2 class="text-3xl lg:text-4xl font-bold mb-4 leading-tight text-gray-900">{{ bookItem.title }}</h2>
+
+                            <div class="flex items-center gap-6 text-lg mb-6">
+                                <span v-if="bookItem.author" class="flex items-center gap-2">
+                                    <i class="pi pi-user text-gray-500"></i>
+                                    <span class="text-gray-700">{{ bookItem.author }}</span>
+                                </span>
+                                <span class="flex items-center gap-2">
+                                    <i class="pi pi-calendar text-gray-500"></i>
+                                    <span class="text-gray-700">{{ formatDate(bookItem.created_at || new Date()) }}</span>
+                                </span>
+                            </div>
+
+                            <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                                {{ bookItem.description || 'Comprehensive digital learning resource designed to enhance your educational experience with interactive content and multimedia materials.' }}
+                            </p>
+
+                            <!-- Resource metadata as enhanced chips -->
+                            <div class="flex flex-wrap gap-3 mb-6">
+                                <span v-if="bookItem.category" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                                    <i class="pi pi-folder mr-2 text-blue-600"></i>{{ bookItem.category.name }}
+                                </span>
+                                <span v-if="bookItem.subject" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-700 border border-green-200">
+                                    <i class="pi pi-book mr-2 text-green-600"></i>{{ bookItem.subject.name }}
+                                </span>
+                                <span v-if="bookItem.grade" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                    <i class="pi pi-chart-bar mr-2 text-yellow-600"></i>Grade {{ bookItem.grade.name }}
+                                </span>
+                                <span v-if="bookItem.language" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                                    <i class="pi pi-globe mr-2 text-purple-600"></i>{{ bookItem.language.name }}
+                                </span>
+                            </div>
+
+                            <!-- Stats counters in Udemy style -->
+                            <div class="flex items-center gap-8 text-lg">
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-file text-gray-500"></i>
+                                    <span class="font-semibold text-gray-800">{{ ebooks.length }}</span>
+                                    <span class="text-gray-600">lessons</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-download text-gray-500"></i>
+                                    <span class="font-semibold text-gray-800">{{ downloadableCount }}</span>
+                                    <span class="text-gray-600">downloadable</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-clock text-gray-500"></i>
+                                    <span class="font-semibold text-gray-800">Self-paced</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-infinity text-gray-500"></i>
+                                    <span class="font-semibold text-gray-800">Lifetime access</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Filter section - Udemy-style -->
+                <div class="flex flex-wrap gap-4 mb-8 items-center justify-between bg-white p-4 rounded-lg border border-gray-200 sticky top-20 z-10 shadow-sm">
+                    <div class="flex-1">
+                        <h3 class="text-xl font-bold text-gray-900">Course Content</h3>
+                        <p class="text-gray-600 text-sm">{{ ebooks.length }} lessons • {{ downloadableCount }} downloadable</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="flex items-center gap-2">
+                            <label for="typeFilter" class="text-sm font-medium text-gray-700">Filter by type:</label>
+                            <select id="typeFilter" v-model="filters.type" class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" @change="applyFilters">
+                                <option value="all">All Types</option>
+                                <option value="pdf">PDF Documents</option>
+                                <option value="video">Video Lessons</option>
+                                <option value="audio">Audio Files</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="downloadableFilter" class="text-sm font-medium text-gray-700">Downloads:</label>
+                            <select
+                                id="downloadableFilter"
+                                v-model="filters.downloadable"
+                                class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                @change="applyFilters"
+                            >
+                                <option value="all">All</option>
+                                <option value="yes">Downloadable</option>
+                                <option value="no">View Only</option>
+                            </select>
+                        </div>
+                        <button @click="resetFilters" class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+                            <i class="pi pi-refresh"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Ebooks Grid - Enhanced Udemy-style -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div v-for="ebook in filteredEbooks" :key="ebook.id" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ebook-card border border-gray-200">
+                        <!-- Media content (Video or PDF) at the top with no padding -->
+                        <div v-if="isYoutubeVideo(ebook)" class="aspect-video bg-gray-100 video-thumbnail relative">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                :src="getYoutubeEmbedUrl(ebook) || 'https://www.youtube.com/embed/dQw4w9WgXcQ'"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                class="rounded-t-xl"
+                            ></iframe>
+                        </div>
+
+                        <div v-else-if="isPdfFile(ebook)" class="aspect-video bg-gradient-to-br from-red-50 to-orange-50 border-b border-gray-200 overflow-hidden relative">
+                            <div class="flex items-center justify-center h-full">
+                                <div class="text-center">
+                                    <i class="pi pi-file-pdf text-red-500 text-4xl mb-2"></i>
+                                    <p class="text-red-600 font-medium text-sm">PDF Document</p>
+                                </div>
+                            </div>
+                            <!-- PDF overlay -->
+                            <div class="absolute top-3 left-3">
+                                <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">PDF</span>
+                            </div>
+                        </div>
+                        <!-- Content section below the media -->
+                        <div class="p-4">
+                            <!-- Header with type badge and action buttons -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+                                        <i :class="getEbookTypeIcon(ebook)" class="text-gray-600"></i>
+                                        {{ ebook.e_book_type ? ebook.e_book_type.name : 'File' }}
+                                    </span>
+                                    <span v-if="ebook.is_downloadable" class="text-xs text-white font-semibold bg-green-500 px-2 py-1 rounded-full">Downloadable</span>
+                                    <span v-else class="text-xs text-white font-semibold bg-orange-500 px-2 py-1 rounded-full">View Only</span>
+                                </div>
+
+                                <!-- Collection Action Buttons -->
+                                <div class="flex items-center gap-1 ml-2">
+                                    <!-- Bookmark Button -->
+                                    <button
+                                        @click="bookmarkEbook(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookBookmarked(ebook) ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-yellow-600'
+                                        ]"
+                                        :title="isEbookBookmarked(ebook) ? 'Remove bookmark' : 'Add bookmark'"
+                                    >
+                                        <i :class="['text-sm', isEbookBookmarked(ebook) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark']"></i>
+                                    </button>
+                                    <!-- Collection Button -->
+                                    <button
+                                        @click="openCollectionModal(ebook)"
+                                        :class="[
+                                            'w-8 h-8 rounded-full flex items-center justify-center transition-all',
+                                            isEbookInCollection(ebook) ? 'bg-purple-100 hover:bg-purple-200 text-purple-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-purple-600'
+                                        ]"
+                                        :title="isEbookInCollection(ebook) ? 'In collection' : 'Add to collection'"
+                                    >
+                                        <i :class="['text-sm', isEbookInCollection(ebook) ? 'pi pi-folder-open' : 'pi pi-folder']"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Title - larger and truncated -->
+                            <h4 class="font-semibold text-gray-900 text-base mb-2 line-clamp-2 leading-tight">{{ ebook.file_name || 'Untitled File' }}</h4>
+                            <!-- Metadata with larger text -->
+                            <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                                <span class="font-medium">{{ formatFileSize(ebook.file_size_mb * 1024 * 1024) }}</span>
+                                <span v-if="ebook.pages" class="flex items-center font-medium">
+                                    <i class="pi pi-file-o mr-1"></i>
+                                    {{ ebook.pages }} pages
+                                </span>
+                            </div>
+
+                            <!-- Action buttons with larger text -->
+                            <div class="space-y-2">
+                                <button
+                                    v-if="canViewInReader(ebook) || isYoutubeVideo(ebook)"
+                                    @click="openInReader(ebook)"
+                                    class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center gap-2 transition-all text-sm font-semibold"
+                                >
+                                    <i class="pi pi-play-circle"></i>
+                                    <span>{{ isYoutubeVideo(ebook) ? 'Watch Now' : 'Read Now' }}</span>
+                                </button>
+
+                                <button
+                                    v-if="ebook.is_downloadable && ebook.file_path && !isYoutubeVideo(ebook)"
+                                    @click="downloadFile(ebook)"
+                                    class="w-full py-2 bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-center gap-2 transition-all text-sm font-medium"
+                                >
+                                    <i class="pi pi-download"></i>
+                                    <span>Download</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="mt-8 flex justify-center paginator-container">
+                    <Paginator
+                        :rows="resourcesPerPage"
+                        :totalRecords="totalRecords"
+                        v-model:first="first"
+                        :rowsPerPageOptions="[9, 15, 24, 30]"
+                        @page="onPageChange($event)"
+                        class="border-none"
+                        :template="{
+                            '640px': 'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown',
+                            '960px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown',
+                            '1300px': 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport'
+                        }"
+                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                        alwaysShow="true"
+                    />
+                </div>
+            </div>
+
+            <!-- No ebooks found state -->
+            <div v-else-if="bookItem && !loading" class="flex justify-center items-center py-16">
+                <div class="flex flex-col items-center">
+                    <i class="pi pi-info-circle text-3xl text-blue-500 mb-4"></i>
+                    <span class="text-gray-700 font-medium">No digital resources found for this item</span>
+                    <p class="text-gray-600 text-sm mt-2">This book may not have any associated digital files.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <CollectionModal v-model:visible="collectionModalVisible" :ebook="selectedEbook" />
+    </div>
+</template>
 <style scoped>
 .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);

@@ -177,7 +177,8 @@ onMounted(fetchReservations);
                             <Column field="id" header="#" style="width: 4rem" />
                             <Column field="reservation_code" header="Code" />
                             <Column field="user_id" header="User ID" />
-                            <Column field="book_id" header="Book ID" />
+                            <Column field="user_name" header="User Name" />
+                            <Column field="book_title" header="Book" />
                             <Column field="reservation_date" header="Reserved On">
                                 <template #body="{ data }">
                                     {{ new Date(data.reservation_date).toLocaleDateString() }}
@@ -209,9 +210,11 @@ onMounted(fetchReservations);
                             </Column>
                             <Column header="Action" style="min-width: 8rem">
                                 <template #body="{ data }">
-                                    <Button v-if="data.status === 'pending'" label="Approve" icon="pi pi-check" class="p-button-success p-button-sm mr-2" @click="handleApprove(data)" />
-                                    <Button v-if="data.status === 'pending'" label="Reject" icon="pi pi-times" class="p-button-danger p-button-sm" @click="handleReject(data)" />
-                                    <Button v-if="data.status === 'approved'" label="Fulfill" icon="pi pi-book" class="p-button-info p-button-sm ml-2" />
+                                    <div class="flex justify-center items-center gap-2">
+                                        <Button v-if="data.status === 'pending'" label="Approve" icon="pi pi-check" class="p-button-success p-button-sm" @click="handleApprove(data)" />
+                                        <Button v-if="data.status === 'pending'" label="Reject" icon="pi pi-times" class="p-button-danger p-button-sm" @click="handleReject(data)" />
+                                        <Button v-if="data.status === 'approved'" label="Fulfill" icon="pi pi-book" class="p-button-info p-button-sm" />
+                                    </div>
                                 </template>
                             </Column>
                         </DataTable>

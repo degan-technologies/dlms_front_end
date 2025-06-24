@@ -1,42 +1,3 @@
-<template>
-    <div class="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-900/90 z-50">
-        <div class="text-center max-w-md p-6">
-            <!-- Loading Animation -->
-            <div class="relative mb-6">
-                <div class="w-16 h-16 mx-auto">
-                    <!-- Outer rotating ring -->
-                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-600 rounded-full absolute animate-spin" :class="spinnerClass"></div>
-                    <!-- Inner content icon -->
-                    <div class="w-16 h-16 flex items-center justify-center">
-                        <i class="text-2xl" :class="iconClass"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Loading Text -->
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                {{ title }}
-            </h3>
-            <p class="text-gray-600 dark:text-gray-300 mb-4">
-                {{ description }}
-            </p>
-
-            <!-- Progress Bar (if available) -->
-            <div v-if="progress && progress.total > 0" class="mb-4">
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all duration-300" :class="progressClass" :style="{ width: `${Math.round((progress.loaded / progress.total) * 100)}%` }"></div>
-                </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ Math.round((progress.loaded / progress.total) * 100) }}% ({{ formatBytes(progress.loaded) }} / {{ formatBytes(progress.total) }})</p>
-            </div>
-
-            <!-- Additional Info -->
-            <div v-if="subtitle" class="text-sm text-gray-500 dark:text-gray-400">
-                {{ subtitle }}
-            </div>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import { computed } from 'vue';
 
@@ -114,6 +75,44 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 </script>
+<template>
+    <div class="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-900/90 z-50">
+        <div class="text-center max-w-md p-6">
+            <!-- Loading Animation -->
+            <div class="relative mb-6">
+                <div class="w-16 h-16 mx-auto">
+                    <!-- Outer rotating ring -->
+                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-600 rounded-full absolute animate-spin" :class="spinnerClass"></div>
+                    <!-- Inner content icon -->
+                    <div class="w-16 h-16 flex items-center justify-center">
+                        <i class="text-2xl" :class="iconClass"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Text -->
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {{ title }}
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+                {{ description }}
+            </p>
+
+            <!-- Progress Bar (if available) -->
+            <div v-if="progress && progress.total > 0" class="mb-4">
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="h-2 rounded-full transition-all duration-300" :class="progressClass" :style="{ width: `${Math.round((progress.loaded / progress.total) * 100)}%` }"></div>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ Math.round((progress.loaded / progress.total) * 100) }}% ({{ formatBytes(progress.loaded) }} / {{ formatBytes(progress.total) }})</p>
+            </div>
+
+            <!-- Additional Info -->
+            <div v-if="subtitle" class="text-sm text-gray-500 dark:text-gray-400">
+                {{ subtitle }}
+            </div>
+        </div>
+    </div>
+</template>
 
 <style scoped>
 .animate-spin {

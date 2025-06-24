@@ -82,7 +82,8 @@ watchEffect(() => {
                   icon: 'pi pi-fw pi-cog',
                   items: [
                       { label: 'Manage Library Branch', icon: 'pi pi-fw pi-building', to: '/library/branches' },
-                      { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' }
+                      { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' },
+                      { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/superadmin/roles' }
                   ]
               }
             : null,
@@ -92,8 +93,7 @@ watchEffect(() => {
                   icon: 'pi pi-fw pi-users',
                   items: [
                       { label: 'Manage Students', icon: 'pi pi-fw pi-user', to: '/students/manage' },
-                      { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' },
-                      { label: 'Roles Management', icon: 'pi pi-fw pi-user-plus', to: '/admin/roles' }
+                      { label: 'Manage Staff', icon: 'pi pi-fw pi-id-card', to: '/staff/manage' }
                   ]
               }
             : null,
@@ -104,10 +104,12 @@ watchEffect(() => {
                 { label: 'Categories', icon: 'pi pi-fw pi-th-large', to: '/constants/categories' }
             ]
         },
-        {
-            label: 'My Account',
-            items: [{ label: 'Reservation History', icon: 'pi pi-fw pi-calendar-plus', to: '/books/reserved/history' }]
-        },
+        hasRole(ROLE.LIBRARIAN)
+            ? {
+                  label: 'My Account',
+                  items: [{ label: 'Reservation History', icon: 'pi pi-fw pi-calendar-plus', to: '/books/reserved/history' }]
+              }
+            : null,
         hasRole(ROLE.LIBRARIAN)
             ? {
                   label: 'Resource Management',
@@ -116,6 +118,25 @@ watchEffect(() => {
                       { label: 'LoanHistory', icon: 'pi pi-fw pi-briefcase', to: '/loans/loan/history' },
                       { label: 'Fine History', icon: 'pi pi-fw pi-money-bill', to: '/loans/fine/history' }
                   ]
+              }
+            : null,
+        hasRole(ROLE.LIBRARIAN)
+            ? {
+                  label: 'Librarian Announcements',
+                  items: [{ label: 'Announcements', icon: 'pi pi-fw pi-megaphone', to: '/announcements' }]
+              }
+            : null,
+        // Show admin announcements only for admins
+        hasRole(ROLE.ADMIN)
+            ? {
+                  label: 'Admin Announcements',
+                  items: [{ label: 'Announcements', icon: 'pi pi-fw pi-megaphone', to: '/admin/announcements' }]
+              }
+            : null,
+        hasRole(ROLE.SUPERADMIN)
+            ? {
+                  label: 'Super Admin Announcements',
+                  items: [{ label: 'Announcements', icon: 'pi pi-fw pi-megaphone', to: '/super/announcements' }]
               }
             : null,
         {

@@ -10,6 +10,9 @@ import ReadingLists from '@/components/home/ReadingLists.vue';
 import RecentlyViewed from '@/components/home/RecentlyViewed.vue';
 import ResourceFilters from '@/components/home/ResourceFilters.vue';
 import ResourceGrid from '@/components/home/ResourceGrid.vue';
+import axiosInstance from '@/util/axios-config';
+import Cookies from 'js-cookie';
+import Toast from 'primevue/toast';
 // import ResourceRequestForm from '@/components/home/ResourceRequestForm.vue';
 import StatsBar from '@/components/home/StatsBar.vue';
 // Note: AskLibrarian component would need to be created separately
@@ -17,11 +20,10 @@ import AskLibrarian from '@/components/home/AskLibrarian.vue';
 import SchoolBranch from '@/components/home/SchoolBranch.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
-
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
-// import { useHomeStore } from '@/stores/homeStore';
+
 const authStore = useAuthStore();
 const store = useChatStore();
 const router = useRouter();
@@ -68,10 +70,6 @@ const searchCurrentPage = ref(1);
 const searchPerPage = ref(15);
 
 const logout = authStore.logout;
-
-import axiosInstance from '@/util/axios-config';
-import Cookies from 'js-cookie';
-import Toast from 'primevue/toast';
 
 // Mobile menu state
 const showMobileMenu = ref(false);
@@ -141,7 +139,7 @@ function trySubscribeToNotifications() {
 }
 const fetchUnreadNotifications = async () => {
     try {
-        const response = await axiosInstance.get('/notifications/unread');
+        const response = await axiosInstance.get('/student/notifications/unread');
         unreadNotifications.value = response.data?.data?.meta?.unread_count || 0;
         console.log('[Echo] fetchUnreadNotifications result:', unreadNotifications.value, response.data);
     } catch (error) {
@@ -399,7 +397,12 @@ const getActiveFilterCount = () => {
 const toggleFilterSection = (section) => {
     openFilterSection.value = openFilterSection.value === section ? '' : section;
 };
-
+const openTawk = () => {
+    console.log('Button clicked - start'); // This will confirm click handler works
+    store.openTawk();
+    console.log('Button clicked - end'); // This will confirm function completed
+};
+// Initialize Tawk.to chat on mount
 onMounted(async () => {
     const token = Cookies.get('access_token');
     if (token && !user.value) {
@@ -566,8 +569,6 @@ onMounted(async () => {
                         </div>
                     </template>
                 </nav>
-
-                <!-- Mobile Auth Buttons -->
             </div>
         </div>
         <!-- Udemy-style Announcement Banner -->
@@ -603,14 +604,10 @@ onMounted(async () => {
                 </div>
             </div>
         </section>
-        <!-- Enhanced Search Results Section -->
-        <!-- Search Results Modal (Udemy-style) -->
-        <!-- This modal is now replaced by the unified search dialog above -->
 
         <!-- Hero Section -->
         <HeroSection />
 
-        <!-- Stats Bar -->
         <StatsBar />
         <!-- Featured Resources Section with Enhanced Udemy-style Header -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
@@ -713,7 +710,7 @@ onMounted(async () => {
         </footer>
         <!-- Chatbot Floating Button -->
         <div class="fixed bottom-6 right-10 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-transparent">
-            <button @click="store.openTawk" class="bg-green-500 hover:bg-green-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-105" title="Live Support">
+            <button @click="openTawk()" class="bg-green-500 hover:bg-green-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-105" title="Live Support">
                 <i class="pi pi-comments text-2xl"></i>
             </button>
         </div>

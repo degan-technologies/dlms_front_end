@@ -1,203 +1,3 @@
-<template>
-    <div class="relative w-full h-full bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <!-- Fixed Header at Top -->
-        <div class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
-            <div class="px-2 py-1 flex items-center justify-between gap-2">
-                <!-- Left Section: Go Back + Video Info -->
-                <div class="flex items-center gap-2 md:gap-10 p-2 md:p-5">
-                    <button @click="goBack" class="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <i class="pi pi-arrow-left text-gray-700 dark:text-gray-300 text-lg"></i>
-                    </button>
-
-                    <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-
-                    <div class="flex flex-col max-w-xs sm:max-w-md md:max-w-lg" v-if="videoMeta.title">
-                        <h1 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate leading-tight" :title="videoMeta.title">
-                            {{ videoMeta.title }}
-                        </h1>
-                        <span v-if="videoMeta.author" class="text-xs text-gray-600 dark:text-gray-400 truncate" :title="videoMeta.author">
-                            {{ videoMeta.author }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Center Section: Current Time -->
-
-                <!-- Right Section: Player Status -->
-            </div>
-        </div>
-
-        <!-- Main Content with top padding to account for fixed header -->
-        <div class="flex-1 overflow-auto relative pt-12">
-            <!-- Loading State -->
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
-                <div class="text-center">
-                    <div class="w-12 h-12 border-4 border-t-red-500 border-gray-200 rounded-full animate-spin mb-4 mx-auto"></div>
-                    <p class="text-gray-700 dark:text-gray-300">Loading video...</p>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div v-else-if="error" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
-                <div class="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-                    <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Failed to load video</h3>
-                    <p class="text-gray-700 dark:text-gray-300 mb-4">{{ error }}</p>
-                    <button @click="initPlayer" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Try Again</button>
-                </div>
-            </div>
-
-            <!-- Main Content -->
-            <div v-show="!loading && !error" class="flex-1 overflow-auto relative">
-                <!-- Video Player Container -->
-                <div class="flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-800">
-                    <!-- Player wrapper with controls overlay -->
-                    <div class="w-full max-w-4xl shadow-lg rounded-lg overflow-hidden aspect-video relative bg-black">
-                        <div :id="playerId" class="w-full h-full"></div>
-
-                        <!-- Quick action buttons overlay -->
-                        <div v-if="isPlaying" class="absolute bottom-4 right-4 flex gap-2 bg-black/60 rounded-full p-2 backdrop-blur-sm">
-                            <button @click="quickAddNote" class="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-white transition-colors" title="Add note at current timestamp">
-                                <i class="pi pi-pencil text-sm"></i>
-                            </button>
-                            <button @click="askAIAboutCurrentSegment" class="p-2 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white transition-colors" title="Ask AI about this moment">
-                                <i class="pi pi-comments text-sm"></i>
-                            </button>
-                        </div>
-
-                        <!-- Timestamp markers for existing notes and chats -->
-                        <div class="absolute bottom-0 left-0 right-0 h-2 bg-transparent">
-                            <!-- Note markers -->
-                            <div
-                                v-for="note in props.notes"
-                                :key="`note-${note.id}`"
-                                class="absolute h-full w-1 bg-amber-500 cursor-pointer hover:bg-amber-400 transition-colors"
-                                :style="{ left: `${(note.timestamp / videoMeta.duration) * 100}%` }"
-                                @click="goToTimestamp(note.timestamp)"
-                                :title="`Note: ${formatDuration(note.timestamp)}`"
-                            ></div>
-                            <!-- Chat markers -->
-                            <div
-                                v-for="chat in props.chatMessages"
-                                :key="`chat-${chat.id}`"
-                                class="absolute h-full w-1 bg-indigo-500 cursor-pointer hover:bg-indigo-400 transition-colors"
-                                :style="{ left: `${(chat.timestamp / videoMeta.duration) * 100}%` }"
-                                @click="goToTimestamp(chat.timestamp)"
-                                :title="`Chat: ${formatDuration(chat.timestamp)}`"
-                            ></div>
-                        </div>
-                    </div>
-
-                    <!-- Video Info Section -->
-                    <div class="w-full max-w-4xl mt-4 p-5 bg-white dark:bg-gray-700 rounded-lg shadow-md" v-if="videoMeta.title">
-                        <h3 class="text-xl font-medium text-gray-800 dark:text-gray-100 mb-3">{{ videoMeta.title }}</h3>
-
-                        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            <div v-if="videoMeta.author" class="flex items-center gap-2">
-                                <i class="pi pi-user"></i>
-                                <span>{{ videoMeta.author }}</span>
-                            </div>
-                            <div v-if="videoMeta.duration" class="flex items-center gap-2">
-                                <i class="pi pi-clock"></i>
-                                <span>{{ formatDuration(videoMeta.duration) }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Custom Progress Bar -->
-                        <div class="mb-4">
-                            <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                <span>{{ formatDuration(currentTime) }}</span>
-                                <span>{{ formatDuration(videoMeta.duration) }}</span>
-                            </div>
-                            <div class="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden relative cursor-pointer" @click="seekToPosition">
-                                <div class="h-full bg-red-500 dark:bg-red-600 transition-all duration-300" :style="{ width: `${(currentTime / videoMeta.duration) * 100}%` }"></div>
-
-                                <!-- Note markers on progress bar -->
-                                <div
-                                    v-for="note in props.notes"
-                                    :key="`progress-note-${note.id}`"
-                                    class="absolute top-0 bottom-0 w-1 bg-amber-500"
-                                    :style="{ left: `${(note.timestamp / videoMeta.duration) * 100}%` }"
-                                    @click.stop="goToTimestamp(note.timestamp)"
-                                    :title="`Note: ${formatDuration(note.timestamp)}`"
-                                ></div>
-
-                                <!-- Chat markers on progress bar -->
-                                <div
-                                    v-for="chat in props.chatMessages"
-                                    :key="`progress-chat-${chat.id}`"
-                                    class="absolute top-0 bottom-0 w-1 bg-indigo-500"
-                                    :style="{ left: `${(chat.timestamp / videoMeta.duration) * 100}%` }"
-                                    @click.stop="goToTimestamp(chat.timestamp)"
-                                    :title="`Chat: ${formatDuration(chat.timestamp)}`"
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Floating Action Buttons -->
-                <div class="fixed right-4 bottom-4 z-30 flex flex-col gap-3 sm:top-1/2 sm:transform sm:-translate-y-1/2 sm:bottom-auto">
-                    <!-- Notes Button -->
-                    <div class="relative group">
-                        <button
-                            @click="notesSidebar = true"
-                            class="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group-hover:scale-110"
-                            title="View Notes"
-                        >
-                            <i class="pi pi-book text-lg"></i>
-                            <span v-if="props.notes.length" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
-                                {{ props.notes.length > 99 ? '99+' : props.notes.length }}
-                            </span>
-                        </button>
-                        <!-- Tooltip -->
-                        <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                            Notes ({{ props.notes.length }})
-                            <div class="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-800 border-y-4 border-y-transparent"></div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Button -->
-                    <div class="relative group">
-                        <button
-                            @click="chatSidebar = true"
-                            class="w-14 h-14 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group-hover:scale-110"
-                            title="View Chat Messages"
-                        >
-                            <i class="pi pi-comments text-lg"></i>
-                            <span v-if="props.chatMessages.length" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
-                                {{ props.chatMessages.length > 99 ? '99+' : props.chatMessages.length }}
-                            </span>
-                        </button>
-                        <!-- Tooltip -->
-                        <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                            Chat Messages ({{ props.chatMessages.length }})
-                            <div class="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-800 border-y-4 border-y-transparent"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Note Sidebar -->
-        <NoteSidebar v-model:visible="notesSidebar" :notes="filteredNotes" :current-time="currentTime" timer-label="Timestamp" :timer-value="formatDuration(currentTime)" @save-note="addNoteWithTimestamp" @delete="deleteNote" @jump-to="jumpToNote" />
-
-        <!-- Chat Sidebar -->
-        <ChatSidebar
-            v-model:visible="chatSidebar"
-            :chat-messages="filteredChatMessages"
-            :current-time="currentTime"
-            timer-label="Timestamp"
-            :timer-value="formatDuration(currentTime)"
-            @save-chat="sendChatWithTimestamp"
-            @delete="deleteChatMessage"
-            @jump-to="jumpToChat"
-        />
-    </div>
-</template>
-
 <script setup>
 import { useReaderStore } from '@/stores/readerStore';
 import { useToast } from 'primevue/usetoast';
@@ -250,12 +50,11 @@ const readerStore = useReaderStore();
 const player = ref(null);
 const playerId = ref(`youtube-player-${Date.now()}`);
 
-// State
-const loading = ref(true);
 const error = ref(null);
 const scriptLoaded = ref(false);
 const isPlaying = ref(false);
 const currentTime = ref(0);
+const loading = ref(false);
 
 // Video metadata
 const videoMeta = ref({
@@ -663,7 +462,200 @@ onMounted(() => {
     initPlayer();
 });
 </script>
+<template>
+    <div>
+        <div class="relative w-full bg-gray-50 dark:bg-gray-900 flex flex-col">
+            <!-- Fixed Header at Top -->
+            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ">
+                <div class="flex flex-col max-w-xs sm:max-w-md md:max-w-lg" v-if="videoMeta.title">
+                    <h1 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate leading-tight" :title="videoMeta.title">
+                        {{ videoMeta.title }}
+                    </h1>
+                    <span v-if="videoMeta.author" class="text-xs text-gray-600 dark:text-gray-400 truncate" :title="videoMeta.author">
+                        {{ videoMeta.author }}
+                    </span>
+                </div>
+            </div>
 
+            <!-- Main Content with top padding to account for fixed header -->
+            <div class="flex-1 overflow-auto relative">
+                <!-- Loading State -->
+                <div v-if="loading" class="flex items-center justify-center dark:bg-gray-900/80 mt-16">
+                    <div class="text-center">
+                        <div class="w-12 h-12 border-4 border-t-red-500 border-gray-200 rounded-full animate-spin mb-4 mx-auto"></div>
+                        <p class="text-gray-700 dark:text-gray-300">Loading video...</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div v-else-if="error" class="flex items-center justify-center bg-white/80 dark:bg-gray-900/80 ">
+                    <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg">
+                        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{{ error }}</p>
+                        <button @click="initPlayer" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Try Again</button>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div v-show="!loading && !error" class="flex-1 overflow-auto relative">
+                    <!-- Video Player Container -->
+                    <div class="flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-800">
+                        <!-- Player wrapper with controls overlay -->
+                        <div class="w-full max-w-4xl shadow-lg rounded-lg overflow-hidden aspect-video relative bg-black">
+                            <div :id="playerId" class="w-full h-full"></div>
+
+                            <!-- Quick action buttons overlay -->
+                            <div v-if="isPlaying" class="absolute bottom-4 right-4 flex gap-2 bg-black/60 rounded-full p-2 backdrop-blur-sm">
+                                <button @click="quickAddNote" class="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-white transition-colors" title="Add note at current timestamp">
+                                    <i class="pi pi-pencil text-sm"></i>
+                                </button>
+                                <button @click="askAIAboutCurrentSegment" class="p-2 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white transition-colors" title="Ask AI about this moment">
+                                    <i class="pi pi-comments text-sm"></i>
+                                </button>
+                            </div>
+
+                            <!-- Timestamp markers for existing notes and chats -->
+                            <div class="absolute bottom-0 left-0 right-0 h-2 bg-transparent">
+                                <!-- Note markers -->
+                                <div
+                                    v-for="note in props.notes"
+                                    :key="`note-${note.id}`"
+                                    class="absolute h-full w-1 bg-amber-500 cursor-pointer hover:bg-amber-400 transition-colors"
+                                    :style="{ left: `${(note.timestamp / videoMeta.duration) * 100}%` }"
+                                    @click="goToTimestamp(note.timestamp)"
+                                    :title="`Note: ${formatDuration(note.timestamp)}`"
+                                ></div>
+                                <!-- Chat markers -->
+                                <div
+                                    v-for="chat in props.chatMessages"
+                                    :key="`chat-${chat.id}`"
+                                    class="absolute h-full w-1 bg-indigo-500 cursor-pointer hover:bg-indigo-400 transition-colors"
+                                    :style="{ left: `${(chat.timestamp / videoMeta.duration) * 100}%` }"
+                                    @click="goToTimestamp(chat.timestamp)"
+                                    :title="`Chat: ${formatDuration(chat.timestamp)}`"
+                                ></div>
+                            </div>
+                        </div>
+
+                        <!-- Video Info Section -->
+                        <div class="w-full max-w-4xl mt-4 p-5 bg-white dark:bg-gray-700 rounded-lg shadow-md" v-if="videoMeta.title">
+                            <h3 class="text-xl font-medium text-gray-800 dark:text-gray-100 mb-3">{{ videoMeta.title }}</h3>
+
+                            <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                <div v-if="videoMeta.author" class="flex items-center gap-2">
+                                    <i class="pi pi-user"></i>
+                                    <span>{{ videoMeta.author }}</span>
+                                </div>
+                                <div v-if="videoMeta.duration" class="flex items-center gap-2">
+                                    <i class="pi pi-clock"></i>
+                                    <span>{{ formatDuration(videoMeta.duration) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Custom Progress Bar -->
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                    <span>{{ formatDuration(currentTime) }}</span>
+                                    <span>{{ formatDuration(videoMeta.duration) }}</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden relative cursor-pointer" @click="seekToPosition">
+                                    <div class="h-full bg-red-500 dark:bg-red-600 transition-all duration-300" :style="{ width: `${(currentTime / videoMeta.duration) * 100}%` }"></div>
+
+                                    <!-- Note markers on progress bar -->
+                                    <div
+                                        v-for="note in props.notes"
+                                        :key="`progress-note-${note.id}`"
+                                        class="absolute top-0 bottom-0 w-1 bg-amber-500"
+                                        :style="{ left: `${(note.timestamp / videoMeta.duration) * 100}%` }"
+                                        @click.stop="goToTimestamp(note.timestamp)"
+                                        :title="`Note: ${formatDuration(note.timestamp)}`"
+                                    ></div>
+
+                                    <!-- Chat markers on progress bar -->
+                                    <div
+                                        v-for="chat in props.chatMessages"
+                                        :key="`progress-chat-${chat.id}`"
+                                        class="absolute top-0 bottom-0 w-1 bg-indigo-500"
+                                        :style="{ left: `${(chat.timestamp / videoMeta.duration) * 100}%` }"
+                                        @click.stop="goToTimestamp(chat.timestamp)"
+                                        :title="`Chat: ${formatDuration(chat.timestamp)}`"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Action Buttons -->
+                    <div class="fixed right-4 bottom-4 z-30 flex flex-col gap-3 sm:top-1/2 sm:transform sm:-translate-y-1/2 sm:bottom-auto">
+                        <!-- Notes Button -->
+                        <div class="relative group">
+                            <button
+                                @click="notesSidebar = true"
+                                class="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group-hover:scale-110"
+                                title="View Notes"
+                            >
+                                <i class="pi pi-book text-lg"></i>
+                                <span v-if="props.notes.length" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                                    {{ props.notes.length > 99 ? '99+' : props.notes.length }}
+                                </span>
+                            </button>
+                            <!-- Tooltip -->
+                            <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                Notes ({{ props.notes.length }})
+                                <div class="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-800 border-y-4 border-y-transparent"></div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Button -->
+                        <div class="relative group">
+                            <button
+                                @click="chatSidebar = true"
+                                class="w-14 h-14 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group-hover:scale-110"
+                                title="View Chat Messages"
+                            >
+                                <i class="pi pi-comments text-lg"></i>
+                                <span v-if="props.chatMessages.length" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                                    {{ props.chatMessages.length > 99 ? '99+' : props.chatMessages.length }}
+                                </span>
+                            </button>
+                            <!-- Tooltip -->
+                            <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                Chat Messages ({{ props.chatMessages.length }})
+                                <div class="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-800 border-y-4 border-y-transparent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note Sidebar -->
+            <NoteSidebar
+                v-model:visible="notesSidebar"
+                :notes="filteredNotes"
+                :current-time="currentTime"
+                timer-label="Timestamp"
+                :timer-value="formatDuration(currentTime)"
+                @save-note="addNoteWithTimestamp"
+                @delete="deleteNote"
+                @jump-to="jumpToNote"
+            />
+
+            <!-- Chat Sidebar -->
+            <ChatSidebar
+                v-model:visible="chatSidebar"
+                :chat-messages="filteredChatMessages"
+                :current-time="currentTime"
+                timer-label="Timestamp"
+                :timer-value="formatDuration(currentTime)"
+                @save-chat="sendChatWithTimestamp"
+                @delete="deleteChatMessage"
+                @jump-to="jumpToChat"
+            />
+        </div>
+    </div>
+</template>
 <style scoped>
 /* YouTube Player styles - Consistent with PDFReader */
 .youtube-player-wrapper {

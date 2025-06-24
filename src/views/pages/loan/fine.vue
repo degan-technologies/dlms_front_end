@@ -147,6 +147,7 @@ onMounted(fetchFines);
                 >
                     <Column field="id" header="#" style="width: 4rem" />
                     <Column field="user_id" header="User" />
+                    <Column field="user_name" header="User Name" />
                     <Column field="loan_id" header="Loan" />
                     <Column field="fine_amount" header="Amount" />
                     <Column field="fine_date" header="Fine Date">

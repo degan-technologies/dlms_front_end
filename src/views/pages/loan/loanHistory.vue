@@ -25,7 +25,7 @@ const fetchLoans = async () => {
         if (filter.value) params.filter = filter.value;
         if (status.value) params.status = status.value;
         if (dateRange.value.length === 2) params.dateRange = dateRange.value;
-        const res = await axiosInstance.get('/loans', { params });
+        const res = await axiosInstance.get('/librarian/loans', { params });
         loans.value = res.data.data;
         // Only set totalRecords from meta, do not overwrite rows/page
         const meta = res.data.meta || res.data.pagination || {};
@@ -108,7 +108,7 @@ const confirmReturnWithFine = async () => {
         }
     }
     try {
-        await axiosInstance.put(`/loans/${loan.id}`, { returned_date: returnDate, book_id: loan.book_id });
+        await axiosInstance.put(`/librarian/loans/${loan.id}`, { returned_date: returnDate, book_id: loan.book_id });
         // Update the local data
         const idx = loans.value.findIndex((l) => l.id === loan.id);
         if (idx !== -1) {
@@ -151,8 +151,6 @@ const confirmReturnWithFine = async () => {
     }
 };
 
-onMounted(fetchLoans);
-
 function getDueStatus(loan) {
     if (!loan.due_date) return '-';
     if (loan.returned_date) return 'Returned';
@@ -167,6 +165,8 @@ function getDueStatus(loan) {
         return Math.abs(diff) + ' day' + (Math.abs(diff) === 1 ? '' : 's') + ' overdue';
     }
 }
+
+onMounted(fetchLoans);
 </script>
 
 <template>
@@ -221,6 +221,8 @@ function getDueStatus(loan) {
                             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} loans"
                         >
                             <Column field="id" header="#" style="width: 4rem" />
+                            <Column field="user_id" header="User ID" />
+                            <Column field="user_name" header="User Name" />
                             <Column header="Book">
                                 <template #body="{ data }">
                                     <div class="flex items-center gap-3">

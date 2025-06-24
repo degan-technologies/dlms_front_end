@@ -1,13 +1,14 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import Echo from 'laravel-echo';
 import axiosInstance from '@/util/axios-config';
+import { computed, onMounted, ref } from 'vue';
 
 const notifications = ref([]);
 const unreadCount = ref(0);
 const menu = ref(null);
 const loading = ref(false);
 const error = ref(null);
+const detailVisible = ref(false);
+const selectedNotification = ref(null);
 
 // Menu items
 const items = ref([
@@ -15,24 +16,12 @@ const items = ref([
     { label: 'Clear all', icon: 'pi pi-trash', command: clearAllNotifications }
 ]);
 
-// Initialize Laravel Echo
-const echo = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_REVERB_APP_KEY || 'local',
-    cluster: 'mt1',
-    wsHost: import.meta.env.VITE_REVERB_HOST || '127.0.0.1',
-    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'http') === 'https',
-    enabledTransports: ['ws', 'wss'],
-    disableStats: true
-});
-
 // Fetch notifications
 async function fetchNotifications() {
     try {
         loading.value = true;
         error.value = null;
-        const response = await axiosInstance.get('/librarian/notifications');
+        const response = await axiosInstance.get('/superadmin/notifications');
         notifications.value = response.data.data.notifications;
         unreadCount.value = response.data.data.meta.unread_count;
     } catch (err) {
@@ -46,7 +35,7 @@ async function fetchNotifications() {
 // Mark notification as read
 async function markAsRead(id) {
     try {
-        await axiosInstance.post(`/notifications/${id}/read`);
+        await axiosInstance.post(`superadmin/notifications/${id}/read`);
         // Update locally without refetching
         const notification = notifications.value.find((n) => n.id === id);
         if (notification) {
@@ -61,7 +50,7 @@ async function markAsRead(id) {
 // Mark all as read
 async function markAllAsRead() {
     try {
-        await axiosInstance.post('/notifications/mark-all-read');
+        await axiosInstance.post('/superadmin/notifications/{id}mark-all-read');
         // Update locally
         notifications.value.forEach((n) => (n.status = 'read'));
         unreadCount.value = 0;
@@ -70,10 +59,20 @@ async function markAllAsRead() {
     }
 }
 
+async function deleteANotification(id) {
+    try {
+        await axiosInstance.delete(`/superadmin/notifications/${id}`);
+        notifications.value = notifications.value.filter((n) => n.id !== id);
+        unreadCount.value = Math.max(0, unreadCount.value - 1);
+    } catch (err) {
+        console.error('Error deleting notification:', err);
+    }
+}
+
 // Clear all notifications
 async function clearAllNotifications() {
     try {
-        await axiosInstance.delete('/notifications/clear');
+        await axiosInstance.delete('/superadmin/notifications/{id}clear-all');
         notifications.value = [];
         unreadCount.value = 0;
     } catch (err) {
@@ -110,16 +109,9 @@ function formatDate(dateString) {
 }
 
 // Listen for new notifications
-function listenForNewNotifications() {
-    echo.private(`App.Models.User.${window.userId}`).notification((notification) => {
-        notifications.value.unshift(notification);
-        unreadCount.value += 1;
-    });
-}
 
 onMounted(() => {
     fetchNotifications();
-    listenForNewNotifications();
 });
 </script>
 
@@ -173,14 +165,55 @@ onMounted(() => {
                             <div class="flex items-center mt-1 text-xs text-surface-500">
                                 <span>{{ notification.time_ago }}</span>
                                 <span class="mx-2">•</span>
-                                <span>{{ Math.floor(notification.book.days_overdue) }} days overdue</span>
                             </div>
                         </div>
                         <Button v-if="notification.status === 'unread'" icon="pi pi-check" class="p-button-text p-button-sm" @click.stop="markAsRead(notification.id)" v-tooltip="'Mark as read'" />
-                        <Button icon="pi pi-external-link" class="p-button-text p-button-sm ml-2" @click.stop="$router.push(notification.actions.view_loan)" v-tooltip="'View loan'" />
+                        <Button icon="pi pi-trash" class="p-button-text p-button-sm ml-2" @click.stop="deleteANotification(notification.id)" v-tooltip="'Delete notification'" />
                     </li>
                 </ul>
             </div>
         </div>
+        <!-- Notification Detail Dialog -->
+        <Dialog v-model:visible="detailVisible" :header="selectedNotification?.title" :style="{ width: 'min(95vw, 600px)' }" :breakpoints="{ '640px': '95vw', '1024px': '75vw' }" :modal="true" class="notification-detail-dialog">
+            <div v-if="selectedNotification" class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-full shrink-0">
+                        <i class="pi pi-exclamation-triangle text-2xl text-orange-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-surface-500">
+                            {{ formatDateTime(selectedNotification.created_at) }}
+                        </div>
+                        <div class="font-medium">
+                            {{ selectedNotification.status === 'unread' ? 'Unread' : 'Read' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-surface-100 dark:bg-surface-700 p-4 rounded-lg whitespace-pre-wrap">
+                    {{ selectedNotification.message }}
+                </div>
+
+                <div v-if="selectedNotification.book" class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg">
+                    <h4 class="font-medium mb-2">Related Book</h4>
+                    <div class="flex items-center gap-3">
+                        <img :src="selectedNotification.book.cover_url || '/default-book-cover.jpg'" class="w-16 h-20 object-cover rounded" alt="Book cover" />
+                        <div>
+                            <div class="font-medium">{{ selectedNotification.book.title }}</div>
+                            <div class="text-sm text-surface-500">{{ selectedNotification.book.author }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-between">
+                    <Button label="Mark as Read" icon="pi pi-check" class="p-button-text" v-if="selectedNotification?.status === 'unread'" @click="markAsRead(selectedNotification.id)" />
+                    <div class="flex gap-2">
+                        <Button label="Close" icon="pi pi-times" class="p-button-text" @click="detailVisible = false" />
+                    </div>
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>
