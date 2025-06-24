@@ -1,101 +1,7 @@
-<template>
-    <div class="reader-container w-full h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <!-- Fixed Page header - streamlined -->
-        <div class="flex-shrink-0 bg-white shadow-sm z-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-            <div class="px-4 py-2 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <button @click="goBack" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <i class="pi pi-arrow-left text-gray-700 dark:text-gray-300 text-lg"></i>
-                    </button>
-                    <div class="flex flex-col">
-                        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate max-w-lg leading-tight">
-                            {{ ebook ? ebook.file_name : 'Digital Resource Reader' }}
-                        </h1>
-                        <span v-if="ebook && ebook.author" class="text-sm text-gray-600 dark:text-gray-400">
-                            {{ ebook.author }}
-                        </span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div v-if="loading" class="flex items-center gap-2">
-                        <div class="w-4 h-4 border-2 border-t-indigo-600 border-gray-200 rounded-full animate-spin"></div>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Loading...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main content area with proper flex layout -->
-        <div class="flex-1 min-h-0 relative">
-            <!-- Global loading overlay -->
-            <LoadingState
-                v-if="loading"
-                :type="isPdf ? 'pdf' : isYouTube ? 'youtube' : 'default'"
-                :title="loading ? 'Loading Resource' : ''"
-                :description="ebook ? `Preparing ${ebook.file_name}...` : 'Loading digital content...'"
-                :subtitle="ebook?.author"
-            />
-
-            <!-- Global error state -->
-            <div v-else-if="error" class="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-900/90 z-50">
-                <div class="text-center max-w-md p-6">
-                    <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Failed to Load Resource</h3>
-                    <p class="text-gray-700 dark:text-gray-300 mb-4">{{ error }}</p>
-                    <button @click="goBack" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">Go Back</button>
-                </div>
-            </div>
-
-            <!-- Content area - only show when not loading and no error -->
-            <div v-else class="w-full h-full">
-                <PDFReader
-                    v-if="isPdf"
-                    :pdfSource="isPdf && route.query.source ? decodeURIComponent(decodeURIComponent(route.query.source)) : resourceUrl"
-                    :ebookId="ebookId"
-                    :notes="notes"
-                    :chatMessages="chatMessages"
-                    :loading="false"
-                    @add-note="addNote"
-                    @delete-note="deleteNote"
-                    @add-chat-message="addChatMessage"
-                    @delete-chat-message="deleteChatMessage"
-                    @retry="reloadPdf"
-                />
-                <YouTubePlayer
-                    v-else-if="isYouTube && (youtubeVideoId || route.query.videoId)"
-                    :videoId="youtubeVideoId || route.query.videoId"
-                    :ebookId="ebookId"
-                    :notes="notes"
-                    :chatMessages="chatMessages"
-                    :darkMode="true"
-                    :loading="false"
-                    @add-note="addNote"
-                    @delete-note="deleteNote"
-                    @go-back="goBack"
-                    @ask-ai-about-timestamp="addChatMessage"
-                    @add-chat-message="addChatMessage"
-                    @delete-chat-message="deleteChatMessage"
-                />
-                <div v-else-if="isYouTube && !youtubeVideoId && !route.query.videoId" class="flex flex-col items-center justify-center h-full">
-                    <i class="pi pi-video text-4xl text-gray-400 mb-4"></i>
-                    <p class="text-lg text-gray-500">No valid YouTube video ID found.</p>
-                    <button @click="goBack" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Go Back</button>
-                </div>
-                <div v-else-if="!isPdf && !isYouTube" class="flex flex-col items-center justify-center h-full">
-                    <i class="pi pi-file text-4xl text-gray-400 mb-4"></i>
-                    <p class="text-lg text-gray-500">Unsupported file format or missing content.</p>
-                    <button @click="goBack" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Go Back</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import { useReaderStore } from '@/stores/readerStore';
 import axiosInstance from '@/util/axios-config';
+import Header from '@/views/pages/home/Header.vue';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -356,6 +262,102 @@ onMounted(() => {
     fetchEbook();
 });
 </script>
+<template>
+    <div class="layout-content">
+        <Header />
+        <div class="reader-container w-full bg-gray-50 dark:bg-gray-900 flex flex-col">
+            <!-- Fixed Page header - streamlined -->
+            <div class="flex-shrink-0 bg-white mt-6 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button @click="goBack" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i class="pi pi-arrow-left text-gray-700 dark:text-gray-300 text-lg"></i>
+                        </button>
+                        <div class="flex flex-col">
+                            <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate max-w-lg leading-tight">
+                                {{ ebook ? ebook.file_name : 'Digital Resource Reader' }}
+                            </h1>
+                            <span v-if="ebook && ebook.author" class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ ebook.author }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div v-if="loading" class="flex items-center gap-2">
+                            <div class="w-4 h-4 border-2 border-t-indigo-600 border-gray-200 rounded-full animate-spin"></div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content area with proper flex layout -->
+            <div class="flex-1 min-h-0 relative">
+                <!-- Global loading overlay -->
+                <LoadingState
+                    v-if="loading"
+                    :type="isPdf ? 'pdf' : isYouTube ? 'youtube' : 'default'"
+                    :title="loading ? 'Loading Resource' : ''"
+                    :description="ebook ? `Preparing ${ebook.file_name}...` : 'Loading digital content...'"
+                    :subtitle="ebook?.author"
+                />
+
+                <!-- Global error state -->
+                <div v-else-if="error" class="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-900/90 z-50">
+                    <div class="text-center max-w-md p-6">
+                        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Failed to Load Resource</h3>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{{ error }}</p>
+                    </div>
+                </div>
+
+                <!-- Content area - only show when not loading and no error -->
+                <div v-else class="w-full h-full">
+                    <PDFReader
+                        v-if="isPdf"
+                        :pdfSource="isPdf && route.query.source ? decodeURIComponent(decodeURIComponent(route.query.source)) : resourceUrl"
+                        :ebookId="ebookId"
+                        :notes="notes"
+                        :chatMessages="chatMessages"
+                        :loading="false"
+                        @add-note="addNote"
+                        @delete-note="deleteNote"
+                        @add-chat-message="addChatMessage"
+                        @delete-chat-message="deleteChatMessage"
+                        @retry="reloadPdf"
+                    />
+                    <YouTubePlayer
+                        v-else-if="isYouTube && (youtubeVideoId || route.query.videoId)"
+                        :videoId="youtubeVideoId || route.query.videoId"
+                        :ebookId="ebookId"
+                        :notes="notes"
+                        :chatMessages="chatMessages"
+                        :darkMode="true"
+                        :loading="false"
+                        @add-note="addNote"
+                        @delete-note="deleteNote"
+                        @go-back="goBack"
+                        @ask-ai-about-timestamp="addChatMessage"
+                        @add-chat-message="addChatMessage"
+                        @delete-chat-message="deleteChatMessage"
+                    />
+                    <div v-else-if="isYouTube && !youtubeVideoId && !route.query.videoId" class="flex flex-col items-center justify-center h-full">
+                        <i class="pi pi-video text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg text-gray-500">No valid YouTube video ID found.</p>
+                        <button @click="goBack" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Go Back</button>
+                    </div>
+                    <div v-else-if="!isPdf && !isYouTube" class="flex flex-col items-center justify-center h-full">
+                        <i class="pi pi-file text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg text-gray-500">Unsupported file format or missing content.</p>
+                        <button @click="goBack" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Go Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
 
 <style scoped>
 .reader-container {

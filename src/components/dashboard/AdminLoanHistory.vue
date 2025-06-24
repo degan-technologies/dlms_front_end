@@ -15,7 +15,7 @@ const fetchLoans = async (page = 1, pageSize = perPage.value) => {
     loading.value = true;
     const token = Cookies.get('access_token') || localStorage.getItem('access_token');
     try {
-        const response = await axiosInstance.get('/librarian/loans', {
+        const response = await axiosInstance.get('/admin/loans', {
             headers: {
                 Authorization: `Bearer ${token}`
             },
@@ -68,11 +68,6 @@ const onPage = (event) => {
                 </svg>
                 <span class="font-bold text-xl sm:text-2xl text-gray-800">Borrowing Status</span>
             </div>
-
-            <!-- Detail Button -->
-            <router-link to="/loans/loan/history" class="self-start sm:self-auto">
-                <Button label="Detail" icon="pi pi-eye" class="p-button-primary" />
-            </router-link>
         </div>
 
         <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-4">
@@ -104,7 +99,7 @@ const onPage = (event) => {
             >
                 <Column field="id" header="ID" />
                 <Column field="user_id" header="User ID" />
-                <Column field="user_name" header="User Name" sortable />
+                <Column field="user_name" header="User Name" />
                 <Column field="book_title" header="Book" />
                 <Column field="borrow_date" header="Borrow Date" />
                 <Column field="due_date" header="Due Date" />

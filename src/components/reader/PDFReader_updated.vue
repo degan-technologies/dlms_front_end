@@ -36,7 +36,6 @@ const emit = defineEmits(['add-note', 'delete-note', 'add-chat-message', 'delete
 // Core refs
 const toast = useToast();
 const pdfIframeRef = ref();
-const componentKey = ref(0);
 
 // PDF state - simplified for browser viewer
 const page = ref(1);
@@ -44,7 +43,6 @@ const pdfLoading = ref(true);
 const error = ref(null);
 const pdfLoaded = ref(false);
 const progress = reactive({ loaded: 0, total: 0 });
-const isRendering = ref(false);
 
 // Browser PDF URL with page navigation
 const pdfUrl = computed(() => {
@@ -518,10 +516,11 @@ const filteredChats = computed(() => {
             <!-- PDF viewer container with auto-adjusting width -->
             <div class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
                 <!-- Loading indicator - only show PDF specific loading when parent is not loading -->
-                <div v-if="!props.loading && pdfLoading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
-                    <div class="text-center">
-                        <div class="w-12 h-12 border-4 border-t-red-500 border-gray-200 rounded-full animate-spin mb-4 mx-auto"></div>
-                        <p class="text-gray-700 dark:text-gray-300">Loading PDF...</p>
+                <!-- Replace the existing loading indicator div with this: -->
+                <div v-if="!props.loading && pdfLoading" class="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-50">
+                    <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+                        <div class="w-16 h-16 border-4 border-t-red-500 border-gray-200 dark:border-gray-600 rounded-full animate-spin mb-4 mx-auto"></div>
+                        <p class="text-gray-700 dark:text-gray-300 text-lg font-medium">Loading PDF...</p>
                         <p v-if="progress.total" class="text-sm text-gray-500 dark:text-gray-400 mt-2">
                             {{ Math.round((progress.loaded / progress.total) * 100) }}% ({{ Math.round(progress.loaded / 1024) }} KB / {{ Math.round(progress.total / 1024) }} KB)
                         </p>

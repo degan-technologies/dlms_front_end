@@ -94,7 +94,7 @@ const router = createRouter({
                     path: '/books/assets',
                     name: 'assets-list',
                     component: () => import('@/views/pages/book/AssetsList.vue'),
-                    meta: { requiresAuth: true, isLibrarian: true }
+                    meta: { requiresAuth: true, isLibrarianOrAdminOrSuperAdmin: true }
                 },
 
                 // User borrowing and history routes
@@ -102,7 +102,7 @@ const router = createRouter({
                     path: '/books/reserved/history',
                     name: 'borrowed-books',
                     component: () => import('@/views/pages/loan/reservations.vue'),
-                    meta: { requiresAuth: true }
+                    meta: { requiresAuth: true, isAdminOrLibrarian: true }
                 },
                 {
                     path: '/loans/loan/history',
@@ -114,7 +114,31 @@ const router = createRouter({
                     path: '/librarianReply',
                     name: 'LibrarianReply',
                     component: () => import('@/views/pages/library/LibrarianReply.vue'),
+                    meta: { requiresAuth: true, isLibrarianOrAdminOrisSuperAdmin: true }
+                },
+                {
+                    path: '/announcements',
+                    name: 'library-announcements',
+                    component: () => import('@/views/pages/library/LibraryAnnouncements.vue'),
                     meta: { requiresAuth: true, isLibrarian: true }
+                },
+                {
+                    path: '/admin/announcements',
+                    name: 'admin-announcements',
+                    component: () => import('@/components/dashboard/AdminAnnouncements.vue'),
+                    meta: { requiresAuth: true, isAdmin: true }
+                },
+                {
+                    path: '/super/announcements',
+                    name: 'super-announcements',
+                    component: () => import('@/components/dashboard/SuperAdminAnnouncements.vue'),
+                    meta: { requiresAuth: true, isSuperAdmin: true }
+                },
+                {
+                    path: '/superadmin/roles',
+                    name: 'roles-management',
+                    component: () => import('@/components/dashboard/RolesManagement.vue'),
+                    meta: { requiresAuth: true, isSuperAdmin: true }
                 }
             ]
         },

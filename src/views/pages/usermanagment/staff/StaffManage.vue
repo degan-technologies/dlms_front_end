@@ -1,15 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import axiosInstance from '@/util/axios-config';
 import Cookies from 'js-cookie';
-
+import { useConfirm } from 'primevue/useconfirm';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 const router = useRouter();
 const staff = ref([]);
 const loading = ref(false);
 const selectedStaff = ref([]);
-
+const confirm = useConfirm();
 const totalRecords = ref(0);
+const searchQuery = ref('');
 const lazyParams = ref({
     first: 0,
     rows: 10,
@@ -17,11 +18,21 @@ const lazyParams = ref({
     sortOrder: 1
 });
 
+const handleSearch = () => {
+    lazyParams.value.first = 0;
+    fetchStaff();
+};
+
 const filters = ref({
-    global: { value: '', matchMode: 'contains' }
+    global: { value: '', matchMode: 'contains' },
+    first_name: { value: null, matchMode: 'contains' },
+    last_name: { value: null, matchMode: 'contains' },
+    department: { value: null, matchMode: 'contains' },
+    role: { value: null, matchMode: 'equals' }
 });
 
 const fetchStaff = async () => {
+    loading.value = true;
     try {
         const token = Cookies.get('access_token') || localStorage.getItem('access_token');
         if (!token) {
@@ -29,29 +40,27 @@ const fetchStaff = async () => {
             return;
         }
 
-        const appliedFilters = {};
-        for (const key in filters.value) {
-            if (filters.value[key]?.value) {
-                appliedFilters[key] = filters.value[key].value;
+        const params = {
+            page: Math.floor(lazyParams.value.first / lazyParams.value.rows) + 1,
+            per_page: lazyParams.value.rows,
+            sortField: lazyParams.value.sortField,
+            sortOrder: lazyParams.value.sortOrder === 1 ? 'asc' : 'desc',
+            search: searchQuery.value // Send search query to backend
+        };
+
+        // Add other filters if needed
+        for (const [key, filter] of Object.entries(filters.value)) {
+            if (filter.value && filter.value.trim() !== '') {
+                params[key] = filter.value.trim();
             }
         }
 
-        const response = await axios.get('http://localhost:8000/api/staff', {
+        const response = await axiosInstance.get('/staff', {
             headers: { Authorization: `Bearer ${token}` },
-            params: {
-                page: Math.floor(lazyParams.value.first / lazyParams.value.rows) + 1,
-                per_page: lazyParams.value.rows,
-                sortField: lazyParams.value.sortField,
-                sortOrder: lazyParams.value.sortOrder,
-                ...appliedFilters,
-                with: 'user'
-            }
+            params
         });
 
-        staff.value = response.data.data.map((s) => ({
-            ...s,
-            'user.username': s.user?.username || ''
-        }));
+        staff.value = response.data.data;
         totalRecords.value = response.data.meta?.total ?? 0;
     } catch (error) {
         console.error('Error fetching staff:', error);
@@ -81,39 +90,52 @@ const onFilter = () => {
 
 const addStaff = () => router.push({ name: 'staffregister' });
 
-const deleteStaff = async (staffMember) => {
-    if (!confirm(`Are you sure you want to delete ${staffMember.first_name} ${staffMember.last_name}?`)) return;
-    try {
-        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        await axios.delete(`http://localhost:8000/api/staff/${staffMember.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchStaff();
-    } catch (error) {
-        alert('Failed to delete staff: ' + (error.response?.data?.message || error.message));
-    }
+const deleteStaff = (staffMember) => {
+    confirm.require({
+        message: `Are you sure you want to delete ${staffMember.first_name} ${staffMember.last_name}?`,
+        header: 'Delete Confirmation',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+                await axiosInstance.delete(`/staff/${staffMember.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                fetchStaff();
+            } catch (error) {
+                alert('Failed to delete staff: ' + (error.response?.data?.message || error.message));
+            }
+        }
+    });
 };
 
-const deleteSelectedStaff = async () => {
+const deleteSelectedStaff = () => {
     if (!selectedStaff.value.length) {
         alert('No staff selected.');
         return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedStaff.value.length} selected staff?`)) return;
-
-    try {
-        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-        const deletePromises = selectedStaff.value.map((s) =>
-            axios.delete(`http://localhost:8000/api/staff/${s.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-        );
-        await Promise.all(deletePromises);
-        fetchStaff();
-    } catch (error) {
-        alert('Failed to delete selected staff: ' + (error.response?.data?.message || error.message));
-    }
+    confirm.require({
+        message: `Are you sure you want to delete ${selectedStaff.value.length} selected staff members?`,
+        header: 'Delete Confirmation',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+                const deletePromises = selectedStaff.value.map((s) =>
+                    axiosInstance.delete(`/staff/${s.id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    })
+                );
+                await Promise.all(deletePromises);
+                fetchStaff();
+            } catch (error) {
+                alert('Failed to delete selected staff: ' + (error.response?.data?.message || error.message));
+            }
+        }
+    });
 };
 
 // Edit form logic
@@ -158,7 +180,7 @@ const updateStaff = async () => {
             department: editForm.value.department
         };
 
-        await axios.put(`http://localhost:8000/api/staff/${editForm.value.id}`, staffData, {
+        await axiosInstance.put(`/staff/${editForm.value.id}`, staffData, {
             headers: { Authorization: `Bearer ${token}` }
         });
         showEditDialog.value = false;
@@ -181,8 +203,10 @@ const updateStaff = async () => {
                 <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedStaff.length" @click="deleteSelectedStaff" />
             </div>
             <div class="toolbar-search flex items-center gap-2 w-full md:w-auto">
-                <i class="pi pi-search text-gray-500" />
-                <InputText v-model="filters.global.value" placeholder="Search staff..." @input="onFilter" class="w-full" />
+                <span class="p-input-icon-left w-full">
+                    <InputText v-model="searchQuery" placeholder="Search students..." @keyup.enter="handleSearch" class="w-full" />
+                </span>
+                <Button icon="pi pi-search" class="p-button-outlined" @click="handleSearch" />
             </div>
         </div>
 
@@ -191,6 +215,8 @@ const updateStaff = async () => {
             v-model:selection="selectedStaff"
             :value="staff"
             :paginator="true"
+            :lazy="true"
+            :rowsPerPageOptions="[10, 20, 50]"
             :rows="lazyParams.rows"
             :totalRecords="totalRecords"
             :loading="loading"
@@ -267,6 +293,7 @@ const updateStaff = async () => {
                 </div>
             </form>
         </Dialog>
+        <ConfirmDialog />
     </div>
 </template>
 

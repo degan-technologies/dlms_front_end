@@ -26,6 +26,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // Tawk.to actions
     const openTawk = () => {
+        console.log('Opening Tawk chat widget');
         if (window.Tawk_API?.maximize) {
             window.Tawk_API.maximize();
             isTawkOpen.value = true;

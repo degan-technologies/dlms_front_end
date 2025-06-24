@@ -88,9 +88,7 @@ function onPdfLoaded(pdfProxy) {
 
     // Initialize virtual scrolling
     if (viewMode.value === 'all') {
-        nextTick(() => {
-            updateVisibleRange();
-        });
+        nextTick(() => {});
     }
 
     console.log('PDF loaded successfully:', totalPages.value, 'pages');
@@ -230,90 +228,6 @@ watch(chatSidebar, (val) => {
         });
     }
 });
-
-// Add mobile menu state
-const showMobileMenu = ref(false);
-
-// Search functionality with PDF.js
-const searchQuery = ref('');
-const showSearch = ref(false);
-const searchResults = ref([]);
-const currentSearchIndex = ref(-1);
-
-async function startSearch() {
-    if (!searchQuery.value.trim() || !pdfDocument.value) {
-        searchResults.value = [];
-        return;
-    }
-
-    try {
-        searchResults.value = [];
-
-        // Search through all pages
-        for (let pageNum = 1; pageNum <= totalPages.value; pageNum++) {
-            const pageObj = await pdfDocument.value.getPage(pageNum);
-            const textContent = await pageObj.getTextContent();
-
-            // Build text string from text items
-            const pageText = textContent.items.map((item) => item.str).join(' ');
-            const searchTerm = searchQuery.value.toLowerCase();
-
-            if (pageText.toLowerCase().includes(searchTerm)) {
-                searchResults.value.push({
-                    pageNumber: pageNum,
-                    text: pageText
-                });
-            }
-        }
-
-        if (searchResults.value.length > 0) {
-            currentSearchIndex.value = 0;
-            const firstResult = searchResults.value[0];
-            currentPage.value = firstResult.pageNumber;
-
-            toast.add({
-                severity: 'success',
-                summary: 'Search Results',
-                detail: `Found ${searchResults.value.length} result(s)`,
-                life: 3000
-            });
-        } else {
-            toast.add({
-                severity: 'warn',
-                summary: 'No Results',
-                detail: 'No matches found for your search',
-                life: 3000
-            });
-        }
-    } catch (err) {
-        console.error('Search error:', err);
-        toast.add({
-            severity: 'error',
-            summary: 'Search Error',
-            detail: 'Failed to search the PDF',
-            life: 3000
-        });
-    }
-}
-
-function nextSearchResult() {
-    if (searchResults.value.length === 0) return;
-
-    currentSearchIndex.value = (currentSearchIndex.value + 1) % searchResults.value.length;
-    const result = searchResults.value[currentSearchIndex.value];
-    currentPage.value = result.pageNumber;
-}
-
-function prevSearchResult() {
-    if (searchResults.value.length === 0) return;
-
-    currentSearchIndex.value = currentSearchIndex.value - 1;
-    if (currentSearchIndex.value < 0) {
-        currentSearchIndex.value = searchResults.value.length - 1;
-    }
-    const result = searchResults.value[currentSearchIndex.value];
-    currentPage.value = result.pageNumber;
-}
 
 // Mouse tracking for text selection
 let isMouseOverActions = false;
@@ -644,9 +558,9 @@ const filteredChats = computed(() => {
 </script>
 
 <template>
-    <div class="relative w-full h-full bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div class="relative w-full bg-gray-50 dark:bg-gray-900 flex flex-col">
         <!-- Fixed Toolbar at Top -->
-        <div class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
+        <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
             <div class="toolbar px-2 py-1 flex items-center justify-between gap-2 flex-wrap">
                 <!-- Left Section: Go Back + Navigation Controls -->
                 <div class="flex items-center gap-2 order-1">
@@ -733,11 +647,15 @@ const filteredChats = computed(() => {
             <!-- PDF viewer container with auto-adjusting width -->
             <div ref="pdfContainerRef" class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
                 <!-- Loading indicator -->
-                <div v-if="pdfLoading && !pdfLoaded" class="absolute top-16 left-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg z-10">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 border-2 border-t-red-500 border-gray-200 rounded-full animate-spin"></div>
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Loading PDF...</span>
-                        <span v-if="progress.total" class="text-xs text-gray-500 dark:text-gray-400"> {{ Math.round((progress.loaded / progress.total) * 100) }}% </span>
+                <div v-if="pdfLoading && !pdfLoaded" class="fixed inset-0 z-40 flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg px-6 py-4 shadow-lg text-center">
+                        <div class="flex items-center justify-center gap-3">
+                            <div class="w-6 h-6 border-4 border-t-red-500 border-gray-300 rounded-full animate-spin"></div>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Loading PDF...</span>
+                        </div>
+                        <div v-if="progress.total" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            {{ Math.round((progress.loaded / progress.total) * 100) }}% ({{ Math.round(progress.loaded / 1024) }} KB / {{ Math.round(progress.total / 1024) }} KB)
+                        </div>
                     </div>
                 </div>
 

@@ -1,10 +1,11 @@
 <script setup>
 import axiosInstance from '@/util/axios-config';
-import Dropdown from 'primevue/dropdown';
+import Cookies from 'js-cookie';
 import InputText from 'primevue/inputtext';
 import { useConfirm } from 'primevue/useconfirm';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
+import { useAuthStore } from '@/stores/authStore';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import ConfirmDialog from 'primevue/confirmdialog';
@@ -24,6 +25,12 @@ const viewMode = ref('list');
 const toast = ref(null);
 const confirm = useConfirm();
 const branches = ref([]);
+const errorMessage = ref('');
+const availableRoles = ref([]);
+
+const authStore = useAuthStore();
+const user = computed(() => authStore.getUser || {});
+const userRoles = computed(() => user.value.roles?.map((role) => role.name) || []);
 
 const fetchLibraries = async () => {
     loading.value = true;
@@ -35,6 +42,7 @@ const fetchLibraries = async () => {
 
         const { data } = await axiosInstance.get('/libraries');
         libraries.value = data;
+        console.log(libraries.value);
     } catch (err) {
         toast.value.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch libraries.', life: 2000 });
     } finally {
@@ -42,18 +50,33 @@ const fetchLibraries = async () => {
     }
 };
 
-const fetchLibraryBranches = async () => {
+onMounted(async () => {
+    loading.value = true;
     try {
-        const { data } = await axiosInstance.get('/branches');
-        branches.value = data.map((branch) => ({ value: branch.id, label: branch.branch_name }));
-    } catch (err) {
-        toast.value.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch library branches.', life: 2000 });
-    }
-};
+        fetchLibraries();
 
-onMounted(() => {
-    fetchLibraryBranches();
-    fetchLibraries();
+        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+        if (!token) {
+            errorMessage.value = 'Authentication required';
+            return;
+        }
+
+        // Fetch roles properly using await
+        const rolesResponse = await axiosInstance.get('/roles', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        availableRoles.value = rolesResponse.data.data || [];
+
+        // Fetch user via auth store
+        if (token && !user.value?.id) {
+            await authStore.authCheck();
+        }
+    } catch (error) {
+        errorMessage.value = 'Failed to load initial data';
+        console.error('Initialization error:', error);
+    } finally {
+        loading.value = false;
+    }
 });
 
 const openNew = () => {
@@ -135,7 +158,7 @@ const confirmBulkDelete = () => {
         <div class="p-col">
             <Toolbar>
                 <template #start>
-                    <div class="flex flex-wrap gap-2 items-center">
+                    <div class="flex flex-wrap gap-2 items-center" v-if="userRoles.includes('admin')">
                         <Button label="New Library" icon="pi pi-plus" @click="openNew" class="p-button-success" />
                         <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedLibraries.length" @click="confirmBulkDelete" />
                     </div>
@@ -169,7 +192,8 @@ const confirmBulkDelete = () => {
             <Column selectionMode="multiple" headerStyle="width: 3em" />
             <Column field="name" header="Name" sortable />
             <Column field="contactNumber" header="Contact" sortable />
-            <Column header="Actions" style="min-width: 8rem">
+            <Column field="library_branch_name" header="Branch" sortable />
+            <Column header="Actions" style="min-width: 8rem" v-if="userRoles.includes('admin')">
                 <template #body="slotProps">
                     <div class="p-d-flex p-ai-center p-gap-2">
                         <Button icon="pi pi-pencil" class="p-button-rounded p-button-text" @click="editLibrary(slotProps.data)" />
@@ -225,8 +249,6 @@ const confirmBulkDelete = () => {
                 >
                     <InputText name="name" v-model="library.name" placeholder="Enter library name" />
                     <InputText name="contact_number" v-model="library.contact_number" placeholder="Enter contact number" />
-                    <Dropdown name="library_branch_id" v-model="library.library_branch_id" :options="branches" optionLabel="label" optionValue="value" placeholder="Select a branch" />
-                    <small v-if="errors.library_branch_id" class="p-error">{{ errors.library_branch_id[0]?.message }}</small>
                     <div class="flex justify-end gap-2">
                         <Button label="Cancel" icon="pi pi-times" class="p-button-outlined p-button-secondary" @click="hideDialog" />
                         <Button label="Save" icon="pi pi-check" type="submit" class="p-button-primary" />

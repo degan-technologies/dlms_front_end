@@ -1,7 +1,7 @@
 <script setup>
 import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 // Get chat store
 const chatStore = useChatStore();
@@ -11,17 +11,16 @@ const newMessage = ref('');
 const chatBox = ref(null);
 const isTyping = ref(false);
 const loading = ref(false);
-
 // Unique session ID per visitor
 const sessionId = ref(localStorage.getItem('chat_session_id') || crypto.randomUUID());
 if (!localStorage.getItem('chat_session_id')) {
     localStorage.setItem('chat_session_id', sessionId.value);
 }
 
-const formatTime = (time) => {
+const formatDateTime = (time) => {
     if (!time) return '';
     const d = new Date(time);
-    return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+    return `${d.toLocaleDateString()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
 };
 
 const scrollToBottom = () => {
@@ -36,16 +35,12 @@ const fetchMessages = async () => {
             params: { session_id: sessionId.value }
         });
 
-        // Group visitor questions and librarian answers as pairs
-        const pairs = [];
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].sender === 'visitor') {
-                const question = data[i];
-                const answer = i + 1 < data.length && data[i + 1].sender === 'librarian' ? data[i + 1] : null;
-                pairs.push({ question, answer });
-                if (answer) i++; // skip the answer because used here
-            }
-        }
+        // Pair questions with their replies using the parent_id relationship
+        const visitorMessages = data.filter((msg) => msg.sender === 'visitor');
+        const pairs = visitorMessages.map((question) => ({
+            question,
+            answer: data.find((msg) => msg.parent_id === question.id) || null
+        }));
 
         messages.value = pairs;
         scrollToBottom();
@@ -65,8 +60,7 @@ const sendMessage = async () => {
             message: newMessage.value
         });
 
-        // Append the visitor's new question as a new pair with no answer yet
-        messages.value.push({ question: data.message, answer: null });
+        messages.value.push({ question: data, answer: null });
         newMessage.value = '';
         simulateTyping();
     } catch (err) {
@@ -114,14 +108,20 @@ onMounted(() => {
         fetchMessages();
     }
 });
+watch(
+    () => chatStore.isChatOpen,
+    (newVal) => {
+        if (newVal) fetchMessages();
+    }
+);
 
 onBeforeUnmount(() => {
     // Clean up if needed
 });
 </script>
+
 <template>
     <div class="fixed bottom-6 right-6 flex flex-col items-end z-50 space-y-2">
-        <!-- Custom Chat Panel -->
         <transition name="slide-fade">
             <section v-if="chatStore.isChatOpen" class="mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow-xl border border-indigo-100 flex flex-col">
                 <header class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3">
@@ -136,9 +136,9 @@ onBeforeUnmount(() => {
                         <!-- Question from visitor -->
                         <div class="flex justify-start">
                             <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-white text-gray-800 border border-gray-200">
-                                <p class="whitespace-pre-wrap break-words">{{ pair.question?.message || 'No question' }}</p>
+                                <p class="whitespace-pre-wrap break-words">{{ pair.question.message }}</p>
                                 <span class="block mt-1 text-[10px] text-gray-400 text-left select-none">
-                                    {{ formatTime(pair.question?.created_at) }}
+                                    {{ formatDateTime(pair.question.created_at) }}
                                 </span>
                             </div>
                         </div>
@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
                             <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-600 text-white">
                                 <p class="whitespace-pre-wrap break-words">{{ pair.answer.message }}</p>
                                 <span class="block mt-1 text-[10px] text-gray-300 text-right select-none">
-                                    {{ formatTime(pair.answer.created_at) }}
+                                    {{ formatDateTime(pair.answer.created_at) }}
                                 </span>
                             </div>
                         </div>
