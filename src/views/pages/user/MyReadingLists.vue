@@ -37,10 +37,6 @@ onMounted(() => {
     fetchMyCollections();
 });
 
-const createCollection = () => {
-    router.push('/student/create-reading-list');
-};
-
 const viewCollection = (list) => {
     router.push({
         name: 'my-reading-list-detail',
@@ -96,8 +92,6 @@ const formatDate = (dateString) => {
                         <i class="pi pi-folder-open text-2xl text-gray-400"></i>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-2">No Collections Yet</h3>
-                    <p class="text-gray-600 mb-4">Create your first collection to organize your favorite resources.</p>
-                    <button @click="createCollection" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Create Collection</button>
                 </div>
                 <!-- Collections Grid -->
                 <div v-else>
