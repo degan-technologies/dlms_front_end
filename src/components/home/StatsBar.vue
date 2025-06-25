@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import axiosInstance from '@/util/axios-config';
 import Cookies from 'js-cookie';
+import { onMounted, ref } from 'vue';
 
 const totalBooks = ref(0);
 const totalEbooks = ref(0);
@@ -14,7 +14,7 @@ const fetchCounts = async () => {
     const token = Cookies.get('access_token') || localStorage.getItem('access_token');
 
     try {
-        const response = await axios.get('http://localhost:8000/api/counts', {
+        const response = await axiosInstance.get('/counts', {
             headers: {
                 Authorization: `Bearer ${token}`
             }
