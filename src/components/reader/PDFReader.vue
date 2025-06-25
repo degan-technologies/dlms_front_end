@@ -558,7 +558,8 @@ const filteredChats = computed(() => {
 </script>
 
 <template>
-    <div class="relative w-full bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div class="relative w-full h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 mb-12">
+
         <!-- Fixed Toolbar at Top -->
         <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 z-50">
             <div class="toolbar px-2 py-1 flex items-center justify-between gap-2 flex-wrap">
@@ -648,7 +649,7 @@ const filteredChats = computed(() => {
             <div ref="pdfContainerRef" class="pdf-container w-full max-w-full px-2 md:px-4 lg:px-8 xl:px-16 2xl:px-24 py-4">
                 <!-- Loading indicator -->
                 <div v-if="pdfLoading && !pdfLoaded" class="fixed inset-0 z-40 flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg px-6 py-4 shadow-lg text-center">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg px-6 py-4 text-center">
                         <div class="flex items-center justify-center gap-3">
                             <div class="w-6 h-6 border-4 border-t-red-500 border-gray-300 rounded-full animate-spin"></div>
                             <span class="text-sm text-gray-700 dark:text-gray-300">Loading PDF...</span>
@@ -668,7 +669,7 @@ const filteredChats = computed(() => {
                 </div>
 
                 <!-- PDF Content -->
-                <div class="pdf-viewer-wrapper bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 sm:p-4">
+                <div class="pdf-viewer-wrapper bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-4">
                     <!-- Single Page View -->
                     <VuePdfEmbed
                         v-if="viewMode === 'single'"
@@ -698,7 +699,7 @@ const filteredChats = computed(() => {
                                 :text-layer="true"
                                 :annotation-layer="true"
                                 image-resources-path="https://unpkg.com/pdfjs-dist/web/images/"
-                                class="vue-pdf-embed__page mb-4 w-full shadow-lg rounded-lg"
+                                class="vue-pdf-embed__page mb-4 w-full rounded-lg"
                                 @rendered="onPdfRendered"
                                 @rendering-failed="onPdfRenderingFailed"
                             />

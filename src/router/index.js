@@ -212,13 +212,6 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
-            path: '/my-collection',
-            name: 'my-collection',
-            component: () => import('@/views/pages/user/MyCollection.vue'),
-            meta: { requiresAuth: true }
-        },
-
-        {
             path: '/my-profile',
             name: 'my-profile',
             component: () => import('@/views/pages/usermanagment/StudentProfile.vue'),
