@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import Cookies from 'js-cookie';
 import axiosInstance from '@/util/axios-config';
+import Cookies from 'js-cookie';
+import { onMounted, ref } from 'vue';
 
 const totalBooks = ref(0);
 const totalEbooks = ref(0);

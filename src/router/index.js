@@ -211,6 +211,7 @@ const router = createRouter({
             component: () => import('@/views/pages/user/MyNotes.vue'),
             meta: { requiresAuth: true }
         },
+
         {
             path: '/my-profile',
             name: 'my-profile',
