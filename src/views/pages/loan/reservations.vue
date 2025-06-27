@@ -64,9 +64,10 @@ const handleApprove = async (reservation) => {
         const today = new Date();
         const borrowDate = today.toISOString().slice(0, 10);
         const dueDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        await axiosInstance.post('/loans', {
+        await axiosInstance.post('librarian/loans', {
             user_id: reservation.user_id,
             book_id: reservation.book_id,
+            book_item_id: reservation.book_item_id,
             borrow_date: borrowDate,
             due_date: dueDate,
             library_id: reservation.library_id

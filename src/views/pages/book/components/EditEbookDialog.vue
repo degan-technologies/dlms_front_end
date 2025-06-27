@@ -139,7 +139,8 @@ const updateEbook = handleSubmit(async (values) => {
         if (error.response?.data?.errors) {
             setErrors(error.response.data.errors);
         }
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update ebook', life: 3000 });
+        const errorMsg = error.response?.data?.message || 'Failed to update ebook';
+        toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 3000 });
     }
 });
 

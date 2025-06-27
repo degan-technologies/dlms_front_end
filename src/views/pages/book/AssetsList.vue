@@ -384,7 +384,12 @@ const confirmDeleteBookRow = (book) => {
             await fetchBooks(bookItemId);
         } catch (error) {
             console.error('Error deleting book:', error);
-            toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete book', life: 3000 });
+            // Show error message from API if available, otherwise show default
+            let message = 'Failed to delete book';
+            if (error.response && error.response.data && error.response.data.message) {
+                message = error.response.data.message;
+            }
+            toast.add({ severity: 'error', summary: 'Error', detail: message, life: 3000 });
         } finally {
             showDeleteDialog.value = false;
         }
@@ -405,7 +410,12 @@ const confirmDeleteEbookRow = (ebook) => {
             await fetchEbooks(bookItemId);
         } catch (error) {
             console.error('Error deleting ebook:', error);
-            toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete ebook', life: 3000 });
+            // Show error message from API if available, otherwise show default
+            let message = 'Failed to delete ebook';
+            if (error.response && error.response.data && error.response.data.message) {
+                message = error.response.data.message;
+            }
+            toast.add({ severity: 'error', summary: 'Error', detail: message, life: 3000 });
         } finally {
             showDeleteDialog.value = false;
         }
@@ -524,17 +534,27 @@ const onEbooksSearchChange = (bookItemId) => {
         >
             <template #header>
                 <div class="flex flex-wrap justify-between gap-2 items-center">
-                    <div class="flex gap-2 items-center">
-                        <IconField>
-                            <InputIcon>
-                                <i class="pi pi-search" />
-                            </InputIcon>
-                            <InputText v-model="mainFilters['global'].value" placeholder="Search book items..." @keyup.enter="onFilterChange" />
-                        </IconField>
-                        <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear style="min-width: 120px" @change="onFilterChange" />
-                        <Dropdown v-model="mainFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear style="min-width: 100px" @change="onFilterChange" />
+                    <div class="flex flex-wrap gap-2 items-center w-full">
+                        <div class="flex-1 min-w-[180px]">
+                            <IconField class="w-full">
+                                <InputIcon>
+                                    <i class="pi pi-search" />
+                                </InputIcon>
+                                <InputText v-model="mainFilters['global'].value" placeholder="Search book items..." @keyup.enter="onFilterChange" class="w-full" />
+                            </IconField>
+                        </div>
+                        <div class="flex-1 min-w-[140px]">
+                            <Dropdown v-model="mainFilters.language_id.value" :options="mainFilterOptions.languages" optionLabel="label" optionValue="value" placeholder="Language" showClear class="w-full" @change="onFilterChange" />
+                        </div>
+                        <div class="flex-1 min-w-[140px]">
+                            <Dropdown v-model="mainFilters.category_id.value" :options="mainFilterOptions.categories" optionLabel="label" optionValue="value" placeholder="Category" showClear class="w-full" @change="onFilterChange" />
+                        </div>
+                        <div class="flex-1 min-w-[140px]">
+                            <Dropdown v-model="mainFilters.subject_id.value" :options="mainFilterOptions.subjects" optionLabel="label" optionValue="value" placeholder="Subject" showClear class="w-full" @change="onFilterChange" />
+                        </div>
+                        <div class="flex-1 min-w-[110px]">
+                            <Dropdown v-model="mainFilters.grade_id.value" :options="mainFilterOptions.grades" optionLabel="label" optionValue="value" placeholder="Grade" showClear class="w-full" @change="onFilterChange" />
+                        </div>
                     </div>
                     <div>
                         <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
