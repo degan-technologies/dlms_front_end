@@ -89,7 +89,7 @@ const addEbook = handleSubmit(async (values) => {
             const formData = new FormData();
             formData.append('book_item_id', props.bookItemId);
             formData.append('file_name', values.file_name);
-            formData.append('is_downloadable', Boolean(values.is_downloadable));
+            formData.append('is_downloadable', values.is_downloadable ? '1' : '0');
             formData.append('e_book_type_id', values.e_book_type_id);
             formData.append('pdf_file', pdfFile.value);
 
@@ -102,7 +102,7 @@ const addEbook = handleSubmit(async (values) => {
             const formData = new FormData();
             formData.append('book_item_id', props.bookItemId);
             formData.append('file_name', values.file_name);
-            formData.append('is_downloadable', Boolean(values.is_downloadable));
+            formData.append('is_downloadable', values.is_downloadable ? '1' : '0');
             formData.append('e_book_type_id', values.e_book_type_id);
             formData.append('file_path', values.file_path);
 

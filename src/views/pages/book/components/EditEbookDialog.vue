@@ -1,68 +1,3 @@
-<template>
-    <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" header="Edit Ebook" :modal="true" :closable="true" :style="{ width: '65rem' }" @show="loadEbookData">
-        <form @submit.prevent="updateEbook">
-            <div class="mb-3">
-                <InputText v-model="fileName" placeholder="File Name" class="w-full" :class="{ 'p-invalid': (meta.touched.file_name || meta.dirty) && (fileNameError || ebookErrors.file_name) }" @input="() => clearFieldError('file_name')" />
-                <div v-if="(meta.touched.file_name || meta.dirty) && (fileNameError || ebookErrors.file_name)" class="text-red-500 text-xs mt-1">
-                    {{ fileNameError || ebookErrors.file_name }}
-                </div>
-            </div>
-            <div class="mb-3">
-                <Dropdown
-                    v-model="ebookTypeId"
-                    :options="ebookTypes"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="EBook Type"
-                    class="w-full"
-                    :class="{ 'p-invalid': (meta.touched.e_book_type_id || meta.dirty) && (ebookTypeIdError || ebookErrors.e_book_type_id) }"
-                    @change="() => clearFieldError('e_book_type_id')"
-                />
-                <div v-if="(meta.touched.e_book_type_id || meta.dirty) && (ebookTypeIdError || ebookErrors.e_book_type_id)" class="text-red-500 text-xs mt-1">
-                    {{ ebookTypeIdError || ebookErrors.e_book_type_id }}
-                </div>
-            </div>
-            <div class="mb-3">
-                <Dropdown
-                    v-model="isDownloadable"
-                    :options="downloadableOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Downloadable"
-                    class="w-full"
-                    :class="{ 'p-invalid': (meta.touched.is_downloadable || meta.dirty) && (isDownloadableError || ebookErrors.is_downloadable) }"
-                    @change="() => clearFieldError('is_downloadable')"
-                />
-                <div v-if="(meta.touched.is_downloadable || meta.dirty) && (isDownloadableError || ebookErrors.is_downloadable)" class="text-red-500 text-xs mt-1">
-                    {{ isDownloadableError || ebookErrors.is_downloadable }}
-                </div>
-            </div>
-            <div class="mb-3" v-if="isPdfType">
-                <FileUpload mode="basic" name="pdf_file" accept="application/pdf" :auto="false" chooseLabel="Update PDF" class="w-full" @select="onPdfFileSelect" />
-                <div v-if="pdfPreview" class="mt-2">
-                    <iframe :src="`${pdfPreview}#toolbar=0&navpanes=0&scrollbar=0`" style="width: 100%; height: 400px; border: 1px solid #ccc" frameborder="0"></iframe>
-                </div>
-            </div>
-            <div class="mb-3" v-else>
-                <InputText
-                    v-model="filePath"
-                    placeholder="YouTube Embed Link or Video URL"
-                    class="w-full"
-                    :class="{ 'p-invalid': (meta.touched.file_path || meta.dirty) && (filePathError || ebookErrors.file_path) }"
-                    @input="() => clearFieldError('file_path')"
-                />
-                <div v-if="(meta.touched.file_path || meta.dirty) && (filePathError || ebookErrors.file_path)" class="text-red-500 text-xs mt-1">
-                    {{ filePathError || ebookErrors.file_path }}
-                </div>
-            </div>
-            <div class="flex justify-end gap-2">
-                <Button label="Cancel" text @click="closeDialog" />
-                <Button label="Update" type="submit" :loading="isSubmitting" />
-            </div>
-        </form>
-    </Dialog>
-</template>
-
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -176,7 +111,7 @@ const updateEbook = handleSubmit(async (values) => {
             const formData = new FormData();
             formData.append('_method', 'PUT'); // Simulate PUT request
             formData.append('file_name', values.file_name);
-            formData.append('is_downloadable', Boolean(values.is_downloadable));
+            formData.append('is_downloadable', values.is_downloadable ? '1' : '0');
             formData.append('e_book_type_id', values.e_book_type_id);
             formData.append('pdf_file', pdfFile.value);
 
@@ -188,7 +123,7 @@ const updateEbook = handleSubmit(async (values) => {
             // For non-PDF types, just send JSON data with file_path
             const ebookData = {
                 file_name: values.file_name,
-                is_downloadable: Boolean(values.is_downloadable),
+                is_downloadable: !!values.is_downloadable,
                 e_book_type_id: values.e_book_type_id,
                 file_path: values.file_path
             };
@@ -235,3 +170,67 @@ watch(
     }
 );
 </script>
+<template>
+    <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" header="Edit Ebook" :modal="true" :closable="true" :style="{ width: '65rem' }" @show="loadEbookData">
+        <form @submit.prevent="updateEbook">
+            <div class="mb-3">
+                <InputText v-model="fileName" placeholder="File Name" class="w-full" :class="{ 'p-invalid': (meta.touched.file_name || meta.dirty) && (fileNameError || ebookErrors.file_name) }" @input="() => clearFieldError('file_name')" />
+                <div v-if="(meta.touched.file_name || meta.dirty) && (fileNameError || ebookErrors.file_name)" class="text-red-500 text-xs mt-1">
+                    {{ fileNameError || ebookErrors.file_name }}
+                </div>
+            </div>
+            <div class="mb-3">
+                <Dropdown
+                    v-model="ebookTypeId"
+                    :options="ebookTypes"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="EBook Type"
+                    class="w-full"
+                    :class="{ 'p-invalid': (meta.touched.e_book_type_id || meta.dirty) && (ebookTypeIdError || ebookErrors.e_book_type_id) }"
+                    @change="() => clearFieldError('e_book_type_id')"
+                />
+                <div v-if="(meta.touched.e_book_type_id || meta.dirty) && (ebookTypeIdError || ebookErrors.e_book_type_id)" class="text-red-500 text-xs mt-1">
+                    {{ ebookTypeIdError || ebookErrors.e_book_type_id }}
+                </div>
+            </div>
+            <div class="mb-3">
+                <Dropdown
+                    v-model="isDownloadable"
+                    :options="downloadableOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Downloadable"
+                    class="w-full"
+                    :class="{ 'p-invalid': (meta.touched.is_downloadable || meta.dirty) && (isDownloadableError || ebookErrors.is_downloadable) }"
+                    @change="() => clearFieldError('is_downloadable')"
+                />
+                <div v-if="(meta.touched.is_downloadable || meta.dirty) && (isDownloadableError || ebookErrors.is_downloadable)" class="text-red-500 text-xs mt-1">
+                    {{ isDownloadableError || ebookErrors.is_downloadable }}
+                </div>
+            </div>
+            <div class="mb-3" v-if="isPdfType">
+                <FileUpload mode="basic" name="pdf_file" accept="application/pdf" :auto="false" chooseLabel="Update PDF" class="w-full" @select="onPdfFileSelect" />
+                <div v-if="pdfPreview" class="mt-2">
+                    <iframe :src="`${pdfPreview}#toolbar=0&navpanes=0&scrollbar=0`" style="width: 100%; height: 400px; border: 1px solid #ccc" frameborder="0"></iframe>
+                </div>
+            </div>
+            <div class="mb-3" v-else>
+                <InputText
+                    v-model="filePath"
+                    placeholder="YouTube Embed Link or Video URL"
+                    class="w-full"
+                    :class="{ 'p-invalid': (meta.touched.file_path || meta.dirty) && (filePathError || ebookErrors.file_path) }"
+                    @input="() => clearFieldError('file_path')"
+                />
+                <div v-if="(meta.touched.file_path || meta.dirty) && (filePathError || ebookErrors.file_path)" class="text-red-500 text-xs mt-1">
+                    {{ filePathError || ebookErrors.file_path }}
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <Button label="Cancel" text @click="closeDialog" />
+                <Button label="Update" type="submit" :loading="isSubmitting" />
+            </div>
+        </form>
+    </Dialog>
+</template>

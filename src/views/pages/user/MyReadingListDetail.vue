@@ -343,11 +343,11 @@ const openCollectionModal = (ebook) => {
 };
 </script>
 <template>
-    <div class="card">
+    <div class="content-layout">
         <Header />
         <div class="bg-white">
             <!-- Fixed Page header with Udemy-style navigation -->
-            <div class="fixed top-0 left-0 right-0 bg-gray-50 shadow-sm z-50 border-b border-gray-200">
+            <div class="bg-gray-50 z-50 border-b border-gray-200">
                 <div class="container mx-auto py-4 px-6 flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <button @click="goBack" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
