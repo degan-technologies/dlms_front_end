@@ -151,7 +151,12 @@ const onSort = (event) => {
 };
 
 const editCategory = (selectedCategory) => {
-    category.value = { ...selectedCategory };
+    // Ensure the dialog field is pre-filled with the correct property
+    category.value = {
+        id: selectedCategory.id,
+        category_name: selectedCategory.category_name || selectedCategory.name || ''
+    };
+    submitted.value = false;
     categoryDialog.value = true;
 };
 

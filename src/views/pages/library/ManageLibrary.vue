@@ -155,22 +155,20 @@ const confirmBulkDelete = () => {
 <template>
     <div class="p-grid p-dir-col p-gap-4">
         <!-- Toolbar -->
-        <div class="p-col">
-            <Toolbar>
-                <template #start>
-                    <div class="flex flex-wrap gap-2 items-center" v-if="userRoles.includes('admin')">
-                        <Button label="New Library" icon="pi pi-plus" @click="openNew" class="p-button-success" />
-                        <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedLibraries.length" @click="confirmBulkDelete" />
-                    </div>
-                </template>
-                <template #end>
-                    <div class="flex flex-wrap gap-2 items-center">
-                        <Button icon="pi pi-th-large" class="p-button-text" @click="viewMode = 'grid'" :class="{ 'p-button-outlined': viewMode !== 'grid' }" />
-                        <Button icon="pi pi-list" class="p-button-text" @click="viewMode = 'list'" :class="{ 'p-button-outlined': viewMode !== 'list' }" />
-                    </div>
-                </template>
-            </Toolbar>
-        </div>
+        <Toolbar>
+            <template #start>
+                <div class="flex flex-wrap gap-2 items-center" v-if="userRoles.includes('admin')">
+                    <Button label="New Library" icon="pi pi-plus" @click="openNew" class="p-button-success" />
+                    <Button label="Delete Selected" icon="pi pi-trash" class="p-button-danger" :disabled="!selectedLibraries.length" @click="confirmBulkDelete" />
+                </div>
+            </template>
+            <template #end>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <Button icon="pi pi-th-large" class="p-button-text" @click="viewMode = 'grid'" :class="{ 'p-button-outlined': viewMode !== 'grid' }" />
+                    <Button icon="pi pi-list" class="p-button-text" @click="viewMode = 'list'" :class="{ 'p-button-outlined': viewMode !== 'list' }" />
+                </div>
+            </template>
+        </Toolbar>
 
         <!-- List/Table View -->
 
@@ -219,7 +217,7 @@ const confirmBulkDelete = () => {
                             <div class="p-4">
                                 <!-- <p class="text-gray-600 text-sm text-center">{{ item.address }}</p> -->
                                 <div class="mt-4 flex justify-center">
-                                    <span class="px-3 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full"> Branch: {{ branches.find((branch) => branch.value === item.libraryBranchId)?.label || 'N/A' }} </span>
+                                    <span class="px-3 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full"> Branch: {{ item.library_branch_name || 'N/A' }} </span>
                                 </div>
                             </div>
                         </template>

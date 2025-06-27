@@ -156,7 +156,6 @@ const confirmBulkDelete = () => {
                 <Column field="address" header="Address" sortable />
                 <Column field="contact_number" header="Contact" sortable />
                 <Column field="email" header="Email" sortable />
-                <Column field="opening_hours" header="Opening Hours" sortable />
                 <Column field="location" header="Location" sortable />
                 <Column header="Actions" style="min-width: 8rem">
                     <template #body="slotProps">
