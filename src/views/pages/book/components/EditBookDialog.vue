@@ -1,144 +1,3 @@
-<template>
-    <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" header="Edit Physical Book" :modal="true" :closable="true" :style="{ width: '65rem' }" @show="loadBookData">
-        <form @submit.prevent="updateBook">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="mb-3">
-                    <label for="edition" class="block text-sm font-medium mb-1">Edition</label>
-                    <InputText id="edition" v-model="edition" placeholder="Edition" class="w-full" :class="{ 'p-invalid': (meta.touched.edition || meta.dirty) && (editionError || formErrors.edition) }" @input="() => clearFieldError('edition')" />
-                    <div v-if="(meta.touched.edition || meta.dirty) && (editionError || formErrors.edition)" class="text-red-500 text-xs mt-1">
-                        {{ editionError || formErrors.edition }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="isbn" class="block text-sm font-medium mb-1">ISBN</label>
-                    <InputText id="isbn" v-model="isbn" placeholder="ISBN" class="w-full" :class="{ 'p-invalid': (meta.touched.isbn || meta.dirty) && (isbnError || formErrors.isbn) }" @input="() => clearFieldError('isbn')" />
-                    <div v-if="(meta.touched.isbn || meta.dirty) && (isbnError || formErrors.isbn)" class="text-red-500 text-xs mt-1">
-                        {{ isbnError || formErrors.isbn }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="title" class="block text-sm font-medium mb-1">Title</label>
-                    <InputText id="title" v-model="title" placeholder="Title" class="w-full" :class="{ 'p-invalid': (meta.touched.title || meta.dirty) && (titleError || formErrors.title) }" @input="() => clearFieldError('title')" />
-                    <div v-if="(meta.touched.title || meta.dirty) && (titleError || formErrors.title)" class="text-red-500 text-xs mt-1">
-                        {{ titleError || formErrors.title }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="pages" class="block text-sm font-medium mb-1">Pages</label>
-                    <InputNumber id="pages" v-model="pages" placeholder="Pages" class="w-full" :class="{ 'p-invalid': (meta.touched.pages || meta.dirty) && (pagesError || formErrors.pages) }" @input="() => clearFieldError('pages')" />
-                    <div v-if="(meta.touched.pages || meta.dirty) && (pagesError || formErrors.pages)" class="text-red-500 text-xs mt-1">
-                        {{ pagesError || formErrors.pages }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="isBorrowable" class="block text-sm font-medium mb-1">Borrowable</label>
-                    <Dropdown
-                        id="isBorrowable"
-                        v-model="isBorrowable"
-                        :options="borrowableOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Is Borrowable"
-                        class="w-full"
-                        :class="{ 'p-invalid': (meta.touched.is_borrowable || meta.dirty) && (isBorrowableError || formErrors.is_borrowable) }"
-                        @change="() => clearFieldError('is_borrowable')"
-                    />
-                    <div v-if="(meta.touched.is_borrowable || meta.dirty) && (isBorrowableError || formErrors.is_borrowable)" class="text-red-500 text-xs mt-1">
-                        {{ isBorrowableError || formErrors.is_borrowable }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="shelfId" class="block text-sm font-medium mb-1">Shelf</label>
-                    <Dropdown
-                        id="shelfId"
-                        v-model="shelfId"
-                        :options="filterOptions.shelves"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Select Shelf"
-                        class="w-full"
-                        :class="{ 'p-invalid': (meta.touched.shelf_id || meta.dirty) && (shelfIdError || formErrors.shelf_id) }"
-                        @change="() => clearFieldError('shelf_id')"
-                    />
-                    <div v-if="(meta.touched.shelf_id || meta.dirty) && (shelfIdError || formErrors.shelf_id)" class="text-red-500 text-xs mt-1">
-                        {{ shelfIdError || formErrors.shelf_id }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="libraryId" class="block text-sm font-medium mb-1">Library</label>
-                    <Dropdown
-                        id="libraryId"
-                        v-model="libraryId"
-                        :options="filterOptions.libraries"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Select Library"
-                        class="w-full"
-                        :class="{ 'p-invalid': (meta.touched.library_id || meta.dirty) && (libraryIdError || formErrors.library_id) }"
-                        @change="() => clearFieldError('library_id')"
-                    />
-                    <div v-if="(meta.touched.library_id || meta.dirty) && (libraryIdError || formErrors.library_id)" class="text-red-500 text-xs mt-1">
-                        {{ libraryIdError || formErrors.library_id }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="isReserved" class="block text-sm font-medium mb-1">Reserved</label>
-                    <Dropdown
-                        id="isReserved"
-                        v-model="isReserved"
-                        :options="reservedOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Is Reserved"
-                        class="w-full"
-                        :class="{ 'p-invalid': (meta.touched.is_reserved || meta.dirty) && (isReservedError || formErrors.is_reserved) }"
-                        @change="() => clearFieldError('is_reserved')"
-                    />
-                    <div v-if="(meta.touched.is_reserved || meta.dirty) && (isReservedError || formErrors.is_reserved)" class="text-red-500 text-xs mt-1">
-                        {{ isReservedError || formErrors.is_reserved }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="publicationYear" class="block text-sm font-medium mb-1">Publication Year</label>
-                    <Dropdown
-                        id="publicationYear"
-                        v-model="publicationYear"
-                        :options="publicationYearOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Publication Year"
-                        class="w-full"
-                        :class="{ 'p-invalid': (meta.touched.publication_year || meta.dirty) && (publicationYearError || formErrors.publication_year) }"
-                        @change="() => clearFieldError('publication_year')"
-                    />
-                    <div v-if="(meta.touched.publication_year || meta.dirty) && (publicationYearError || formErrors.publication_year)" class="text-red-500 text-xs mt-1">
-                        {{ publicationYearError || formErrors.publication_year }}
-                    </div>
-                </div>
-                <div class="mb-3 md:col-span-2">
-                    <label for="coverImage" class="block text-sm font-medium mb-1">Cover Image</label>
-                    <div v-if="currentCoverImage" class="mb-2">
-                        <img :src="currentCoverImage" class="h-32 border rounded" />
-                        <div class="text-xs text-gray-500 mt-1">Current cover image</div>
-                    </div>
-                    <FileUpload id="coverImage" mode="basic" name="cover_image" accept="image/*" :auto="false" chooseLabel="Change Cover Image" class="w-full" @select="onCoverImageSelect" :class="{ 'p-invalid': formErrors.cover_image }" />
-                    <div v-if="formErrors.cover_image" class="text-red-500 text-xs mt-1">
-                        {{ formErrors.cover_image }}
-                    </div>
-                    <div v-if="coverImagePreview" class="mt-2">
-                        <img :src="coverImagePreview" class="max-h-40 border rounded" />
-                        <div class="text-xs text-gray-500 mt-1">New cover image preview</div>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 mt-4">
-                <Button label="Cancel" text @click="closeDialog" />
-                <Button label="Update Book" type="submit" :loading="isSubmitting" />
-            </div>
-        </form>
-    </Dialog>
-</template>
-
 <script setup>
 import axiosInstance from '@/util/axios-config';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -293,15 +152,15 @@ const updateBook = handleSubmit(async (values) => {
     try {
         const formData = new FormData();
         formData.append('_method', 'PUT'); // Simulate PUT request
-        formData.append('edition', values.edition);
-        formData.append('isbn', values.isbn);
-        formData.append('title', values.title);
-        formData.append('pages', values.pages);
-        formData.append('is_borrowable', values.is_borrowable);
-        formData.append('shelf_id', values.shelf_id);
-        formData.append('library_id', values.library_id);
-        formData.append('is_reserved', values.is_reserved);
-        formData.append('publication_year', values.publication_year);
+        formData.append('edition', String(values.edition));
+        formData.append('isbn', String(values.isbn));
+        formData.append('title', String(values.title));
+        formData.append('pages', String(values.pages));
+        formData.append('is_borrowable', values.is_borrowable ? '1' : '0');
+        formData.append('shelf_id', String(values.shelf_id));
+        formData.append('library_id', String(values.library_id));
+        formData.append('is_reserved', values.is_reserved ? '1' : '0');
+        formData.append('publication_year', String(values.publication_year));
 
         if (coverImageFile.value) {
             formData.append('cover_image', coverImageFile.value);
@@ -340,3 +199,143 @@ const closeDialog = () => {
     currentCoverImage.value = null;
 };
 </script>
+<template>
+    <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" header="Edit Physical Book" :modal="true" :closable="true" :style="{ width: '65rem' }" @show="loadBookData">
+        <form @submit.prevent="updateBook">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="mb-3">
+                    <label for="edition" class="block text-sm font-medium mb-1">Edition</label>
+                    <InputText id="edition" v-model="edition" placeholder="Edition" class="w-full" :class="{ 'p-invalid': (meta.touched.edition || meta.dirty) && (editionError || formErrors.edition) }" @input="() => clearFieldError('edition')" />
+                    <div v-if="(meta.touched.edition || meta.dirty) && (editionError || formErrors.edition)" class="text-red-500 text-xs mt-1">
+                        {{ editionError || formErrors.edition }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="isbn" class="block text-sm font-medium mb-1">ISBN</label>
+                    <InputText id="isbn" v-model="isbn" placeholder="ISBN" class="w-full" :class="{ 'p-invalid': (meta.touched.isbn || meta.dirty) && (isbnError || formErrors.isbn) }" @input="() => clearFieldError('isbn')" />
+                    <div v-if="(meta.touched.isbn || meta.dirty) && (isbnError || formErrors.isbn)" class="text-red-500 text-xs mt-1">
+                        {{ isbnError || formErrors.isbn }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="title" class="block text-sm font-medium mb-1">Title</label>
+                    <InputText id="title" v-model="title" placeholder="Title" class="w-full" :class="{ 'p-invalid': (meta.touched.title || meta.dirty) && (titleError || formErrors.title) }" @input="() => clearFieldError('title')" />
+                    <div v-if="(meta.touched.title || meta.dirty) && (titleError || formErrors.title)" class="text-red-500 text-xs mt-1">
+                        {{ titleError || formErrors.title }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="pages" class="block text-sm font-medium mb-1">Pages</label>
+                    <InputNumber id="pages" v-model="pages" placeholder="Pages" class="w-full" :class="{ 'p-invalid': (meta.touched.pages || meta.dirty) && (pagesError || formErrors.pages) }" @input="() => clearFieldError('pages')" />
+                    <div v-if="(meta.touched.pages || meta.dirty) && (pagesError || formErrors.pages)" class="text-red-500 text-xs mt-1">
+                        {{ pagesError || formErrors.pages }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="isBorrowable" class="block text-sm font-medium mb-1">Borrowable</label>
+                    <Dropdown
+                        id="isBorrowable"
+                        v-model="isBorrowable"
+                        :options="borrowableOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Is Borrowable"
+                        class="w-full"
+                        :class="{ 'p-invalid': (meta.touched.is_borrowable || meta.dirty) && (isBorrowableError || formErrors.is_borrowable) }"
+                        @change="() => clearFieldError('is_borrowable')"
+                    />
+                    <div v-if="(meta.touched.is_borrowable || meta.dirty) && (isBorrowableError || formErrors.is_borrowable)" class="text-red-500 text-xs mt-1">
+                        {{ isBorrowableError || formErrors.is_borrowable }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="shelfId" class="block text-sm font-medium mb-1">Shelf</label>
+                    <Dropdown
+                        id="shelfId"
+                        v-model="shelfId"
+                        :options="filterOptions.shelves"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select Shelf"
+                        class="w-full"
+                        :class="{ 'p-invalid': (meta.touched.shelf_id || meta.dirty) && (shelfIdError || formErrors.shelf_id) }"
+                        @change="() => clearFieldError('shelf_id')"
+                    />
+                    <div v-if="(meta.touched.shelf_id || meta.dirty) && (shelfIdError || formErrors.shelf_id)" class="text-red-500 text-xs mt-1">
+                        {{ shelfIdError || formErrors.shelf_id }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="libraryId" class="block text-sm font-medium mb-1">Library</label>
+                    <Dropdown
+                        id="libraryId"
+                        v-model="libraryId"
+                        :options="filterOptions.libraries"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select Library"
+                        class="w-full"
+                        :class="{ 'p-invalid': (meta.touched.library_id || meta.dirty) && (libraryIdError || formErrors.library_id) }"
+                        @change="() => clearFieldError('library_id')"
+                    />
+                    <div v-if="(meta.touched.library_id || meta.dirty) && (libraryIdError || formErrors.library_id)" class="text-red-500 text-xs mt-1">
+                        {{ libraryIdError || formErrors.library_id }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="isReserved" class="block text-sm font-medium mb-1">Reserved</label>
+                    <Dropdown
+                        id="isReserved"
+                        v-model="isReserved"
+                        :options="reservedOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Is Reserved"
+                        class="w-full"
+                        :class="{ 'p-invalid': (meta.touched.is_reserved || meta.dirty) && (isReservedError || formErrors.is_reserved) }"
+                        @change="() => clearFieldError('is_reserved')"
+                    />
+                    <div v-if="(meta.touched.is_reserved || meta.dirty) && (isReservedError || formErrors.is_reserved)" class="text-red-500 text-xs mt-1">
+                        {{ isReservedError || formErrors.is_reserved }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="publicationYear" class="block text-sm font-medium mb-1">Publication Year</label>
+                    <Dropdown
+                        id="publicationYear"
+                        v-model="publicationYear"
+                        :options="publicationYearOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Publication Year"
+                        class="w-full"
+                        :class="{ 'p-invalid': (meta.touched.publication_year || meta.dirty) && (publicationYearError || formErrors.publication_year) }"
+                        @change="() => clearFieldError('publication_year')"
+                    />
+                    <div v-if="(meta.touched.publication_year || meta.dirty) && (publicationYearError || formErrors.publication_year)" class="text-red-500 text-xs mt-1">
+                        {{ publicationYearError || formErrors.publication_year }}
+                    </div>
+                </div>
+                <div class="mb-3 md:col-span-2">
+                    <label for="coverImage" class="block text-sm font-medium mb-1">Cover Image</label>
+                    <div v-if="currentCoverImage" class="mb-2">
+                        <img :src="currentCoverImage" class="h-32 border rounded" />
+                        <div class="text-xs text-gray-500 mt-1">Current cover image</div>
+                    </div>
+                    <FileUpload id="coverImage" mode="basic" name="cover_image" accept="image/*" :auto="false" chooseLabel="Change Cover Image" class="w-full" @select="onCoverImageSelect" :class="{ 'p-invalid': formErrors.cover_image }" />
+                    <div v-if="formErrors.cover_image" class="text-red-500 text-xs mt-1">
+                        {{ formErrors.cover_image }}
+                    </div>
+                    <div v-if="coverImagePreview" class="mt-2">
+                        <img :src="coverImagePreview" class="max-h-40 border rounded" />
+                        <div class="text-xs text-gray-500 mt-1">New cover image preview</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <Button label="Cancel" text @click="closeDialog" />
+                <Button label="Update Book" type="submit" :loading="isSubmitting" />
+            </div>
+        </form>
+    </Dialog>
+</template>

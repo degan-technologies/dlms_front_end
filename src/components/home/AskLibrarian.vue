@@ -3,43 +3,50 @@ import { useChatStore } from '@/stores/chatStore';
 import axiosInstance from '@/util/axios-config';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-// Get chat store
+// Chat store
 const chatStore = useChatStore();
 
+// Refs
 const messages = ref([]);
 const newMessage = ref('');
 const chatBox = ref(null);
 const isTyping = ref(false);
 const loading = ref(false);
-// Unique session ID per visitor
+
+// Session ID
 const sessionId = ref(localStorage.getItem('chat_session_id') || crypto.randomUUID());
 if (!localStorage.getItem('chat_session_id')) {
     localStorage.setItem('chat_session_id', sessionId.value);
 }
 
+// Format date
 const formatDateTime = (time) => {
     if (!time) return '';
     const d = new Date(time);
     return `${d.toLocaleDateString()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
 };
 
+// Auto-scroll to bottom
 const scrollToBottom = () => {
     nextTick(() => {
-        if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight;
+        if (chatBox.value) {
+            chatBox.value.scrollTop = chatBox.value.scrollHeight;
+        }
     });
 };
 
+// ✅ Corrected fetch logic
 const fetchMessages = async () => {
     try {
         const { data } = await axiosInstance.get('/anonymous-chat', {
             params: { session_id: sessionId.value }
         });
 
-        // Pair questions with their replies using the parent_id relationship
+        // Use the `reply` directly from the visitor message
         const visitorMessages = data.filter((msg) => msg.sender === 'visitor');
         const pairs = visitorMessages.map((question) => ({
             question,
-            answer: data.find((msg) => msg.parent_id === question.id) || null
+            answer: question.reply || null
         }));
 
         messages.value = pairs;
@@ -60,6 +67,7 @@ const sendMessage = async () => {
             message: newMessage.value
         });
 
+        // Push new question with no answer yet
         messages.value.push({ question: data, answer: null });
         newMessage.value = '';
         simulateTyping();
@@ -79,9 +87,8 @@ const simulateTyping = () => {
     }, 1600);
 };
 
-// Initialize Tawk.to script injection
+// Optional: inject Tawk.to chat
 let tawkScriptInjected = false;
-
 const initializeTawk = () => {
     if (tawkScriptInjected) return;
 
@@ -93,7 +100,6 @@ const initializeTawk = () => {
     document.body.appendChild(script);
     tawkScriptInjected = true;
 
-    // Initially hide Tawk widget
     setTimeout(() => {
         if (window.Tawk_API?.hideWidget) {
             window.Tawk_API.hideWidget();
@@ -101,12 +107,10 @@ const initializeTawk = () => {
     }, 1000);
 };
 
+// Mount
 onMounted(() => {
     initializeTawk();
-    // Fetch messages when chat is opened
-    if (chatStore.isChatOpen) {
-        fetchMessages();
-    }
+    if (chatStore.isChatOpen) fetchMessages();
 });
 watch(
     () => chatStore.isChatOpen,
@@ -116,7 +120,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
-    // Clean up if needed
+    // Cleanup if needed
 });
 </script>
 
@@ -133,7 +137,7 @@ onBeforeUnmount(() => {
 
                 <div ref="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 bg-indigo-50 min-h-[40vh] max-h-[60vh]">
                     <div v-for="(pair, index) in messages" :key="index" class="space-y-3">
-                        <!-- Question from visitor -->
+                        <!-- Visitor question -->
                         <div class="flex justify-start">
                             <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-white text-gray-800 border border-gray-200">
                                 <p class="whitespace-pre-wrap break-words">{{ pair.question.message }}</p>
@@ -143,7 +147,7 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <!-- Answer from librarian -->
+                        <!-- Librarian answer -->
                         <div class="flex justify-end" v-if="pair.answer">
                             <div class="max-w-[75%] px-4 py-2 rounded-lg text-sm shadow bg-indigo-600 text-white">
                                 <p class="whitespace-pre-wrap break-words">{{ pair.answer.message }}</p>
